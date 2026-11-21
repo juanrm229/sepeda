@@ -14,7 +14,7 @@ Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memua
 
 ## Yang baru di v5 — Avatar Modular Kit & QA
 
-- **Avatar generator memakai Avatar Modular Kit** (512 bagian: 16 wajah, 66 rambut, 50 hijab, 41 mata/alis/mulut, 66 baju termasuk batik, baju koko, kebaya & jersey, 50 topi termasuk peci, kopiah & cycling cap, kacamata, anting, kalung, kumis, detail, aksesori). Proporsi wajah dikalibrasi, aturan hijab mengikuti spesifikasi kit, ekspresi berubah mengikuti mood, item langka terbuka lewat level & lencana. Aset dioptimasi ke WebP (`public/avatar`, manifest `src/lib/avatar-kit.json`).
+- **Avatar profil memakai [DiceBear Lorelei](https://www.dicebear.com/styles/lorelei/)** (desain Lisa Wischofsky, CC0; kode MIT): 4 bentuk wajah, 48 rambut, 24 mata, 13 alis, 27 mulut, 6 hidung, 5 kacamata, 3 anting, 2 janggut, bintik, bunga rambut, warna kulit/rambut/aksesori bebas. SVG vektor offline tanpa file gambar. Ekspresi mengikuti mood, sebagian warna & aksesori terbuka lewat level/lencana. Avatar versi lama dimigrasi otomatis (warna kulit & rambut dipertahankan).
 - **QA/QC menyeluruh**: `npm run qa` menjalankan 88 pemeriksaan (fungsi, status kosong, aksesibilitas axe-core, tata letak 360 px, error & 404). Laporan: [`docs/QA-REPORT.md`](docs/QA-REPORT.md).
 - **Aksesibilitas WCAG AA**: token warna diperbarui (aksen `#d93d14`), label aksesibel di peta, tile, & input.
 

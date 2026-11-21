@@ -1,59 +1,37 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import type { CharConfig } from '../lib/types'
 import type { Mood } from '../lib/character'
-import { isCharConfig, layers, partUrl } from '../lib/avatar'
+import { avatarUri } from '../lib/avatar'
 
 /* =====================================================================
-   Karakter dari Avatar Modular Kit — lapisan raster di kanvas 512×512,
-   dirender sebagai <image> SVG supaya tajam & bisa dipotong ke area mana pun.
+   Avatar profil — DiceBear Lorelei (SVG data URI, cache di lib/avatar).
    ===================================================================== */
 
 const INK = '#111111'
-export const FACE_VIEW: [number, number, number] = [86, 16, 340]
-const PORTRAIT_VIEW: [number, number, number] = [0, 0, 512]
 
-/** Lapisan avatar dalam koordinat kanvas 512. */
-export function AvatarLayers({ c, mood }: { c: CharConfig; mood?: Mood }) {
+/** Avatar sebagai <img> (aman di semua browser, termasuk Safari). */
+export function AvatarImg({ c, mood, size, className, style, label = 'Avatar', zoom = 1, shift = 0 }: { c: CharConfig; mood?: Mood; size: number; className?: string; style?: React.CSSProperties; label?: string; zoom?: number; shift?: number }) {
   return (
-    <g>
-      {layers(c, mood).map((p) => p.seg && p.sz ? (
-        p.seg.map((sg, i) => (
-          <svg key={p.id + i} x={sg.r[0]} y={sg.r[1]} width={sg.r[2]} height={sg.r[3]} viewBox={`${sg.s[0]} ${sg.s[1]} ${sg.s[2] - sg.s[0]} ${sg.s[3] - sg.s[1]}`} preserveAspectRatio="none" overflow="hidden">
-            <image href={partUrl(p.src ?? p.id)} width={p.sz![0]} height={p.sz![1]} preserveAspectRatio="none" />
-          </svg>
-        ))
-      ) : (
-        <image key={p.id} href={partUrl(p.src ?? p.id)} x={p.r[0]} y={p.r[1]} width={p.r[2]} height={p.r[3]} preserveAspectRatio="none" />
-      ))}
-    </g>
+    <img src={avatarUri(c, mood)} width={size} height={size} alt={label} className={className} draggable={false} decoding="async"
+      style={{ display: 'block', width: size, height: size, transform: zoom !== 1 || shift ? `translateY(${shift}%) scale(${zoom})` : undefined, ...style }} />
   )
 }
 
-export function AvatarSvg({ c, mood, view, size, className, style, bg, label = 'Karakter' }: { c: CharConfig; mood?: Mood; view: [number, number, number]; size: number; className?: string; style?: React.CSSProperties; bg?: string; label?: string }) {
-  if (!isCharConfig(c)) return <span style={{ width: size, height: size, display: 'inline-block' }} />
-  return (
-    <svg viewBox={`${view[0]} ${view[1]} ${view[2]} ${view[2]}`} width={size} height={size} className={className} style={style} role="img" aria-label={label}>
-      {bg && <rect x={view[0]} y={view[1]} width={view[2]} height={view[2]} fill={bg} />}
-      <AvatarLayers c={c} mood={mood} />
-    </svg>
-  )
+/** Avatar di dalam SVG lain (adegan balapan dsb). */
+export function AvatarImage({ c, mood, x, y, size }: { c: CharConfig; mood?: Mood; x: number; y: number; size: number }) {
+  return <image href={avatarUri(c, mood)} x={x} y={y} width={size} height={size} />
 }
 
-/** Potret dada-ke-atas. */
-export function Portrait({ c, mood = 'oke', size = 160, bg, className, style }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; className?: string; style?: React.CSSProperties }) {
-  return <AvatarSvg c={c} mood={mood} view={PORTRAIT_VIEW} size={size} bg={bg} className={className} style={style} />
-}
-
-/** Wajah (potongan kepala) — untuk tile builder dan pratinjau. */
-export function FaceArt({ c, mood, size = 80 }: { c: CharConfig; mood?: Mood; size?: number }) {
-  return <AvatarSvg c={c} mood={mood} view={FACE_VIEW} size={size} />
+/** Potret profil. */
+export function Portrait({ c, mood = 'oke', size = 160, className, style }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; className?: string; style?: React.CSSProperties }) {
+  return <AvatarImg c={c} mood={mood} size={size} className={className} style={style} label="Potret karakter" />
 }
 
 /** Kepala kecil bulat untuk avatar di daftar. */
 export function HeadBadge({ c, mood = 'oke', size = 38, bg = 'var(--surface-2)', ring = true }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; ring?: boolean }) {
   return (
     <span style={{ width: size, height: size, borderRadius: '50%', overflow: 'hidden', display: 'inline-grid', placeItems: 'center', background: bg, flexShrink: 0, boxShadow: ring ? '0 0 0 2px var(--surface)' : undefined }}>
-      <AvatarSvg c={c} mood={mood} view={[106, 50, 300]} size={size} />
+      <AvatarImg c={c} mood={mood} size={size} zoom={1.12} shift={4} />
     </span>
   )
 }
@@ -139,7 +117,7 @@ export function RaceScene({ racers, height = 250 }: { racers: Racer[]; height?: 
           <ellipse cx={0} cy={22} rx={16} ry={4} fill={INK} opacity={0.18} />
           <g transform={`translate(0 ${bob}) rotate(${Math.sin(t * 5 + i) * 6})`}>
             <circle r={21} fill={r.me ? '#d93d14' : 'var(--surface-2)'} stroke={INK} strokeWidth={2.5} />
-            <g clipPath={`url(#hc${uid})`}><g transform="translate(-32 -29.5) scale(0.125)"><AvatarLayers c={r.c} /></g></g>
+            <g clipPath={`url(#hc${uid})`}><AvatarImage c={r.c} x={-23} y={-21} size={46} /></g>
             <circle r={19} fill="none" stroke={INK} strokeWidth={2} />
           </g>
           <g transform={`translate(0 ${by})`}>
@@ -168,7 +146,7 @@ export function HoloOrb({ size = 220, children, spin = true }: { size?: number; 
 export function HeadSticker({ c, mood = 'oke', size = 64, bg = 'var(--surface-2)', tilt = 0 }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; tilt?: number }) {
   return (
     <span className="sticker" style={{ width: size, height: size, background: bg, transform: `rotate(${tilt}deg)` }}>
-      <AvatarSvg c={c} mood={mood} view={[100, 44, 312]} size={size} />
+      <AvatarImg c={c} mood={mood} size={size} zoom={1.1} shift={4} />
     </span>
   )
 }

@@ -496,3 +496,8 @@ button:focus:not(:focus-visible) { outline: none; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 h1.t { font-size: 26px; margin: 0; }
 .pin-av { border-radius: 50%; overflow: hidden; background: #f6f5f2; border: 3px solid #fff; box-shadow: 0 5px 14px -3px rgba(0,0,0,.45); }
+.wardrobe .tile > img { position: absolute; inset: 6%; width: 88%; height: 88%; display: block; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 10px; }
+.swatch { aspect-ratio: 1 / 1; width: 100%; border-radius: 50%; border: 2px solid var(--line); display: grid; place-items: center; padding: 0; position: relative; }
+.swatch.on { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--ink); }
+.swatch.locked { opacity: .55; }

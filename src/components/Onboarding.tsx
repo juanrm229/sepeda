@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, Crosshair, Shuffle, Sparkles, Bell, Database, Eraser } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { HoloOrb, HeadSticker, Portrait } from './Character'
-import { applyPick, PART, randomChar, TABS } from '../lib/avatar'
+import { applyPick, HAIR_COLORS, randomChar, SKINS, TABS } from '../lib/avatar'
 import { celebrate, haptic } from './UI'
 import { askPermission } from '../lib/notify'
 
@@ -19,8 +19,7 @@ export default function Onboarding() {
 
   const next = () => { haptic(8); setStep((s) => Math.min(STEPS - 1, s + 1)) }
   const shuffle = () => setChar(randomChar())
-  const headTab = TABS.find((t) => t.k === 'head')!, hairTab = TABS.find((t) => t.k === 'hair')!, hijabTab = TABS.find((t) => t.k === 'hijab')!
-  const shapeIdx = (parseInt(char.head.split('-')[1]) - 1) % 4
+  const hairTab = TABS.find((t) => t.k === 'hair')!, skinTab = TABS.find((t) => t.k === 'skin')!, hairColorTab = TABS.find((t) => t.k === 'hairColor')!
   const locate = () => {
     setLoc('busy')
     navigator.geolocation?.getCurrentPosition(
@@ -59,24 +58,24 @@ export default function Onboarding() {
               <button className="btn ghost sm" onClick={shuffle}><Shuffle size={14} /> Acak</button>
             </div>
             <div style={{ display: 'grid', placeItems: 'center', marginTop: 10 }}><HoloOrb size={200}><Portrait c={char} mood="segar" size={172} style={{ marginBottom: -8 }} /></HoloOrb></div>
-            <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Gaya</div>
+            <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Gaya rambut</div>
             <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 8 }}>
-              {[['hair', 'hair-03'], ['hair', 'hair-01'], ['hair', 'hair-48'], ['hijab', 'hijabs-21'], ['hijab', 'hijabs-01']].map(([k, id], i) => {
-                const tab = k === 'hair' ? hairTab : hijabTab
-                const on = (char as unknown as Record<string, string | null>)[k] === id
+              {['variant10', 'variant25', 'variant41', 'variant47', 'variant33'].map((v, i) => {
+                const on = char.hair === v
                 return (
-                  <button key={id} onClick={() => setChar(applyPick(char, tab, id))} style={{ background: 'none', border: 0, padding: 0 }} aria-label={PART[id].l} aria-pressed={on}>
-                    <HeadSticker c={{ ...applyPick(char, tab, id), hat: null }} size={50} tilt={[-6, 4, -3, 6, -4][i]} bg={on ? 'var(--yellow)' : 'var(--surface-2)'} />
+                  <button key={v} onClick={() => setChar(applyPick(char, hairTab, v))} style={{ background: 'none', border: 0, padding: 0 }} aria-label={`Rambut ${i + 1}`} aria-pressed={on}>
+                    <HeadSticker c={applyPick(char, hairTab, v)} size={50} tilt={[-6, 4, -3, 6, -4][i]} bg={on ? 'var(--yellow)' : 'var(--surface-2)'} />
                   </button>
                 )
               })}
             </div>
             <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Warna kulit</div>
-            <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 8 }}>
-              {[0, 1, 2, 3].map((tone) => {
-                const id = `heads-${String(tone * 4 + shapeIdx + 1).padStart(2, '0')}`
-                return <button key={id} aria-label={PART[id].l} onClick={() => setChar(applyPick(char, headTab, id))} style={{ width: 36, height: 36, borderRadius: '50%', border: char.head === id ? '3px solid var(--ink)' : '2px solid var(--line)', background: ['#f7dccb', '#f3cfa8', '#e9b07d', '#b9785a'][tone] }} />
-              })}
+            <div className="row" style={{ justifyContent: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              {SKINS.map((h, i) => <button key={h} aria-label={`Warna kulit ${i + 1}`} aria-pressed={char.skin === h} onClick={() => setChar(applyPick(char, skinTab, h))} style={{ width: 34, height: 34, borderRadius: '50%', border: char.skin === h ? '3px solid var(--ink)' : '2px solid var(--line)', background: `#${h}` }} />)}
+            </div>
+            <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Warna rambut</div>
+            <div className="row" style={{ justifyContent: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+              {HAIR_COLORS.slice(0, 8).map((h, i) => <button key={h} aria-label={`Warna rambut ${i + 1}`} aria-pressed={char.hairColor === h} onClick={() => setChar(applyPick(char, hairColorTab, h))} style={{ width: 34, height: 34, borderRadius: '50%', border: char.hairColor === h ? '3px solid var(--ink)' : '2px solid var(--line)', background: `#${h}` }} />)}
             </div>
           </div>
         )}

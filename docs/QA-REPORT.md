@@ -1,6 +1,6 @@
 # Laporan QA / QC — Kayuh
 
-**Tanggal:** 21 Nov 2026 · **Build:** v5.2 (Avatar Modular Kit, kalibrasi proporsi v3) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
+**Tanggal:** 21 Nov 2026 · **Build:** v6 (avatar DiceBear Lorelei) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
 
 **Hasil akhir: 88/88 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
 
@@ -20,6 +20,8 @@
 | QC global | 0 error JavaScript, 0 request 4xx/5xx |
 | QC tata letak | 16 halaman tanpa scroll horizontal di 360 px |
 | QC aksesibilitas | axe-core 16 halaman: 0 pelanggaran kritis/serius (terang & gelap) |
+
+> **Catatan v6:** avatar diganti dari Avatar Modular Kit ke DiceBear Lorelei atas keputusan pemilik. Temuan #14–#21 di bawah berkaitan dengan kit lama dan kini tidak berlaku lagi (aset kit sudah dihapus). Suite QA disesuaikan: tab lemari, warna palet & bebas, kacamata, ekstra, item terkunci, migrasi.
 
 ## Temuan & perbaikan
 
@@ -54,4 +56,4 @@
 
 ## Kinerja
 - Bundle utama ~275 KB (gzip ~87 KB); halaman lain dimuat sesuai kebutuhan.
-- Avatar: 505 bagian valid (dari 512) → WebP 4,2 MB total; satu avatar memuat ±7 file kecil. Build ulang: `python3 scripts/build-avatar-kit.py <folder kit>`.
+- Avatar: SVG Lorelei dibuat di perangkat (tanpa file gambar); aset kit lama 4,2 MB dihapus.

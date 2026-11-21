@@ -14,7 +14,7 @@ const rec = (area, name, ok, note = '') => { results.push({ area, name, ok, note
 
 async function newPage(b, opts = {}) {
   const ctx = await b.newContext({ ...(opts.device ?? devices['iPhone 13']), ...(opts.ctx ?? {}) })
-  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 5 })) })
+  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 6 })) })
   const p = await ctx.newPage()
   p._errs = []; p._404 = []
   p.on('pageerror', (e) => p._errs.push('PAGEERR ' + e.message))
@@ -33,12 +33,13 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
     const p = await newPage(b, { onboarded: false })
     await p.goto(BASE); await p.waitForTimeout(1200)
     await step('Onboarding', 'muncul untuk pengguna baru', () => p.getByText('Gowes lebih pintar').waitFor({ timeout: 5000 }))
-    await step('Onboarding', 'isi nama, ganti gaya hijab & kulit', async () => {
+    await step('Onboarding', 'isi nama, ganti rambut, kulit & warna rambut', async () => {
       await p.getByRole('button', { name: /Ayo mulai/ }).click()
       await p.getByPlaceholder('Nama panggilan').fill('Rizky')
-      await p.getByRole('button', { name: 'Black sport hijab' }).click()
-      await p.getByRole('button', { name: /Brown/ }).first().click()
-      const s = await store(p); if (!s.char.hijab) throw new Error('hijab tidak terpasang')
+      await p.getByRole('button', { name: 'Rambut 4', exact: true }).click()
+      await p.getByRole('button', { name: 'Warna kulit 7', exact: true }).click()
+      await p.getByRole('button', { name: 'Warna rambut 6', exact: true }).click()
+      const s = await store(p); if (s.char.hair !== 'variant47' || s.char.skin !== '8d5a3b' || s.char.hairColor !== 'e6c27a') throw new Error(JSON.stringify(s.char))
       await p.getByRole('button', { name: /Lanjut/ }).click()
     })
     await step('Onboarding', 'target mingguan & lanjut', async () => { await p.getByText('Dari mana kamu biasa gowes?').waitFor(); await p.locator('input[type=range]').fill('150'); await p.getByRole('button', { name: /Lanjut/ }).click() })
@@ -62,37 +63,40 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
 
   // Karakter
   await p.goto(BASE + 'karakter'); await p.waitForTimeout(1200)
-  await step('Karakter', 'semua 14 tab lemari terbuka & berisi', async () => {
+  await step('Karakter', 'semua tab lemari terbuka & berisi', async () => {
     const tabs = await p.locator('.seg-tabs button').allInnerTexts()
-    for (const t of tabs) { await p.locator('.seg-tabs button', { hasText: t.replace(' •', '') }).first().click(); await p.waitForTimeout(120); const n = await p.locator('.wardrobe .tile').count(); if (n < 2) throw new Error(`tab ${t} kosong`) }
+    for (const t of tabs) { await p.locator('.seg-tabs button', { hasText: new RegExp('^' + t + '$') }).first().click(); await p.waitForTimeout(100); const n = await p.locator('.wardrobe .tile, .swatch').count(); if (n < 2) throw new Error(`tab ${t} kosong`) }
     return `${tabs.length} tab`
   })
-  await step('Karakter', 'aturan: hijab menyembunyikan rambut, rambut melepas hijab', async () => {
-    await p.locator('.seg-tabs button', { hasText: /^Hijab/ }).click(); await p.locator('.wardrobe .tile').nth(2).click()
-    let s = await store(p); if (!s.char.hijab) throw new Error('hijab tidak terpasang')
-    const hairShown = await p.locator('.tiltcard image[href*="/hair-"]').count(); if (hairShown) throw new Error('rambut masih tergambar di bawah hijab')
-    await p.locator('.seg-tabs button', { hasText: /^Rambut/ }).click(); await p.locator('.wardrobe .tile').nth(3).click()
-    s = await store(p); if (s.char.hijab || !s.char.hair) throw new Error('rambut tidak melepas hijab')
+  await step('Karakter', 'pilih rambut & warna (palet + bebas)', async () => {
+    await p.locator('.seg-tabs button', { hasText: /^Rambut$/ }).click(); await p.locator('.wardrobe .tile').nth(20).click()
+    let s = await store(p); if (s.char.hair !== 'variant21') throw new Error('rambut ' + s.char.hair)
+    await p.locator('.seg-tabs button', { hasText: /^Warna rambut$/ }).click(); await p.locator('.swatch').nth(4).click()
+    s = await store(p); if (s.char.hairColor !== 'c79a5b') throw new Error('warna ' + s.char.hairColor)
+    await p.locator('input[type=color]').fill('#123456'); s = await store(p); if (s.char.hairColor !== '123456') throw new Error('warna bebas ' + s.char.hairColor)
   })
-  await step('Karakter', 'multi-pilih detail & tombol Tanpa', async () => {
-    await p.locator('.seg-tabs button', { hasText: /^Detail/ }).click()
-    await p.locator('.wardrobe .tile').nth(1).click(); await p.locator('.wardrobe .tile').nth(2).click()
-    let s = await store(p); if (s.char.details.length !== 2) throw new Error('detail ' + s.char.details.length)
-    await p.locator('.wardrobe .tile').nth(0).click(); s = await store(p); if (s.char.details.length !== 0) throw new Error('Tanpa gagal')
+  await step('Karakter', 'kacamata: pilih lalu Tanpa', async () => {
+    await p.locator('.seg-tabs button', { hasText: /^Kacamata$/ }).click(); await p.locator('.wardrobe .tile').nth(2).click()
+    let s = await store(p); if (s.char.glasses !== 'variant02') throw new Error('kacamata ' + s.char.glasses)
+    await p.locator('.wardrobe .tile').nth(0).click(); s = await store(p); if (s.char.glasses !== null) throw new Error('Tanpa gagal')
+  })
+  await step('Karakter', 'ekstra: bintik on/off', async () => {
+    await p.locator('.seg-tabs button', { hasText: /^Ekstra$/ }).click(); await p.locator('.wardrobe .tile').nth(0).click()
+    let s = await store(p); if (!s.char.freckles) throw new Error('bintik tidak aktif')
+    await p.locator('.wardrobe .tile').nth(0).click(); s = await store(p); if (s.char.freckles) throw new Error('bintik tidak mati')
   })
   await step('Karakter', 'item terkunci menolak + toast', async () => {
-    await p.locator('.seg-tabs button', { hasText: /^Topi/ }).click()
-    const locked = p.locator('.wardrobe .tile.locked').first()
+    const locked = p.locator('.tile.locked, .swatch.locked').first()
+    for (const t of ['Kacamata', 'Warna rambut', 'Ekstra', 'Anting']) { await p.locator('.seg-tabs button', { hasText: new RegExp('^' + t + '$') }).click(); if (await locked.count()) break }
     if (!(await locked.count())) return 'tidak ada item terkunci di level ini'
-    const before = (await store(p)).char.hat; await locked.click(); await p.waitForTimeout(300)
-    if ((await store(p)).char.hat !== before) throw new Error('item terkunci terpasang')
+    const before = JSON.stringify((await store(p)).char); await locked.click(); await p.waitForTimeout(300)
+    if (JSON.stringify((await store(p)).char) !== before) throw new Error('item terkunci terpasang')
     await p.locator('.island').waitFor({ timeout: 2000 })
   })
   await step('Karakter', 'urungkan & acak', async () => { const a = JSON.stringify((await store(p)).char); await p.getByRole('button', { name: 'Acak' }).click(); const b2 = JSON.stringify((await store(p)).char); await p.getByRole('button', { name: 'Urungkan' }).click(); const c = JSON.stringify((await store(p)).char); if (a === b2 || a !== c) throw new Error('undo/acak tidak sesuai') })
-  await step('Karakter', 'cari item', async () => { await p.locator('.seg-tabs button', { hasText: /^Baju/ }).click(); await p.getByPlaceholder(/Cari baju/).fill('batik'); await p.waitForTimeout(200); const n = await p.locator('.wardrobe .tile').count(); await p.getByPlaceholder(/Cari baju/).fill(''); if (n !== 2) throw new Error('hasil ' + n) })
   await step('Karakter', 'unduh PNG', async () => { const [d] = await Promise.all([p.waitForEvent('download', { timeout: 8000 }), p.getByRole('button', { name: 'Unduh' }).click()]); return d.suggestedFilename() })
   await step('Karakter', 'pratinjau ekspresi mood', async () => { await p.getByRole('button', { name: 'lelah' }).click(); await p.waitForTimeout(200); await p.getByRole('button', { name: 'lelah' }).click() })
-  await step('Karakter', 'gambar avatar termuat (tanpa 404)', async () => { const bad = p._404.filter((x) => x.includes('/avatar/')); if (bad.length) throw new Error(bad.slice(0, 2).join(', ')) })
+  await step('Karakter', 'avatar dirender (SVG data URI)', async () => { const n = await p.locator('img[src^="data:image/svg+xml"]').count(); if (n < 3) throw new Error('avatar tidak tampil: ' + n) })
 
   // Squad & undangan
   let invite = ''

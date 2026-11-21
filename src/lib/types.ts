@@ -128,22 +128,23 @@ export interface Settings {
   fuelPricePerKm: number // Rp per km bila naik motor
 }
 
-/** Konfigurasi avatar modular (ID bagian dari Avatar Modular Kit). */
+/** Avatar profil (DiceBear Lorelei). */
 export interface CharConfig {
+  v: 2
   head: string
-  hair: string | null
-  hijab: string | null
+  hair: string
   eyes: string
-  brows: string
+  eyebrows: string
   mouth: string
-  beard: string | null
-  shirt: string
-  hat: string | null
-  eyewear: string | null
+  nose: string
+  glasses: string | null
   earrings: string | null
-  neckwear: string | null
-  details: string[]
-  acc: string[]
+  beard: string | null
+  freckles: boolean
+  flowers: boolean
+  skin: string // hex tanpa '#'
+  hairColor: string
+  accColor: string
 }
 
 export type Workout = 'rec' | 'end' | 'tempo' | 'int' | 'long'

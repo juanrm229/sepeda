@@ -91,7 +91,7 @@ Deliverable: audit tiap halaman → versi tenang; token baru `--surface-quiet`, 
 - **Pendaftaran event komunitas** (gran fondo, fun ride).
 - **Kartu darurat** (golongan darah, kontak, alergi) yang bisa dibuka dari layar kunci (shortcut PWA).
 
-## 6. Avatar — pindah ke DiceBear **Lorelei** (diputuskan)
+## 6. Avatar — DiceBear **Lorelei** ✅ SELESAI
 - Paket: `@dicebear/core` + `@dicebear/lorelei` v9 (kode MIT, desain Lisa Wischofsky **CC0** — bebas komersial tanpa kredit). SVG, offline, deterministik.
 - **Pakai apa adanya** — avatar hanya untuk profil. Tanpa lapisan tambahan (hijab/topi/baju tidak dibuat).
 - Pilihan di lemari karakter: bentuk kepala 4 · rambut 48 · mata 24 · alis 13 · mulut 27 · hidung 6 · kacamata 5 · anting 3 · kumis/janggut 2 · bintik · bunga rambut; warna kulit, rambut, kacamata, anting (palet terkurasi + pemilih warna).
@@ -113,6 +113,6 @@ Deliverable: audit tiap halaman → versi tenang; token baru `--surface-quiet`, 
 | 5 | Supabase (auth, backup, RSVP, voting, radar) | Project URL + anon key | besar |
 | 6 | Peta rawan + kafe terverifikasi | Supabase | sedang |
 | 7 | KRL/MRT, CFD, Wrapped, sensor Bluetooth, cek pagi | data jadwal kereta (opsional) | sedang |
-| 8 | Avatar Lorelei (apa adanya, untuk profil) | — | kecil |
+| 8 | ~~Avatar Lorelei~~ ✅ selesai | — | — |
 
 Verifikasi: satu putaran `npm run qa` + tes perangkat nyata setelah semua item selesai; laporan diperbarui di `docs/QA-REPORT.md`.
