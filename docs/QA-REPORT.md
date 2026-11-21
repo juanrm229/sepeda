@@ -1,6 +1,6 @@
 # Laporan QA / QC — Kayuh
 
-**Tanggal:** 21 Nov 2026 · **Build:** v5.1 (Avatar Modular Kit, kalibrasi proporsi) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
+**Tanggal:** 21 Nov 2026 · **Build:** v5.2 (Avatar Modular Kit, kalibrasi proporsi v3) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
 
 **Hasil akhir: 88/88 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
 
@@ -42,6 +42,9 @@
 | 15 | **Manifest kit men-stretch gambar tidak proporsional**: baju melar ~1,5× ke samping (leher terlihat kecil), topi 1,26×, kumis 1,25×, detail 1,33×, headphone 2,7× | Tinggi (visual) | ✅ Rasio aspek asli dipertahankan, jangkar per kategori |
 | 16 | Rambut terlalu besar (1,37× lebar tengkorak) | Sedang (visual) | ✅ Rambut 92% dijangkar di garis telinga, topi 94%, kepala 105% dari leher |
 | 17 | Sport hijab 21–25 tidak menutup ubun-ubun | Sedang | ✅ Dinaikkan 10 px & 104% |
+| 19 | **Safari iOS**: tile lemari karakter rusak (irisan rambut bertumpuk, tile tidak terskala) — dilaporkan pengguna | Tinggi | ✅ Diperbaiki dengan pola CSS aman lintas browser (SVG absolut, tanpa `content-visibility`). Catatan: mesin WebKit tidak tersedia di lingkungan uji, verifikasi akhir di iPhone |
+| 20 | Leher di aset kepala terlalu kurus (25% lebar kepala) & bayangan dagu hitam pekat tampak seperti choker | Sedang (visual) | ✅ Leher dilebarkan 1,65× bertahap dari dagu; bayangan → nada kulit; baju kembali berbahu lebar (×1,22) |
+| 21 | Rambut panjang memperlihatkan telinga setelah rambut diperkecil | Sedang (visual) | ✅ 63 rambut yang menutupi telinga memakai varian kepala tanpa telinga; rambut 90% |
 | 18 | 7 aset kit rusak (mulut 18/20/23/33 hanya garis 3–4 px; headphone leher 22–24 terpotong) | Tinggi | ✅ Dikeluarkan dari katalog; avatar tersimpan yang memakainya dimigrasi otomatis |
 
 ## Belum bisa diverifikasi otomatis (perlu uji perangkat nyata)

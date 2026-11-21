@@ -7,7 +7,7 @@ import type { CharConfig } from './types'
    naik, mulut naik & diperbesar, kumis menyesuaikan mulut).
    ============================================================ */
 
-export interface Part { id: string; l: string; z: number; r: [number, number, number, number]; slot?: string; seg?: { s: [number, number, number, number]; r: [number, number, number, number] }[]; sz?: [number, number] }
+export interface Part { id: string; l: string; z: number; r: [number, number, number, number]; slot?: string; ears?: number; src?: string; seg?: { s: [number, number, number, number]; r: [number, number, number, number] }[]; sz?: [number, number] }
 type Cat = keyof typeof kit.cats
 
 export const CATS = kit.cats as unknown as Record<Cat, Part[]>
@@ -112,7 +112,9 @@ const MOOD: Record<MoodKey, Partial<Pick<CharConfig, 'eyes' | 'brows' | 'mouth'>
 export function layers(c: CharConfig, mood?: MoodKey): (Part & { cat: Cat })[] {
   const m = mood ? MOOD[mood] : {}
   const ids = [c.head, c.shirt, m.eyes ?? c.eyes, m.brows ?? c.brows, m.mouth ?? c.mouth, c.beard, c.hijab ? null : c.hair, c.hijab, c.hat, c.eyewear, c.hijab ? null : c.earrings, c.neckwear, ...c.details, ...c.acc]
-  return ids.filter((x): x is string => !!x && !!PART[x]).map((id) => PART[id]).sort((a, b) => a.z - b.z)
+  // rambut yang menutupi telinga → kepala varian tanpa telinga (rambut sudah diperkecil)
+  const earless = !c.hijab && !!c.hair && !!PART[c.hair]?.ears
+  return ids.filter((x): x is string => !!x && !!PART[x]).map((id) => (id === c.head && earless ? { ...PART[id], src: `${id}-ne` } : PART[id])).sort((a, b) => a.z - b.z)
 }
 
 /** Avatar acak dari item yang tidak terkunci. */
@@ -139,7 +141,7 @@ export async function drawAvatar(g: CanvasRenderingContext2D, c: CharConfig, x: 
   const [vx, vy, vs] = view
   const k = size / vs
   for (const p of layers(c, mood)) {
-    const im = await loadImg(partUrl(p.id))
+    const im = await loadImg(partUrl(p.src ?? p.id))
     if (p.seg && p.sz) {
       const fx = im.naturalWidth / p.sz[0], fy = im.naturalHeight / p.sz[1]
       for (const sgm of p.seg) {

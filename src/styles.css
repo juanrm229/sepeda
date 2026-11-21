@@ -479,8 +479,10 @@ button:focus:not(:focus-visible) { outline: none; }
 @media (min-width: 1024px) { .hscroll { grid-auto-columns: minmax(240px, 280px); } }
 .tpl { display: flex; flex-direction: column; }
 .wardrobe { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; max-height: 520px; overflow-y: auto; padding: 2px; overscroll-behavior: contain; }
-.wardrobe .tile { content-visibility: auto; contain-intrinsic-size: 96px; background: var(--surface-2); }
-.wardrobe .tile svg { width: 100%; height: auto; }
+.wardrobe .tile { background: var(--surface-2); position: relative; display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; }
+@supports not (aspect-ratio: 1 / 1) { .wardrobe .tile { height: 0; padding-bottom: 100%; } }
+.wardrobe .tile > svg { position: absolute; inset: 0; width: 100% !important; height: 100% !important; display: block; }
+.wardrobe .tile > svg.lucide { inset: auto; left: 50%; top: 42%; width: 22px !important; height: 22px !important; transform: translate(-50%, -50%); }
 .tile-check { position: absolute; top: 6px; right: 6px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; }
 
 /* a11y: kontras teks di permukaan berwarna */

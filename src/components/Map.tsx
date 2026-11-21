@@ -82,8 +82,8 @@ export function Ring({ center, km, color = '#d93d14' }: { center: LatLng; km: nu
 /** Markup SVG statis kepala avatar (untuk ikon Leaflet). */
 function avatarSvg(c: CharConfig): string {
   const imgs = layers(c).map((p) => p.seg && p.sz
-    ? p.seg.map((sg) => `<svg x="${sg.r[0]}" y="${sg.r[1]}" width="${sg.r[2]}" height="${sg.r[3]}" viewBox="${sg.s[0]} ${sg.s[1]} ${sg.s[2] - sg.s[0]} ${sg.s[3] - sg.s[1]}" preserveAspectRatio="none"><image href="${partUrl(p.id)}" width="${p.sz![0]}" height="${p.sz![1]}" preserveAspectRatio="none"/></svg>`).join('')
-    : `<image href="${partUrl(p.id)}" x="${p.r[0]}" y="${p.r[1]}" width="${p.r[2]}" height="${p.r[3]}" preserveAspectRatio="none"/>`).join('')
+    ? p.seg.map((sg) => `<svg x="${sg.r[0]}" y="${sg.r[1]}" width="${sg.r[2]}" height="${sg.r[3]}" viewBox="${sg.s[0]} ${sg.s[1]} ${sg.s[2] - sg.s[0]} ${sg.s[3] - sg.s[1]}" preserveAspectRatio="none"><image href="${partUrl(p.src ?? p.id)}" width="${p.sz![0]}" height="${p.sz![1]}" preserveAspectRatio="none"/></svg>`).join('')
+    : `<image href="${partUrl(p.src ?? p.id)}" x="${p.r[0]}" y="${p.r[1]}" width="${p.r[2]}" height="${p.r[3]}" preserveAspectRatio="none"/>`).join('')
   return `<svg viewBox="106 50 300 300" width="100%" height="100%" aria-hidden="true">${imgs}</svg>`
 }
 

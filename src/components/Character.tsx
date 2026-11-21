@@ -19,11 +19,11 @@ export function AvatarLayers({ c, mood }: { c: CharConfig; mood?: Mood }) {
       {layers(c, mood).map((p) => p.seg && p.sz ? (
         p.seg.map((sg, i) => (
           <svg key={p.id + i} x={sg.r[0]} y={sg.r[1]} width={sg.r[2]} height={sg.r[3]} viewBox={`${sg.s[0]} ${sg.s[1]} ${sg.s[2] - sg.s[0]} ${sg.s[3] - sg.s[1]}`} preserveAspectRatio="none" overflow="hidden">
-            <image href={partUrl(p.id)} width={p.sz![0]} height={p.sz![1]} preserveAspectRatio="none" />
+            <image href={partUrl(p.src ?? p.id)} width={p.sz![0]} height={p.sz![1]} preserveAspectRatio="none" />
           </svg>
         ))
       ) : (
-        <image key={p.id} href={partUrl(p.id)} x={p.r[0]} y={p.r[1]} width={p.r[2]} height={p.r[3]} preserveAspectRatio="none" />
+        <image key={p.id} href={partUrl(p.src ?? p.id)} x={p.r[0]} y={p.r[1]} width={p.r[2]} height={p.r[3]} preserveAspectRatio="none" />
       ))}
     </g>
   )
