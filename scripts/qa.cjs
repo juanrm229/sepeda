@@ -94,7 +94,7 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
     await p.locator('.island').waitFor({ timeout: 2000 })
   })
   await step('Karakter', 'urungkan & acak', async () => { const a = JSON.stringify((await store(p)).char); await p.getByRole('button', { name: 'Acak' }).click(); const b2 = JSON.stringify((await store(p)).char); await p.getByRole('button', { name: 'Urungkan' }).click(); const c = JSON.stringify((await store(p)).char); if (a === b2 || a !== c) throw new Error('undo/acak tidak sesuai') })
-  await step('Karakter', 'unduh PNG', async () => { const [d] = await Promise.all([p.waitForEvent('download', { timeout: 8000 }), p.getByRole('button', { name: 'Unduh' }).click()]); return d.suggestedFilename() })
+  await step('Karakter', 'unduh PNG', async () => { const [d] = await Promise.all([p.waitForEvent('download', { timeout: 8000 }), p.getByRole('button', { name: 'Unduh', exact: true }).click()]); return d.suggestedFilename() })
   await step('Karakter', 'pratinjau ekspresi mood', async () => { await p.getByRole('button', { name: 'lelah' }).click(); await p.waitForTimeout(200); await p.getByRole('button', { name: 'lelah' }).click() })
   await step('Karakter', 'avatar dirender (SVG data URI)', async () => { const n = await p.locator('img[src^="data:image/svg+xml"]').count(); if (n < 3) throw new Error('avatar tidak tampil: ' + n) })
 

@@ -25,12 +25,14 @@ export const VARIANTS = {
 export const SKINS = ['fbe3d1', 'f6d3b8', 'eec09b', 'e2a87d', 'c68a5f', 'a96f4a', '8d5a3b', '6b4329']
 export const HAIR_COLORS = ['111111', '2b1d16', '5a3a22', '8b5a2b', 'c79a5b', 'e6c27a', '8a8a85', 'ece8df', 'd93d14', 'e87ba4', '2f6fed', '1f9d6a', '9b6fd6']
 export const ACC_COLORS = ['111111', '5a3a22', 'c9a227', 'd93d14', '2f6fed']
+/** Latar kartu karakter — pastel tenang. */
+export const CARD_BGS = ['e9e2d0', 'dfe7d6', 'd9e4ee', 'f1dcd6', 'e3dcef', 'f3e3b8', 'd7d6d1', '2b2a27']
 
 /* ---------------- Tab lemari karakter ---------------- */
 export type VariantKey = keyof typeof VARIANTS
 export type TabDef =
   | { k: VariantKey; l: string; kind: 'variant'; optional?: boolean }
-  | { k: 'skin' | 'hairColor' | 'accColor'; l: string; kind: 'color'; palette: string[] }
+  | { k: 'skin' | 'hairColor' | 'accColor' | 'bg'; l: string; kind: 'color'; palette: string[] }
   | { k: 'extras'; l: string; kind: 'toggles' }
 
 export const TABS: TabDef[] = [
@@ -47,6 +49,7 @@ export const TABS: TabDef[] = [
   { k: 'beard', l: 'Janggut', kind: 'variant', optional: true },
   { k: 'extras', l: 'Ekstra', kind: 'toggles' },
   { k: 'accColor', l: 'Warna aksesori', kind: 'color', palette: ACC_COLORS },
+  { k: 'bg', l: 'Latar kartu', kind: 'color', palette: CARD_BGS },
 ]
 
 /** Nama ramah untuk varian (Lorelei tidak memberi nama). */
@@ -79,7 +82,7 @@ export const reqLabel = (key: string) => { const r = LOCKS[key]; return !r ? '' 
 /* ---------------- Konfigurasi ---------------- */
 export const defaultChar: CharConfig = {
   v: 2, head: 'variant02', hair: 'variant10', eyes: 'variant16', eyebrows: 'variant06', mouth: 'happy01', nose: 'variant01',
-  glasses: null, earrings: null, beard: null, freckles: false, flowers: false, skin: 'f6d3b8', hairColor: '5a3a22', accColor: '111111',
+  glasses: null, earrings: null, beard: null, freckles: false, flowers: false, skin: 'f6d3b8', hairColor: '5a3a22', accColor: '111111', bg: 'e9e2d0',
 }
 
 export function isCharConfig(x: unknown): x is CharConfig {
@@ -96,7 +99,7 @@ export function sanitizeChar(c: CharConfig): CharConfig {
     head: inEnum('head', c.head) ?? defaultChar.head, hair: inEnum('hair', c.hair) ?? defaultChar.hair, eyes: inEnum('eyes', c.eyes) ?? defaultChar.eyes,
     eyebrows: inEnum('eyebrows', c.eyebrows) ?? defaultChar.eyebrows, mouth: inEnum('mouth', c.mouth) ?? defaultChar.mouth, nose: inEnum('nose', c.nose) ?? defaultChar.nose,
     glasses: inEnum('glasses', c.glasses), earrings: inEnum('earrings', c.earrings), beard: inEnum('beard', c.beard),
-    freckles: !!c.freckles, flowers: !!c.flowers, skin: hex(c.skin, defaultChar.skin), hairColor: hex(c.hairColor, defaultChar.hairColor), accColor: hex(c.accColor, defaultChar.accColor),
+    freckles: !!c.freckles, flowers: !!c.flowers, skin: hex(c.skin, defaultChar.skin), hairColor: hex(c.hairColor, defaultChar.hairColor), accColor: hex(c.accColor, defaultChar.accColor), bg: hex(c.bg, 'e9e2d0'),
   }
 }
 
@@ -115,7 +118,7 @@ export function randomChar(seed: string | number = Math.random().toString(36)): 
     v: 2, head: pick(VARIANTS.head), hair: pick(VARIANTS.hair), eyes: pick(VARIANTS.eyes), eyebrows: pick(VARIANTS.eyebrows),
     mouth: pick(VARIANTS.mouth.filter((m) => m.startsWith('happy'))), nose: pick(VARIANTS.nose),
     glasses: r() < 0.22 ? pick(VARIANTS.glasses.slice(0, 4)) : null, earrings: r() < 0.18 ? pick(VARIANTS.earrings.slice(0, 2)) : null, beard: r() < 0.12 ? pick(VARIANTS.beard) : null,
-    freckles: r() < 0.15, flowers: false, skin: pick(SKINS), hairColor: pick(freeHair), accColor: '111111',
+    freckles: r() < 0.15, flowers: false, skin: pick(SKINS), hairColor: pick(freeHair), accColor: '111111', bg: pick(CARD_BGS.slice(0, 7)),
   }
 }
 
@@ -147,7 +150,7 @@ const cache = new Map<string, string>()
 export function avatarUri(c: CharConfig, mood?: MoodKey): string {
   const s = isCharConfig(c) ? c : defaultChar
   const m = mood ? MOOD[mood] : {}
-  const key = JSON.stringify(s) + (mood ?? '')
+  const key = JSON.stringify({ ...s, bg: undefined }) + (mood ?? '')
   const hit = cache.get(key)
   if (hit) return hit
   const uri = createAvatar(lorelei, {

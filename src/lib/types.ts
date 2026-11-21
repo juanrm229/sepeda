@@ -145,6 +145,7 @@ export interface CharConfig {
   skin: string // hex tanpa '#'
   hairColor: string
   accColor: string
+  bg?: string // warna latar kartu (hex)
 }
 
 export type Workout = 'rec' | 'end' | 'tempo' | 'int' | 'long'

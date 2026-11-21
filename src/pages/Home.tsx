@@ -6,7 +6,8 @@ import { BAR_LABEL, fmt, fmtDur, relDay } from '../lib/util'
 import { BarChart, DotRows, LineChart } from '../charts/Charts'
 import { useForecast } from '../lib/useForecast'
 import { bestWindow, scoreLabel, windAdvice } from '../lib/weather'
-import { HeadBadge, HoloOrb, Portrait, RaceScene, type Racer } from '../components/Character'
+import { HeadBadge, RaceScene, type Racer } from '../components/Character'
+import { CharacterCard } from '../components/CharacterCard'
 import { useCountUp } from '../components/UI'
 import { useEffect, useRef, useState } from 'react'
 import { QUEST } from '../lib/character'
@@ -104,7 +105,7 @@ export default function Home() {
           </div>
         </div>
 
-        <StoryDeck char={char} mood={mood} line={line} clsName={cls.main.name} emblem={cls.main.emblem} lvl={lv.lvl} xpPct={lv.cur / lv.next} win={win} windText={nowHour ? windAdvice(nowHour.windDir, nowHour.wind).split('.').slice(0, 2).join('.') + '.' : ''} next={next} quest={QUEST[cls.weakest.k]} weakest={cls.weakest.l} />
+        <StoryDeck userName={settings.name} char={char} mood={mood} line={line} clsName={cls.main.name} emblem={cls.main.emblem} lvl={lv.lvl} xpPct={lv.cur / lv.next} win={win} windText={nowHour ? windAdvice(nowHour.windDir, nowHour.wind).split('.').slice(0, 2).join('.') + '.' : ''} next={next} quest={QUEST[cls.weakest.k]} weakest={cls.weakest.l} />
       </div>
 
       {/* Bento ala CMF */}
@@ -233,7 +234,7 @@ import type { CharConfig, GroupRide } from '../lib/types'
 import type { Mood } from '../lib/character'
 import type { Window as WWindow } from '../lib/weather'
 
-function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windText, next, quest, weakest }: { char: CharConfig; mood: Mood; line: string; clsName: string; emblem: string; lvl: number; xpPct: number; win: WWindow | null; windText: string; next?: GroupRide; quest: string; weakest: string }) {
+function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windText, next, quest, weakest, userName }: { userName: string; char: CharConfig; mood: Mood; line: string; clsName: string; emblem: string; lvl: number; xpPct: number; win: WWindow | null; windText: string; next?: GroupRide; quest: string; weakest: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const [i, setI] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -249,15 +250,11 @@ function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windTex
   return (
     <div style={{ marginTop: 20, position: 'relative' }} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerLeave={() => setPaused(false)}>
       <div className="stories" ref={ref} onScroll={onScroll}>
-        <a href="#/karakter" className="story card outline dotgrid-bg" style={{ textDecoration: 'none', color: 'inherit' }}>
+        <a href="#/karakter" className="story card" style={{ textDecoration: 'none', color: 'inherit' }}>
           {bars}
-          <div className="row between"><span className="mono">Lv {lvl} · {emblem} {clsName}</span><span className="mono">1/4</span></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 14, alignItems: 'center', marginTop: 10, flex: 1 }}>
-            <HoloOrb size={150}><Portrait c={char} mood={mood} size={128} style={{ marginBottom: -6 }} /></HoloOrb>
-            <div>
-              <div className="bubble small" style={{ lineHeight: 1.35 }}>{line}</div>
-              <div className="xpbar" style={{ marginTop: 14, height: 12 }}><i style={{ width: `${xpPct * 100}%` }} /></div>
-            </div>
+          <div className="row between"><span className="mono">Karaktermu</span><span className="mono">1/4</span></div>
+          <div style={{ marginTop: 'auto' }}>
+            <CharacterCard compact c={char} mood={mood} name={userName} className={clsName} emblem={emblem} lvl={lvl} xpCur={xpPct * 100} xpNext={100} line={line} />
           </div>
         </a>
         <a href="#/weather" className="story card ink" style={{ textDecoration: 'none' }}>

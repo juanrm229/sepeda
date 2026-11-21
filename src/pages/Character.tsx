@@ -1,20 +1,15 @@
-import { useMemo, useRef, useState } from 'react'
-import { Download, Shuffle, Lock, Sparkles, Swords, Glasses, Scissors, Palette, Settings, Check, Ban, Undo2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Download, Shuffle, Lock, Swords, Scissors, Palette, Settings, Check, Ban, Undo2 } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { CharConfig } from '../lib/types'
 import { characterLevel, moodOf, QUEST, riderClass, riderStats } from '../lib/character'
 import { applyPick, avatarUri, drawAvatar, isUnlocked, lockKey, lockOf, randomChar, reqLabel, TABS, VARIANTS, variantLabel, type TabDef } from '../lib/avatar'
-import { levelTitle } from '../lib/analytics'
+import { levelTitle, streakWeeks } from '../lib/analytics'
 import { fmt } from '../lib/util'
-import { HeadSticker, HoloOrb, Portrait } from '../components/Character'
+import { HeadSticker } from '../components/Character'
+import { CharacterCard } from '../components/CharacterCard'
 import { celebrate, toast, Top } from '../components/UI'
 import type { Mood } from '../lib/character'
-
-const Spark = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
-  <svg width={28 * s} height={28 * s} viewBox="-14 -14 28 28" style={{ position: 'absolute', left: x, top: y }} aria-hidden>
-    <path d="M0,-13 Q2,-2 13,0 Q2,2 0,13 Q-2,2 -13,0 Q-2,-2 0,-13 Z" fill="var(--ink)" />
-  </svg>
-)
 
 export default function Character() {
   const { char, setChar, rides, settings, upsertReminder } = useStore()
@@ -22,13 +17,13 @@ export default function Character() {
   const [undo, setUndo] = useState<CharConfig | null>(null)
   const tab = TABS.find((t) => t.k === tabK)!
   const setTab = (k: TabDef['k']) => setTabK(k)
-  const [tilt, setTilt] = useState({ x: 0, y: 0, on: false })
   const [preview, setPreview] = useState<Mood | null>(null)
   const lv = characterLevel(rides)
   const stats = useMemo(() => riderStats(rides), [rides])
   const cls = riderClass(stats)
   const { mood, line } = moodOf(rides, settings)
-  const svgRef = useRef<HTMLDivElement>(null)
+  const totalKm = rides.reduce((a, r) => a + r.distanceKm, 0)
+  const streak = streakWeeks(rides)
 
   const pick = (value: string | null) => {
     const key = value ? lockKey(tab.k, value) : ''
@@ -45,19 +40,25 @@ export default function Character() {
   })()
 
   async function downloadPng() {
-    const c = document.createElement('canvas'); c.width = 1080; c.height = 1350
+    const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H
     const g = c.getContext('2d')!
-    g.fillStyle = '#e8e7e3'; g.fillRect(0, 0, 1080, 1350)
-    g.fillStyle = '#f6f5f2'; g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.fill()
-    g.save(); g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.clip()
-    await drawAvatar(g, char, 110, 130, 860, mood)
+    const rr = (x: number, y: number, w: number, h: number, r: number) => { g.beginPath(); g.roundRect(x, y, w, h, r) }
+    g.fillStyle = '#e8e7e3'; g.fillRect(0, 0, W, H)
+    g.fillStyle = '#f6f5f2'; rr(60, 60, 960, 1230, 64); g.fill()
+    g.fillStyle = `#${char.bg ?? 'e9e2d0'}`; rr(90, 90, 900, 780, 46); g.fill()
+    g.save(); rr(90, 90, 900, 780, 46); g.clip()
+    g.fillStyle = 'rgba(0,0,0,.07)'
+    for (let x = 100; x < 990; x += 30) for (let y = 100; y < 870; y += 30) { g.beginPath(); g.arc(x, y, 2.4, 0, 7); g.fill() }
+    await drawAvatar(g, char, 170, 140, 740, mood)
     g.restore()
-    g.lineWidth = 8; g.strokeStyle = '#111'; g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.stroke()
-    g.fillStyle = '#111'; g.font = '800 64px "Bricolage Grotesque"'; g.textAlign = 'center'
-    g.fillText(cls.main.name, 540, 1130)
-    g.font = '700 28px "Space Mono"'; g.fillText(`LV. ${lv.lvl} · ${settings.name.toUpperCase()} · KAYUH`, 540, 1190)
-    const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'karakter-kayuh.png'; a.click()
-    toast('🖼️ Karakter diunduh', 'Pakai sebagai foto profil WhatsApp/IG')
+    g.fillStyle = '#111'; g.font = '700 84px "Bricolage Grotesque"'; g.textAlign = 'left'
+    g.fillText(settings.name, 120, 990)
+    g.fillStyle = '#4f4e4a'; g.font = '500 38px "Inter Tight"'; g.fillText(`${cls.main.emblem} ${cls.main.name} · Level ${lv.lvl}`, 120, 1050)
+    g.fillStyle = '#d6d5cf'; g.fillRect(120, 1100, 840, 2)
+    g.fillStyle = '#64635d'; g.font = '700 26px "Space Mono"'
+    g.fillText(`${fmt(totalKm)} KM`, 120, 1160); g.fillText(`STREAK ${streak} MGG`, 440, 1160); g.fillText('KAYUH', 820, 1160)
+    const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'kartu-kayuh.png'; a.click()
+    toast('🖼️ Kartu diunduh', 'Siap dibagikan ke WhatsApp/IG')
   }
 
   return (
@@ -65,34 +66,12 @@ export default function Character() {
       <Top title="Karakter" sub={`lvl up ↑ · ${levelTitle(lv.lvl)}`} right={<a href="#/profile" className="iconbtn" aria-label="Profil & pengaturan"><Settings size={18} /></a>} />
       <div className="row-d">
         <div className="stack">
-          <div className="card outline tiltcard" style={{ padding: '18px 18px 22px', overflow: 'hidden', transform: `perspective(900px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`, ['--sheen' as string]: tilt.on ? 0.55 : 0, ['--sx' as string]: `${50 + tilt.x * 4}%` }}
-            onPointerMove={(e) => { if (e.pointerType !== 'mouse') return; const r = e.currentTarget.getBoundingClientRect(); setTilt({ x: ((e.clientX - r.left) / r.width - 0.5) * 10, y: -((e.clientY - r.top) / r.height - 0.5) * 10, on: true }) }}
-            onPointerLeave={() => setTilt({ x: 0, y: 0, on: false })}>
-            <div className="row between">
-              <span className="mono">No. {String(lv.lvl).padStart(3, '0')} · Kartu pesepeda</span>
-              <span className="tag ink">{cls.main.emblem} {cls.sub.name}</span>
-            </div>
-            <div ref={svgRef} style={{ position: 'relative', display: 'grid', placeItems: 'center', minHeight: 300, marginTop: 10 }}>
-              <Spark x={10} y={30} s={1.3} /><Spark x={42} y={70} s={0.7} /><Spark x={286} y={220} s={1.2} /><Spark x={318} y={196} s={0.6} />
-              <HoloOrb size={270}><Portrait c={char} mood={preview ?? mood} size={230} style={{ marginBottom: -8 }} /></HoloOrb>
-            </div>
-            <div style={{ textAlign: 'center', marginTop: 8 }}>
-              <div className="display" style={{ fontSize: 40 }}>{cls.main.name}</div>
-              <div style={{ marginTop: 6, fontSize: 17 }}>lv. {lv.lvl} <span className="muted small">({fmt(lv.xp)} exp)</span></div>
-            </div>
-            <div className="xpbar" style={{ marginTop: 16 }}><i style={{ width: `${(lv.cur / lv.next) * 100}%` }} /></div>
-            <div className="row between mono ink" style={{ marginTop: 8 }}><span>{fmt(lv.cur)} exp</span><span>{fmt(lv.next)} exp</span></div>
-            <button className="btn rpg block" style={{ marginTop: 16 }} onClick={() => document.getElementById('quest')?.scrollIntoView({ behavior: 'smooth' })}><Sparkles size={15} /> Ambil quest naik level <Sparkles size={15} /></button>
-            <div className="row" style={{ justifyContent: 'center', gap: 14, marginTop: 16 }}>
-              {([['hair', <Scissors key="h" size={22} />, 'Rambut', true], ['glasses', <Glasses key="g" size={22} />, 'Kacamata', !!char.glasses], ['hairColor', <Palette key="p" size={22} />, 'Warna', true]] as const).map(([k, ic, l, filled]) => (
-                <button key={k} className={`slot ${filled ? '' : 'empty'}`} onClick={() => { setTab(k); document.getElementById('lemari')?.scrollIntoView({ behavior: 'smooth' }) }} aria-label={`Ubah ${l}`}>{ic}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-            <HeadSticker c={char} mood={mood} size={58} tilt={-6} />
-            <div className="bubble" style={{ marginLeft: 6 }}>{line}</div>
+          <CharacterCard c={char} mood={preview ?? mood} name={settings.name} className={cls.main.name} emblem={cls.main.emblem} subClass={cls.sub.name}
+            lvl={lv.lvl} xpCur={lv.cur} xpNext={lv.next} totalKm={totalKm} streak={streak} line={line} />
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btn ghost" style={{ flex: 1 }} onClick={() => { setTab('hair'); document.getElementById('lemari')?.scrollIntoView({ behavior: 'smooth' }) }}><Scissors size={15} /> Ubah tampilan</button>
+            <button className="btn ghost" style={{ flex: 1 }} onClick={() => { setTab('bg'); document.getElementById('lemari')?.scrollIntoView({ behavior: 'smooth' }) }}><Palette size={15} /> Latar kartu</button>
+            <button className="btn ink circle" onClick={downloadPng} aria-label="Unduh kartu"><Download size={16} /></button>
           </div>
 
           <div className="card">

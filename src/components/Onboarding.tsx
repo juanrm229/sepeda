@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, Crosshair, Shuffle, Sparkles, Bell, Database, Eraser } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { HoloOrb, HeadSticker, Portrait } from './Character'
+import { AvatarImg, HeadSticker } from './Character'
 import { applyPick, HAIR_COLORS, randomChar, SKINS, TABS } from '../lib/avatar'
 import { celebrate, haptic } from './UI'
 import { askPermission } from '../lib/notify'
@@ -42,7 +42,7 @@ export default function Onboarding() {
           <div className="onb-step" key="s0">
             <div className="mono">Selamat datang</div>
             <div className="dot" style={{ fontSize: 'clamp(72px, 22vw, 120px)', marginTop: 8 }}>KAYUH</div>
-            <div style={{ display: 'grid', placeItems: 'center', margin: '18px 0' }}><HoloOrb size={220}><Portrait c={char} mood="semangat" size={190} style={{ marginBottom: -8 }} /></HoloOrb></div>
+            <div className="ccard-photo" style={{ background: `#${char.bg ?? 'e9e2d0'}`, width: 230, margin: '18px auto', aspectRatio: '1' }}><AvatarImg c={char} mood="semangat" size={210} className="ccard-avatar" /></div>
             <h2 className="display" style={{ fontSize: 30 }}>Gowes lebih pintar,<br />bareng squad.</h2>
             <p className="ink2" style={{ marginTop: 8 }}>Analitik latihan, karakter yang tumbuh bersamamu, rute dengan coffee break, dan pengingat yang paham cuaca.</p>
           </div>
@@ -57,7 +57,7 @@ export default function Onboarding() {
               <div><div className="b">Karaktermu</div><div className="small muted">Bisa diubah kapan saja di menu Karakter.</div></div>
               <button className="btn ghost sm" onClick={shuffle}><Shuffle size={14} /> Acak</button>
             </div>
-            <div style={{ display: 'grid', placeItems: 'center', marginTop: 10 }}><HoloOrb size={200}><Portrait c={char} mood="segar" size={172} style={{ marginBottom: -8 }} /></HoloOrb></div>
+            <div className="ccard-photo" style={{ background: `#${char.bg ?? 'e9e2d0'}`, width: 200, margin: '10px auto 0', aspectRatio: '1' }}><AvatarImg c={char} mood="segar" size={180} className="ccard-avatar" /></div>
             <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Gaya rambut</div>
             <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 8 }}>
               {['variant10', 'variant25', 'variant41', 'variant47', 'variant33'].map((v, i) => {
