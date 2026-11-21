@@ -1,5 +1,7 @@
 import type { Ride, Settings } from './types'
 import { clamp, dayKey } from './util'
+import { stamps } from './passport'
+const stampCount = (rides: Ride[]) => stamps(rides).filter((s) => s.date).length
 
 export function metFor(speed: number): number {
   if (speed < 16) return 4
@@ -189,6 +191,7 @@ export function badges(rides: Ride[]): Badge[] {
     mk('subuh', '☾', 'Pejuang Subuh', '10 ride sebelum jam 6', subuh, 10),
     mk('squad', '⁂', 'Anak Squad', '10 ride bareng teman', squad, 10),
     mk('streak', '≡', 'Konsisten', 'Streak 8 minggu', streak, 8),
+    mk('paspor', '✪', 'Penjelajah Paspor', '6 stempel landmark', stampCount(rides), 6),
   ]
 }
 

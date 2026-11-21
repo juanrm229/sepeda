@@ -14,7 +14,7 @@ export const OPTIONS: Record<keyof CharConfig, Opt[]> = {
   hair: [{ l: 'Keriting' }, { l: 'Cepak' }, { l: 'Belah samping' }, { l: 'Panjang' }, { l: 'Cepol' }, { l: 'Botak' }, { l: 'Hijab' }, { l: 'Mohawk', req: { level: 6 } }],
   hairColor: HAIR_COLORS.map((_, i) => ({ l: ['Hitam', 'Cokelat', 'Pirang', 'Uban', 'Oranye', 'Biru'][i], req: i >= 4 ? { level: 8 } : undefined })),
   headgear: [{ l: 'Tanpa' }, { l: 'Helm aero' }, { l: 'Cap sepeda' }, { l: 'Bandana' }, { l: 'Helm MTB', req: { badge: 'everest' } }, { l: 'Mahkota', req: { level: 12 } }],
-  glasses: [{ l: 'Tanpa' }, { l: 'Bulat' }, { l: 'Sport' }, { l: 'Hitam' }, { l: 'Visor', req: { badge: '1000' } }],
+  glasses: [{ l: 'Tanpa' }, { l: 'Bulat' }, { l: 'Sport' }, { l: 'Hitam' }, { l: 'Visor', req: { badge: 'paspor' } }],
   jersey: [{ l: 'Polos' }, { l: 'Garis' }, { l: 'Polkadot KOM', req: { badge: 'everest' } }, { l: 'Parang', req: { level: 4 } }, { l: 'Split tim', req: { badge: 'squad' } }],
   jerseyColor: JERSEY_COLORS.map((_, i) => ({ l: ['Hitam', 'Oranye', 'Kuning', 'Putih', 'Biru', 'Hijau', 'Pink'][i] })),
   bike: [{ l: 'Road' }, { l: 'MTB' }, { l: 'Lipat' }, { l: 'Fixie', req: { level: 3 } }],
@@ -38,7 +38,7 @@ export function unlocked(o: Opt, lvl: number, gotBadges: Set<string>): boolean {
 export function reqText(o: Opt): string {
   if (!o.req) return ''
   if (o.req.level) return `Level ${o.req.level}`
-  const names: Record<string, string> = { everest: 'Lencana Everesting', '1000': 'Lencana Seribu Kilo', squad: 'Lencana Anak Squad', '100k': 'Lencana Century', streak: 'Lencana Konsisten' }
+  const names: Record<string, string> = { everest: 'Lencana Everesting', '1000': 'Lencana Seribu Kilo', squad: 'Lencana Anak Squad', '100k': 'Lencana Century', streak: 'Lencana Konsisten', paspor: 'Lencana Paspor' }
   return names[o.req.badge!] ?? 'Lencana'
 }
 

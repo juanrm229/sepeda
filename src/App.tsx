@@ -1,11 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee } from 'lucide-react'
+import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee, Stamp } from 'lucide-react'
 import { useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { dueReminders, notify } from './lib/notify'
 import { dayKey } from './lib/util'
 import { celebrate, ConfirmHost, ErrorBoundary, Skeleton, Toaster, toast } from './components/UI'
 import { level, levelTitle, weekly } from './lib/analytics'
+import { stamps } from './lib/passport'
 import Home from './pages/Home'
 const Record = lazy(() => import('./pages/Record'))
 const Squad = lazy(() => import('./pages/Squad'))
@@ -24,6 +25,7 @@ const Plan = lazy(() => import('./pages/Plan'))
 const RoutePlanner = lazy(() => import('./pages/RoutePlanner'))
 const RouteList = lazy(() => import('./pages/RoutePlanner').then((m) => ({ default: m.RouteList })))
 const Onboarding = lazy(() => import('./components/Onboarding'))
+const Passport = lazy(() => import('./pages/Passport'))
 import { HeadBadge } from './components/Character'
 
 function useAchievements() {
@@ -35,10 +37,13 @@ function useAchievements() {
       prev = s.rides
       if (s.rides.length <= before.length) return
       const lvA = level(before).lvl, lvB = level(s.rides).lvl
+      const stA = stamps(before).filter((x) => x.date).length
+      const newStamp = stamps(s.rides).filter((x) => x.date).find((x) => !stamps(before).find((y) => y.lm.id === x.lm.id && y.date))
       const wkA = weekly(before, 1)[0].km, wkB = weekly(s.rides, 1)[0].km
       const goal = s.settings.weeklyGoalKm
       setTimeout(() => {
-        if (lvB > lvA) { celebrate(1.4); toast(`🆙 Naik ke level ${lvB}!`, `Kamu sekarang ${levelTitle(lvB)} — cek item baru di lemari`) }
+        if (newStamp && stA >= 0) { celebrate(1); toast(`${newStamp.lm.emoji} Stempel baru: ${newStamp.lm.name}!`, 'Cek paspormu — koleksi landmark bertambah') }
+        else if (lvB > lvA) { celebrate(1.4); toast(`🆙 Naik ke level ${lvB}!`, `Kamu sekarang ${levelTitle(lvB)} — cek item baru di lemari`) }
         else if (wkA < goal && wkB >= goal) { celebrate(1.2); toast('🎯 Target mingguan tembus!', `${Math.round(wkB)} / ${goal} km — karaktermu semangat`) }
         else celebrate(0.6)
       }, 600)
@@ -91,6 +96,7 @@ export default function App() {
     case 'join': page = <Join code={b} />; break
     case 'karakter': page = <CharacterPage />; break
     case 'rencana': page = <Plan />; break
+    case 'paspor': page = <Passport />; break
     case 'rute': page = !b ? <RouteList /> : b === 'g' ? <RoutePlanner key={'g' + c} groupId={c} /> : <RoutePlanner key={b} id={b} />; break
     default: page = <Home />
   }
@@ -106,6 +112,7 @@ export default function App() {
         <a href="#/karakter" className={on('karakter')}><Smile size={18} /> Karakter</a>
         <a href="#/rencana" className={on('rencana')}><Sliders size={18} /> Rencana</a>
         <a href="#/rute" className={on('rute')}><Coffee size={18} /> Rute & Kopi</a>
+        <a href="#/paspor" className={on('paspor')}><Stamp size={18} /> Paspor</a>
         <a href="#/meet" className={on('meet')}><MapPin size={18} /> Titik Temu</a>
         <a href="#/reminders" className={on('reminders')}><Bell size={18} /> Pengingat</a>
         <a href="#/weather" className={on('weather')}><CloudSun size={18} /> Cuaca Gowes</a>

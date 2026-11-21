@@ -12,6 +12,15 @@ npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat **data contoh 4 bulan** supaya analitiknya langsung terlihat. Data ini bisa dimuat ulang atau dikosongkan di Profil.
 
+## Yang baru di v4 (polish profesional)
+
+- **Onboarding** pertama kali: nama, karakter, lokasi & target, pilih data contoh atau mulai bersih.
+- **Animasi:** sheet & notifikasi masuk-keluar, tab dan navigasi dengan indikator meluncur, kartu muncul berurutan, grafik menggambar diri, dial terisi bertahap, pin checkpoint jatuh, confetti (ride tersimpan, naik level, target tembus, stempel baru), getaran halus, dan skeleton loading.
+- **Kualitas:** dialog konfirmasi kustom, penangkap error, autosave rute, migrasi data, halaman lazy-load (bundle utama 650 → ~280 KB), ikon PNG, gambar pratinjau link, shortcut PWA, dan fokus keyboard.
+- **Mode hujan:** di perencana rute, peluang hujan sepanjang durasi ride → saran checkpoint berteduh atau geser jam start.
+- **Paspor landmark:** 10 stempel (Monas, Kota Tua, Gunung Pancar, Puncak Pass, …) otomatis didapat saat ride melewatinya. 6 stempel membuka item karakter.
+- **Rute populer:** 5 template klasik Jabodetabek dengan checkpoint & coffee break, sekali ketuk.
+
 ## Yang baru di v3
 
 - **Rute, checkpoint & coffee break.** Tambah checkpoint sebanyak apa pun (ketuk peta, seret untuk geser). Rute dihitung **mengikuti jalan sepeda** (OSRM/OpenStreetMap), dengan **ETA tiap checkpoint**, durasi rehat, dan jam finish.

@@ -126,6 +126,11 @@ export default function Character() {
             </div>
           </div>
 
+          <a href="#/paspor" className="card click passport" style={{ textDecoration: 'none' }}>
+            <div className="row between"><div><div className="mono">Paspor landmark</div><div className="display" style={{ fontSize: 22, marginTop: 4 }}>Koleksi stempel</div></div><span style={{ fontSize: 34 }}>✪</span></div>
+            <div className="small" style={{ opacity: 0.8, marginTop: 6 }}>Gowes melewati Monas, Kota Tua, Gunung Pancar, dan lainnya untuk mengisi paspormu.</div>
+          </a>
+
           <div id="quest" className="card ink">
             <div className="mono">Quest minggu ini · perkuat {cls.weakest.l.toLowerCase()}</div>
             <div style={{ fontWeight: 600, fontSize: 18, marginTop: 6 }}>{QUEST[cls.weakest.k]}</div>

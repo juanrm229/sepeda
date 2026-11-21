@@ -13,6 +13,8 @@ import { BaseMap, MeetPin, Route, SmallPin } from '../components/Map'
 import { confirmDialog, Sheet, toast, Top } from '../components/UI'
 import { waLink, shareOrCopy } from '../lib/share'
 import { go } from '../lib/router'
+import { useForecast } from '../lib/useForecast'
+import { TEMPLATES, fromTemplate } from '../lib/templates'
 import { CreateRide } from './Squad'
 import { Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -87,6 +89,29 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
   useEffect(() => { prayerTimes(plan.start.pos, new Date(plan.startTime)).then(setPrayers) }, [plan.start.pos, plan.startTime])
   const rideStart = new Date(plan.startTime).getTime()
   const crossing = prayers.filter((p) => p.time.getTime() > rideStart && p.time.getTime() < tl.finish.getTime() && !plan.checkpoints.some((c) => c.kind === 'sholat' && Math.abs(timeAt(c.id) - p.time.getTime()) < 75 * 60000))
+  // ---- mode hujan: peluang hujan sepanjang durasi ride
+  const fc = useForecast(plan.start.pos)
+  const rain = useMemo(() => {
+    if (!fc) return null
+    const t0 = rideStart, t1 = tl.finish.getTime()
+    const hourAt = (t: number) => fc.hours.find((h) => t >= h.time.getTime() && t < h.time.getTime() + 3600000)
+    if (!hourAt(t0)) return { far: true as const }
+    const steps = 24
+    const segs = Array.from({ length: steps }, (_, i) => { const t = t0 + ((t1 - t0) * (i + 0.5)) / steps; return { t, rain: hourAt(t)?.rain ?? 0 } })
+    const peak = Math.max(...segs.map((x) => x.rain))
+    const firstWet = segs.find((x) => x.rain >= 50)
+    const kmWet = firstWet ? ((firstWet.t - t0) / (t1 - t0)) * tl.totalKm : null
+    let best: { shift: number; peak: number } | null = null
+    for (const sh of [-3, -2, -1, 1, 2, 3]) {
+      const s0 = t0 + sh * 3600000, s1 = t1 + sh * 3600000
+      const h = new Date(s0).getHours()
+      if (h < 4 || h > 17 || s0 < Date.now()) continue
+      const pk = Math.max(...Array.from({ length: 12 }, (_, i) => hourAt(s0 + ((s1 - s0) * (i + 0.5)) / 12)?.rain ?? 100))
+      if (!best || pk < best.peak) best = { shift: sh, peak: pk }
+    }
+    return { far: false as const, segs, peak, kmWet, best: best && best.peak < peak - 20 ? best : null, demo: fc.demo }
+  }, [fc, rideStart, tl.finish.getTime(), tl.totalKm])
+
   function timeAt(cid: string) { return tl.rows.find((r) => r.c.id === cid)?.arrive.getTime() ?? 0 }
 
   const addCp = (pos: LatLng, kind: CheckpointKind = 'rehat', extra?: Partial<Checkpoint>) => {
@@ -256,6 +281,24 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
             {plan.checkpoints.length === 0 && <div className="empty" style={{ paddingTop: 6 }}>Ketuk peta untuk menambah checkpoint sebanyak yang kamu mau, atau pakai alat pintar di bawah.</div>}
           </div>
 
+          {/* Mode hujan */}
+          {rain && (rain.far ? (
+            <div className="card flat small">🌦️ Prakiraan hujan muncul 2 hari sebelum ride. Mode hujan akan aktif otomatis.</div>
+          ) : rain.peak >= 50 ? (
+            <div className="card rain">
+              <div className="card-h"><div><div className="mono">Mode hujan aktif{rain.demo ? ' · data contoh' : ''}</div><div className="display" style={{ fontSize: 22, marginTop: 4 }}>☔ Hujan {rain.peak}% {rain.kmWet != null && rain.kmWet <= 3 ? 'sejak start' : `mulai km ${rain.kmWet?.toFixed(0)}`}</div></div></div>
+              <div className="rainbar">{rain.segs.map((x, i) => <i key={i} title={`${hhmm(new Date(x.t))} · ${x.rain}%`} style={{ background: `color-mix(in srgb, #2f6fed ${Math.max(6, x.rain)}%, var(--surface-2))` }} />)}</div>
+              <div className="row between mono" style={{ marginTop: 6 }}><span>{hhmm(new Date(plan.startTime))}</span><span>{hhmm(tl.finish)}</span></div>
+              <div className="stack" style={{ gap: 8, marginTop: 12 }}>
+                {rain.kmWet != null && rain.kmWet > 3 && plan.geometry && <button className="btn ink" onClick={() => autoPlace('rehat', pointAtKm(plan.geometry!, Math.max(0.5, rain.kmWet! - 1)), 'Berteduh (hujan)').then(() => undefined)}>🏪 Checkpoint berteduh di km {Math.max(0.5, rain.kmWet - 1).toFixed(0)}</button>}
+                {rain.best && <button className="btn ghost" onClick={() => setPlan({ ...plan, startTime: new Date(rideStart + rain.best!.shift * 3600000).toISOString() })}>⏰ Geser start ke {hhmm(new Date(rideStart + rain.best.shift * 3600000))} (hujan maks {rain.best.peak}%)</button>}
+                <div className="tiny muted">Bawa jas hujan tipis, lampu belakang menyala, dan kurangi tekanan ban 5–10 psi untuk grip di jalan basah.</div>
+              </div>
+            </div>
+          ) : (
+            <div className="card flat small">☀️ Aman dari hujan — peluang maksimal {rain.peak}% sepanjang ride{rain.demo ? ' (data contoh)' : ''}.</div>
+          ))}
+
           {/* Alat pintar */}
           <div className="card ink">
             <div className="card-h"><span className="mono">Alat pintar</span><Wand2 size={16} /></div>
@@ -400,6 +443,19 @@ export function RouteList() {
   return (
     <div className="fadein">
       <Top title="Rute saya" sub="Checkpoint & coffee break" back right={<button className="btn ink sm" onClick={() => { const p = defaultPlan({ name: settings.homeLabel, pos: settings.home }); upsertRoute(p); go('rute/' + p.id) }}><Plus size={15} /> Baru</button>} />
+      <div className="section-h" style={{ marginBottom: 10 }}><h3 className="display" style={{ fontSize: 22 }}>Rute populer</h3><span className="mono">sekali ketuk</span></div>
+      <div className="hscroll">
+        {TEMPLATES.map((t) => (
+          <div key={t.id} className="card tpl">
+            <div className="row between"><span style={{ fontSize: 30 }}>{t.emoji}</span><span className={`tag ${t.level === 'Berat' ? 'accent' : t.level === 'Sedang' ? 'ink' : ''}`}>{t.level}</span></div>
+            <div className="display" style={{ fontSize: 20, marginTop: 10 }}>{t.name}</div>
+            <div className="mono" style={{ marginTop: 4 }}>{t.tag} · {t.plan.checkpoints.length} CP</div>
+            <p className="tiny ink2" style={{ marginTop: 8, flex: 1 }}>{t.desc}</p>
+            <button className="btn ink sm" style={{ marginTop: 10 }} onClick={() => { const p = fromTemplate(t); upsertRoute(p); toast(`${t.emoji} ${t.name} ditambahkan`, 'Atur jam & checkpoint sesukamu'); go('rute/' + p.id) }}>Pakai rute ini</button>
+          </div>
+        ))}
+      </div>
+      <div className="section-h" style={{ marginTop: 22, marginBottom: 10 }}><h3 className="display" style={{ fontSize: 22 }}>Rute saya</h3><span className="mono">{routes.length}</span></div>
       <div className="stack">
         {routes.length === 0 && (
           <div className="card ink" style={{ textAlign: 'center', padding: 28 }}>
