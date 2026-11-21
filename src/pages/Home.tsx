@@ -68,6 +68,7 @@ export default function Home() {
 
   return (
     <div className="fadein">
+      <h1 className="sr-only">Beranda Kayuh — ringkasan gowes {settings.name}</h1>
       <div className="topbar">
         <span className="today-pill">Hari ini · {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
         <div className="row">
@@ -272,14 +273,14 @@ function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windTex
         </a>
         <a href={next ? '#/squad/' + next.id : '#/rute'} className="story card" style={{ textDecoration: 'none', color: '#fff', background: '#6b3f1f' }}>
           {bars}
-          <div className="row between"><span className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>Coffee ride berikutnya</span><span className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>3/4</span></div>
+          <div className="row between"><span className="mono" style={{ color: 'rgba(255,255,255,.88)' }}>Coffee ride berikutnya</span><span className="mono" style={{ color: 'rgba(255,255,255,.88)' }}>3/4</span></div>
           {next ? (
             <div style={{ marginTop: 'auto' }}>
               <div className="display" style={{ fontSize: 30 }}>{next.title}</div>
               <div className="small" style={{ opacity: 0.8, marginTop: 4 }}>{relDay(next.datetime)} · {next.meet.name}</div>
               <div className="stack" style={{ gap: 6, marginTop: 14 }}>
                 {(next.plan?.checkpoints ?? []).slice(0, 4).map((c, k) => (
-                  <div key={c.id} className="row" style={{ gap: 8 }}><span style={{ width: 26, height: 26, borderRadius: 9, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', fontSize: 13 }}>{CP_KIND[c.kind].emoji}</span><span className="small" style={{ flex: 1 }}>{k + 1}. {c.place?.name ?? c.name}</span><span className="mono" style={{ color: 'rgba(255,255,255,.6)' }}>{c.stopMin}m</span></div>
+                  <div key={c.id} className="row" style={{ gap: 8 }}><span style={{ width: 26, height: 26, borderRadius: 9, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', fontSize: 13 }}>{CP_KIND[c.kind].emoji}</span><span className="small" style={{ flex: 1 }}>{k + 1}. {c.place?.name ?? c.name}</span><span className="mono" style={{ color: 'rgba(255,255,255,.85)' }}>{c.stopMin}m</span></div>
                 ))}
                 {kopi.length === 0 && <span className="small" style={{ opacity: 0.7 }}>Belum ada coffee break — tambahkan di rute.</span>}
               </div>

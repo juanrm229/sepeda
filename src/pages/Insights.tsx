@@ -42,8 +42,8 @@ export default function Insights() {
             <div className="display" style={{ fontSize: 28 }}>{ready.label}</div>
             <div className="small" style={{ opacity: 0.9, marginTop: 6 }}>{ready.advice}</div>
             <div className="row wrap" style={{ gap: 6, marginTop: 10 }}>
-              <span className="tag" style={{ background: 'rgba(255,255,255,.2)', color: '#fff' }}>Fitness {Math.round(last.ctl)}</span>
-              <span className="tag" style={{ background: 'rgba(255,255,255,.2)', color: '#fff' }}>Lelah {Math.round(last.atl)}</span>
+              <span className="tag" style={{ background: 'rgba(0,0,0,.22)', color: '#fff' }}>Fitness {Math.round(last.ctl)}</span>
+              <span className="tag" style={{ background: 'rgba(0,0,0,.22)', color: '#fff' }}>Lelah {Math.round(last.atl)}</span>
               <span className="tag" style={{ background: '#fff', color: '#111' }}>Form {form >= 0 ? '+' : ''}{Math.round(form)}</span>
             </div>
           </div>

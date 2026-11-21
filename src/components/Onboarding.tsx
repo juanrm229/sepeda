@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, Crosshair, Shuffle, Sparkles, Bell, Database, Eraser } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { HoloOrb, HeadSticker, Portrait } from './Character'
-import { OPTIONS, seededChar, unlocked } from '../lib/character'
-import type { CharConfig } from '../lib/types'
+import { applyPick, PART, randomChar, TABS } from '../lib/avatar'
 import { celebrate, haptic } from './UI'
 import { askPermission } from '../lib/notify'
 
@@ -19,11 +18,9 @@ export default function Onboarding() {
   const [notif, setNotif] = useState(false)
 
   const next = () => { haptic(8); setStep((s) => Math.min(STEPS - 1, s + 1)) }
-  const shuffle = () => {
-    const c = seededChar(Math.floor(Math.random() * 9999))
-    const ok = (k: keyof CharConfig, v: number) => (unlocked(OPTIONS[k][v], 1, new Set()) ? v : 0)
-    setChar({ ...c, hair: ok('hair', c.hair), hairColor: ok('hairColor', c.hairColor), headgear: ok('headgear', c.headgear), glasses: ok('glasses', c.glasses), jersey: ok('jersey', c.jersey), acc: 0, bike: 0 })
-  }
+  const shuffle = () => setChar(randomChar())
+  const headTab = TABS.find((t) => t.k === 'head')!, hairTab = TABS.find((t) => t.k === 'hair')!, hijabTab = TABS.find((t) => t.k === 'hijab')!
+  const shapeIdx = (parseInt(char.head.split('-')[1]) - 1) % 4
   const locate = () => {
     setLoc('busy')
     navigator.geolocation?.getCurrentPosition(
@@ -62,12 +59,24 @@ export default function Onboarding() {
               <button className="btn ghost sm" onClick={shuffle}><Shuffle size={14} /> Acak</button>
             </div>
             <div style={{ display: 'grid', placeItems: 'center', marginTop: 10 }}><HoloOrb size={200}><Portrait c={char} mood="segar" size={172} style={{ marginBottom: -8 }} /></HoloOrb></div>
-            <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 14 }}>
-              {[0, 1, 2, 3, 6].map((h, i) => (
-                <button key={h} onClick={() => setChar({ ...char, hair: h })} style={{ background: 'none', border: 0, padding: 0 }} aria-label={OPTIONS.hair[h].l}>
-                  <HeadSticker c={{ ...char, hair: h, headgear: 0 }} size={48} tilt={[-6, 4, -3, 6, -4][i]} bg={char.hair === h ? 'var(--yellow)' : 'var(--surface-2)'} />
-                </button>
-              ))}
+            <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Gaya</div>
+            <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 8 }}>
+              {[['hair', 'hair-03'], ['hair', 'hair-01'], ['hair', 'hair-48'], ['hijab', 'hijabs-21'], ['hijab', 'hijabs-01']].map(([k, id], i) => {
+                const tab = k === 'hair' ? hairTab : hijabTab
+                const on = (char as unknown as Record<string, string | null>)[k] === id
+                return (
+                  <button key={id} onClick={() => setChar(applyPick(char, tab, id))} style={{ background: 'none', border: 0, padding: 0 }} aria-label={PART[id].l} aria-pressed={on}>
+                    <HeadSticker c={{ ...applyPick(char, tab, id), hat: null }} size={50} tilt={[-6, 4, -3, 6, -4][i]} bg={on ? 'var(--yellow)' : 'var(--surface-2)'} />
+                  </button>
+                )
+              })}
+            </div>
+            <div className="mono" style={{ textAlign: 'center', marginTop: 14 }}>Warna kulit</div>
+            <div className="row" style={{ justifyContent: 'center', gap: 10, marginTop: 8 }}>
+              {[0, 1, 2, 3].map((tone) => {
+                const id = `heads-${String(tone * 4 + shapeIdx + 1).padStart(2, '0')}`
+                return <button key={id} aria-label={PART[id].l} onClick={() => setChar(applyPick(char, headTab, id))} style={{ width: 36, height: 36, borderRadius: '50%', border: char.head === id ? '3px solid var(--ink)' : '2px solid var(--line)', background: ['#f7dccb', '#f3cfa8', '#e9b07d', '#b9785a'][tone] }} />
+              })}
             </div>
           </div>
         )}

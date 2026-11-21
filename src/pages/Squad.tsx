@@ -7,7 +7,7 @@ import { Avatar, Sheet, Tabs, Toggle, toast, Top } from '../components/UI'
 import { BaseMap, MeetPin, SmallPin } from '../components/Map'
 import { weekly } from '../lib/analytics'
 import { go } from '../lib/router'
-import { seededChar } from '../lib/character'
+import { randomChar } from '../lib/avatar'
 import { HeadBadge, RaceScene } from '../components/Character'
 import { haversine } from '../lib/geo'
 
@@ -78,7 +78,7 @@ export default function Squad() {
             </div>
           </div>
           <BaseMap center={settings.home} zoom={10} fit={[settings.home, ...friends.map((f) => f.home)]} className="map">
-            <SmallPin pos={settings.home} color="#ff4d1f" />
+            <SmallPin pos={settings.home} color="#d93d14" />
             {friends.map((f) => <SmallPin key={f.id} pos={f.home} color={f.color} />)}
           </BaseMap>
           <button className="btn ghost block" onClick={() => setAddF(true)}><UserPlus size={16} /> Tambah teman</button>
@@ -227,7 +227,7 @@ export function CreateRide({ open, onClose, preset }: { open: boolean; onClose: 
   )
 }
 
-const COLORS = ['#ff4d1f', '#111111', '#f5c518', '#2f6fed', '#1f9d6a', '#8a8a85', '#b04ad6']
+const COLORS = ['#d93d14', '#111111', '#f5c518', '#2f6fed', '#1f9d6a', '#8a8a85', '#b04ad6']
 
 function AddFriend({ open, onClose, onAdd }: { open: boolean; onClose: () => void; onAdd: (f: Friend) => void }) {
   const { settings } = useStore()
@@ -242,8 +242,8 @@ function AddFriend({ open, onClose, onAdd }: { open: boolean; onClose: () => voi
         <label className="field"><span className="mono">Daerah</span><input className="input" value={area} placeholder="mis. Tebet" onChange={(e) => setArea(e.target.value)} /></label>
         <label className="field"><span className="mono">Kecepatan rata-rata · {spd} km/j</span><input type="range" min={15} max={35} value={spd} onChange={(e) => setSpd(+e.target.value)} /></label>
         <div className="mono">Ketuk perkiraan lokasi rumahnya (untuk titik temu)</div>
-        <BaseMap center={pos} zoom={11} className="map" onClick={setPos}><SmallPin pos={pos} color="#ff4d1f" /></BaseMap>
-        <button className="btn ink block" disabled={!name.trim()} onClick={() => { onAdd({ id: uid(), name: name.trim(), color: COLORS[Math.floor(Math.random() * COLORS.length)], avgSpeed: spd, weeklyKm: 80, home: pos, homeLabel: area || 'Jakarta', char: seededChar(Date.now() % 1000) }); setName(''); setArea(''); onClose() }}>Tambah</button>
+        <BaseMap center={pos} zoom={11} className="map" onClick={setPos}><SmallPin pos={pos} color="#d93d14" /></BaseMap>
+        <button className="btn ink block" disabled={!name.trim()} onClick={() => { onAdd({ id: uid(), name: name.trim(), color: COLORS[Math.floor(Math.random() * COLORS.length)], avgSpeed: spd, weeklyKm: 80, home: pos, homeLabel: area || 'Jakarta', char: randomChar() }); setName(''); setArea(''); onClose() }}>Tambah</button>
       </div>
     </Sheet>
   )

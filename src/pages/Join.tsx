@@ -40,7 +40,7 @@ export default function Join({ code }: { code: string }) {
         </div>
       )}
       <div className="section"><BaseMap center={g.meet.pos} zoom={14} className="map" fit={g.plan ? [g.meet.pos, ...g.plan.checkpoints.map((c) => c.pos)] : undefined}>
-        {g.plan && <Route track={[g.meet.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#ff4d1f" weight={3} dash="6 8" />}
+        {g.plan && <Route track={[g.meet.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#d93d14" weight={3} dash="6 8" />}
         {g.plan?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.pos} />)}
         <MeetPin pos={g.meet.pos} />
       </BaseMap></div>

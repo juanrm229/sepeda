@@ -1,52 +1,9 @@
-import type { CharConfig, Ride } from './types'
+import type { Ride } from './types'
 import { clamp } from './util'
 import { badges, level, readiness, trainingLoad, weekly } from './analytics'
 import type { Settings } from './types'
 
-export interface Opt { l: string; req?: { level?: number; badge?: string } }
-
-export const SKINS = ['#ffffff', '#f7dcc4', '#e5b78f', '#b97f55', '#7b4f31']
-export const HAIR_COLORS = ['#111111', '#5a3a22', '#c79a5b', '#8a8a85', '#ff4d1f', '#2f6fed']
-export const JERSEY_COLORS = ['#111111', '#ff4d1f', '#f3d40b', '#ffffff', '#2f6fed', '#1f9d6a', '#e87ba4']
-
-export const OPTIONS: Record<keyof CharConfig, Opt[]> = {
-  skin: SKINS.map((_, i) => ({ l: ['Doodle', 'Terang', 'Sawo', 'Cokelat', 'Gelap'][i] })),
-  hair: [{ l: 'Keriting' }, { l: 'Cepak' }, { l: 'Belah samping' }, { l: 'Panjang' }, { l: 'Cepol' }, { l: 'Botak' }, { l: 'Hijab' }, { l: 'Mohawk', req: { level: 6 } }],
-  hairColor: HAIR_COLORS.map((_, i) => ({ l: ['Hitam', 'Cokelat', 'Pirang', 'Uban', 'Oranye', 'Biru'][i], req: i >= 4 ? { level: 8 } : undefined })),
-  headgear: [{ l: 'Tanpa' }, { l: 'Helm aero' }, { l: 'Cap sepeda' }, { l: 'Bandana' }, { l: 'Helm MTB', req: { badge: 'everest' } }, { l: 'Mahkota', req: { level: 12 } }],
-  glasses: [{ l: 'Tanpa' }, { l: 'Bulat' }, { l: 'Sport' }, { l: 'Hitam' }, { l: 'Visor', req: { badge: 'paspor' } }],
-  jersey: [{ l: 'Polos' }, { l: 'Garis' }, { l: 'Polkadot KOM', req: { badge: 'everest' } }, { l: 'Parang', req: { level: 4 } }, { l: 'Split tim', req: { badge: 'squad' } }],
-  jerseyColor: JERSEY_COLORS.map((_, i) => ({ l: ['Hitam', 'Oranye', 'Kuning', 'Putih', 'Biru', 'Hijau', 'Pink'][i] })),
-  bike: [{ l: 'Road' }, { l: 'MTB' }, { l: 'Lipat' }, { l: 'Fixie', req: { level: 3 } }],
-  acc: [{ l: 'Tanpa' }, { l: 'Bendera', req: { level: 2 } }, { l: 'Buff' }, { l: 'Medali', req: { badge: '100k' } }, { l: 'Bel emas', req: { badge: 'streak' } }],
-}
-
-export const PART_TABS: { k: keyof CharConfig; l: string }[] = [
-  { k: 'hair', l: 'Rambut' }, { k: 'headgear', l: 'Kepala' }, { k: 'glasses', l: 'Kacamata' }, { k: 'jersey', l: 'Jersey' },
-  { k: 'jerseyColor', l: 'Warna' }, { k: 'skin', l: 'Kulit' }, { k: 'hairColor', l: 'Warna rambut' }, { k: 'acc', l: 'Aksesori' },
-]
-
-export const defaultChar: CharConfig = { skin: 0, hair: 0, hairColor: 0, headgear: 1, glasses: 2, jersey: 1, jerseyColor: 1, bike: 0, acc: 0 }
-
-export function unlocked(o: Opt, lvl: number, gotBadges: Set<string>): boolean {
-  if (!o.req) return true
-  if (o.req.level && lvl < o.req.level) return false
-  if (o.req.badge && !gotBadges.has(o.req.badge)) return false
-  return true
-}
-
-export function reqText(o: Opt): string {
-  if (!o.req) return ''
-  if (o.req.level) return `Level ${o.req.level}`
-  const names: Record<string, string> = { everest: 'Lencana Everesting', '1000': 'Lencana Seribu Kilo', squad: 'Lencana Anak Squad', '100k': 'Lencana Century', streak: 'Lencana Konsisten', paspor: 'Lencana Paspor' }
-  return names[o.req.badge!] ?? 'Lencana'
-}
-
-export function seededChar(seed: number): CharConfig {
-  let s = seed * 9301 + 49297
-  const r = (n: number) => { s = (s * 9301 + 49297) % 233280; return Math.floor((s / 233280) * n) }
-  return { skin: r(5), hair: r(7), hairColor: r(4), headgear: r(4), glasses: r(4), jersey: r(2) === 0 ? 0 : 1, jerseyColor: r(7), bike: r(3), acc: r(3) === 0 ? 2 : 0 }
-}
+export { defaultChar, randomChar as seededChar } from './avatar'
 
 /* ---------------- Kelas & statistik RPG dari data ---------------- */
 

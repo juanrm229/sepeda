@@ -27,7 +27,7 @@ const CAT_TO_KIND: Record<PlaceCat, CheckpointKind> = { kopi: 'kopi', makan: 'ma
 
 
 function cpIcon(n: number, kind: CheckpointKind, active: boolean) {
-  const html = `<div class="drop"><div style="display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:${active ? '#ff4d1f' : '#111'};color:#fff;font:700 12px var(--f-ui);border:2.5px solid #fff;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);transform:rotate(-6deg)"><span style="font-size:11px;line-height:1">${CP_KIND[kind].emoji}</span><span style="font-size:9px;line-height:1;margin-top:1px">${n}</span></div></div>`
+  const html = `<div class="drop"><div style="display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:${active ? '#d93d14' : '#111'};color:#fff;font:700 12px var(--f-ui);border:2.5px solid #fff;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);transform:rotate(-6deg)"><span style="font-size:11px;line-height:1">${CP_KIND[kind].emoji}</span><span style="font-size:9px;line-height:1;margin-top:1px">${n}</span></div></div>`
   return L.divIcon({ html, className: '', iconSize: [34, 34], iconAnchor: [17, 17] })
 }
 const finishIcon = L.divIcon({ html: '<div style="width:30px;height:30px;border-radius:50%;background:repeating-conic-gradient(#111 0 25%,#fff 0 50%) 50%/12px 12px;border:3px solid #111;box-shadow:0 4px 10px rgba(0,0,0,.4)"></div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15] })
@@ -188,7 +188,7 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
 
   return (
     <div className="fadein">
-      <Top title={group ? 'Rute & checkpoint' : 'Perencana rute'} sub={group ? group.title : 'Checkpoint & coffee break'} back={group ? 'squad/' + group.id : 'rute'}
+      <Top title={group ? 'Rute' : 'Perencana rute'} sub={group ? `${group.title} · checkpoint` : 'Checkpoint & coffee break'} back={group ? 'squad/' + group.id : 'rute'}
         right={<span className={`savechip ${saved}`} aria-live="polite">{saved === 'saving' ? <><Loader2 size={13} className="spin" /> Menyimpan</> : saved === 'saved' ? <>✓ Tersimpan</> : <><Save size={13} /> Otomatis</>}</span>} />
 
       <div className="row-d">
@@ -196,13 +196,13 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
           {!group && <input className="input" style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 20 }} value={plan.name} onChange={(e) => setPlan({ ...plan, name: e.target.value })} aria-label="Nama rute" />}
           <div style={{ position: 'relative' }}>
             <BaseMap center={plan.start.pos} zoom={13} className="map full" onClick={onMap} fit={initialFit}>
-              {plan.geometry && <><Route track={plan.geometry} color="#111" weight={7} /><Route track={plan.geometry} color="#ff4d1f" weight={3.5} /></>}
+              {plan.geometry && <><Route track={plan.geometry} color="#111" weight={7} /><Route track={plan.geometry} color="#d93d14" weight={3.5} /></>}
               <MeetPin pos={plan.start.pos} label="S" draggable onDrag={(p) => setPlan({ ...plan, start: { ...plan.start, pos: p } })} />
-              {plan.finish && <Marker position={plan.finish.pos} icon={finishIcon} draggable eventHandlers={{ dragend: (e) => { const ll = (e.target as L.Marker).getLatLng(); setPlan({ ...plan, finish: { ...plan.finish!, pos: [ll.lat, ll.lng] } }) } }} />}
+              {plan.finish && <Marker title="Finish" position={plan.finish.pos} icon={finishIcon} draggable eventHandlers={{ dragend: (e) => { const ll = (e.target as L.Marker).getLatLng(); setPlan({ ...plan, finish: { ...plan.finish!, pos: [ll.lat, ll.lng] } }) } }} />}
               {plan.checkpoints.map((c, i) => (
                 <Fragment key={c.id}>
-                  {c.place && haversine(c.place.pos, c.pos) > 0.02 && <SmallPin pos={c.place.pos} color="#ff4d1f" />}
-                  <Marker position={c.pos} icon={cpIcon(i + 1, c.kind, sel === c.id)} draggable zIndexOffset={500}
+                  {c.place && haversine(c.place.pos, c.pos) > 0.02 && <SmallPin pos={c.place.pos} color="#d93d14" />}
+                  <Marker title={`Checkpoint ${i + 1}: ${c.name}`} position={c.pos} icon={cpIcon(i + 1, c.kind, sel === c.id)} draggable zIndexOffset={500}
                     eventHandlers={{ click: () => setSel(c.id), dragend: (e) => { const ll = (e.target as L.Marker).getLatLng(); updCp(c.id, { pos: [ll.lat, ll.lng], place: undefined }) } }} />
                 </Fragment>
               ))}
@@ -382,7 +382,7 @@ function CoffeeSheet({ cp, onClose, onPick }: { cp: Checkpoint | null; onClose: 
         <div className="chips">{CAT_TABS.map((t) => <button key={t.c} className={`chip ${cat === t.c ? 'on' : ''}`} style={{ display: 'inline-flex', gap: 5, alignItems: 'center' }} onClick={() => setCat(t.c)}>{t.icon}{t.l}</button>)}</div>
         <BaseMap center={cp.pos} zoom={15} className="map" fit={list?.length ? [cp.pos, ...list.slice(0, 6).map((p) => p.pos)] : undefined}>
           <MeetPin pos={cp.pos} label="CP" />
-          {list?.map((p, i) => <SmallPin key={p.id} pos={p.pos} color={i === 0 ? '#ff4d1f' : '#111'} onClick={() => onPick(p, cat)} />)}
+          {list?.map((p, i) => <SmallPin key={p.id} pos={p.pos} color={i === 0 ? '#d93d14' : '#111'} onClick={() => onPick(p, cat)} />)}
         </BaseMap>
         {!list && <div className="row" style={{ justifyContent: 'center', padding: 16, gap: 8 }}><Loader2 size={16} className="spin" /> Mencari {q} dalam {radius} m…</div>}
         {list && list.length === 0 && (

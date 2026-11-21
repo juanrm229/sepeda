@@ -28,14 +28,14 @@ export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolea
   }
 
   return (
-    <div className="card" style={{ background: '#ff4433', color: '#fff', padding: compact ? 16 : 18 }}>
+    <div className="card accent" style={{ padding: compact ? 16 : 18 }}>
       <div className="row between" style={{ cursor: 'pointer' }} onClick={() => go('squad/' + g.id)}>
         <div style={{ minWidth: 0 }}>
-          <div className="mono" style={{ color: 'rgba(255,255,255,.8)' }}>{relDay(g.datetime)} · {hhmm(start)}</div>
+          <div className="mono" style={{ color: '#fff' }}>{relDay(g.datetime)} · {hhmm(start)}</div>
           <div className="display" style={{ fontSize: 26, marginTop: 4 }}>{g.title}</div>
           <div className="small" style={{ opacity: 0.9, marginTop: 4 }}><MapPin size={12} style={{ verticalAlign: -1 }} /> {g.meet.name}</div>
         </div>
-        <div style={{ textAlign: 'center', flexShrink: 0, background: 'rgba(255,255,255,.18)', borderRadius: 18, padding: '8px 12px' }}>
+        <div style={{ textAlign: 'center', flexShrink: 0, background: 'rgba(0,0,0,.2)', borderRadius: 18, padding: '8px 12px' }}>
           <div className="mono" style={{ color: '#fff', fontSize: 9 }}>{fmtDate(g.datetime).split(',')[0]}</div>
           <div className="dot" style={{ fontSize: 28 }}>{start.getDate()}</div>
         </div>
@@ -47,11 +47,11 @@ export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolea
           {going.slice(0, 4).map((f) => f && <Avatar key={f.id} name={f.name} color={f.color} c={f.char} size={30} />)}
         </div>
         <span className="small" style={{ flex: 1 }}>{going.length + (g.myRsvp === 'ikut' ? 1 : 0)} ikut</span>
-        <button className="btn sm" style={{ background: 'rgba(255,255,255,.2)', color: '#fff' }} onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><UserPlus size={14} /> Ajak</button>
+        <button className="btn sm" style={{ background: 'rgba(0,0,0,.22)', color: '#fff' }} onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><UserPlus size={14} /> Ajak</button>
       </div>
 
       <div className="row" style={{ marginTop: 12, gap: 8 }}>
-        <span className="mono" style={{ color: 'rgba(255,255,255,.85)', flexShrink: 0 }}>Telat</span>
+        <span className="mono" style={{ color: '#fff', flexShrink: 0 }}>Telat</span>
         <div className="row" style={{ background: 'rgba(0,0,0,.14)', borderRadius: 999, padding: 4, gap: 2, flex: 1, justifyContent: 'space-between' }}>
           {[5, 15, 30].map((m) => (
             <button key={m} onClick={() => setLate(m)} style={{ flex: 1, border: 0, borderRadius: 999, padding: '6px 0', background: late === m ? '#fff' : 'transparent', color: late === m ? '#111' : '#fff', fontWeight: 700 }}>
@@ -67,7 +67,7 @@ export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolea
           { i: <CalendarClock size={20} />, l: 'Geser 30m', f: reschedule },
           { i: <Clock size={20} />, l: 'Aku telat', f: sendLate },
         ].map((a) => (
-          <button key={a.l} onClick={a.f} style={{ border: 0, background: 'rgba(255,255,255,.16)', color: '#fff', borderRadius: 999, aspectRatio: '1', maxWidth: 84, width: '100%', margin: '0 auto', display: 'grid', placeItems: 'center', alignContent: 'center', gap: 4 }}>
+          <button key={a.l} onClick={a.f} style={{ border: 0, background: 'rgba(0,0,0,.2)', color: '#fff', borderRadius: 999, aspectRatio: '1', maxWidth: 84, width: '100%', margin: '0 auto', display: 'grid', placeItems: 'center', alignContent: 'center', gap: 4 }}>
             {a.i}<span className="mono" style={{ color: '#fff', fontSize: 8.5 }}>{a.l}</span>
           </button>
         ))}

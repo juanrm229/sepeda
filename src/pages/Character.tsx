@@ -1,11 +1,12 @@
 import { useMemo, useRef, useState } from 'react'
-import { Download, Shuffle, Lock, Sparkles, Swords, HardHat, Glasses, Medal, Settings } from 'lucide-react'
+import { Download, Shuffle, Lock, Sparkles, Swords, HardHat, Glasses, Shirt, Settings, Search, Check, Ban, Undo2 } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { CharConfig } from '../lib/types'
-import { characterLevel, moodOf, OPTIONS, PART_TABS, QUEST, reqText, riderClass, riderStats, unlocked, JERSEY_COLORS, HAIR_COLORS, SKINS } from '../lib/character'
+import { characterLevel, moodOf, QUEST, riderClass, riderStats } from '../lib/character'
+import { applyPick, CATS, drawAvatar, isUnlocked, lockOf, PART, randomChar, reqLabel, TABS, type TabDef } from '../lib/avatar'
 import { levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
-import { HeadArt, HeadSticker, HoloOrb, Portrait } from '../components/Character'
+import { AvatarSvg, HeadSticker, HoloOrb, Portrait } from '../components/Character'
 import { celebrate, toast, Top } from '../components/UI'
 import type { Mood } from '../lib/character'
 
@@ -17,7 +18,11 @@ const Spark = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
 
 export default function Character() {
   const { char, setChar, rides, settings, upsertReminder } = useStore()
-  const [tab, setTab] = useState<keyof CharConfig>('hair')
+  const [tabK, setTabK] = useState<TabDef['k']>('hair')
+  const [q, setQ] = useState('')
+  const [undo, setUndo] = useState<CharConfig | null>(null)
+  const tab = TABS.find((t) => t.k === tabK)!
+  const setTab = (k: TabDef['k']) => { setTabK(k); setQ('') }
   const [tilt, setTilt] = useState({ x: 0, y: 0, on: false })
   const [preview, setPreview] = useState<Mood | null>(null)
   const lv = characterLevel(rides)
@@ -26,35 +31,31 @@ export default function Character() {
   const { mood, line } = moodOf(rides, settings)
   const svgRef = useRef<HTMLDivElement>(null)
 
-  const opts = OPTIONS[tab]
-  const pick = (k: keyof CharConfig, i: number) => {
-    const o = OPTIONS[k][i]
-    if (!unlocked(o, lv.lvl, lv.got)) { toast('🔒 Masih terkunci', `Buka dengan ${reqText(o)}`); return }
-    setChar({ ...char, [k]: i })
+  const pick = (id: string | null) => {
+    if (id && !isUnlocked(id, lv.lvl, lv.got)) { toast('🔒 Masih terkunci', `Buka dengan ${reqLabel(id)}`); return }
+    setUndo(char)
+    setChar(applyPick(char, tab, id))
   }
-  const randomize = () => {
-    const next = { ...char }
-    for (const k of Object.keys(OPTIONS) as (keyof CharConfig)[]) {
-      const ok = OPTIONS[k].map((o, i) => [o, i] as const).filter(([o]) => unlocked(o, lv.lvl, lv.got))
-      next[k] = ok[Math.floor(Math.random() * ok.length)][1]
-    }
-    setChar(next)
+  const randomize = () => { setUndo(char); setChar(randomChar()) }
+  const items = CATS[tab.cat].filter((p) => !q || p.l.toLowerCase().includes(q.toLowerCase()))
+  const selected = (id: string) => {
+    if (tab.k === 'details' || tab.k === 'acc') { const p = PART[id]; return p.slot ? (char as unknown as Record<string, string | null>)[p.slot] === id : char[tab.k].includes(id) }
+    return (char as unknown as Record<string, string | null>)[tab.k] === id
   }
+  const current = tab.k === 'details' || tab.k === 'acc' ? null : (char as unknown as Record<string, string | null>)[tab.k]
 
   async function downloadPng() {
-    const svg = svgRef.current?.querySelector('svg')
-    if (!svg) return
-    const xml = new XMLSerializer().serializeToString(svg).replace(/var\(--f-ui\)/g, 'Inter Tight')
-    const img = new Image()
-    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)
-    await img.decode()
     const c = document.createElement('canvas'); c.width = 1080; c.height = 1350
     const g = c.getContext('2d')!
     g.fillStyle = '#e8e7e3'; g.fillRect(0, 0, 1080, 1350)
-    g.drawImage(img, 140, 120, 800, 1000)
+    g.fillStyle = '#f6f5f2'; g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.fill()
+    g.save(); g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.clip()
+    await drawAvatar(g, char, 110, 130, 860, mood)
+    g.restore()
+    g.lineWidth = 8; g.strokeStyle = '#111'; g.beginPath(); g.arc(540, 560, 430, 0, Math.PI * 2); g.stroke()
     g.fillStyle = '#111'; g.font = '800 64px "Bricolage Grotesque"'; g.textAlign = 'center'
-    g.fillText(cls.main.name, 540, 1200)
-    g.font = '700 28px "Space Mono"'; g.fillText(`LV. ${lv.lvl} · KAYUH`, 540, 1260)
+    g.fillText(cls.main.name, 540, 1130)
+    g.font = '700 28px "Space Mono"'; g.fillText(`LV. ${lv.lvl} · ${settings.name.toUpperCase()} · KAYUH`, 540, 1190)
     const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'karakter-kayuh.png'; a.click()
     toast('🖼️ Karakter diunduh', 'Pakai sebagai foto profil WhatsApp/IG')
   }
@@ -83,8 +84,8 @@ export default function Character() {
             <div className="row between mono ink" style={{ marginTop: 8 }}><span>{fmt(lv.cur)} exp</span><span>{fmt(lv.next)} exp</span></div>
             <button className="btn rpg block" style={{ marginTop: 16 }} onClick={() => document.getElementById('quest')?.scrollIntoView({ behavior: 'smooth' })}><Sparkles size={15} /> Ambil quest naik level <Sparkles size={15} /></button>
             <div className="row" style={{ justifyContent: 'center', gap: 14, marginTop: 16 }}>
-              {([['headgear', <HardHat key="h" size={24} />, 'Kepala'], ['glasses', <Glasses key="g" size={24} />, 'Kacamata'], ['acc', <Medal key="m" size={24} />, 'Aksesori']] as const).map(([k, ic, l]) => (
-                <button key={k} className={`slot ${char[k] === 0 ? 'empty' : ''}`} onClick={() => setTab(k)} aria-label={l} title={`${l}: ${OPTIONS[k][char[k]].l}`}>{ic}</button>
+              {([['hat', <HardHat key="h" size={24} />, 'Topi'], ['eyewear', <Glasses key="g" size={24} />, 'Kacamata'], ['shirt', <Shirt key="m" size={24} />, 'Baju']] as const).map(([k, ic, l]) => (
+                <button key={k} className={`slot ${!char[k] ? 'empty' : ''}`} onClick={() => { setTab(k); document.getElementById('lemari')?.scrollIntoView({ behavior: 'smooth' }) }} aria-label={l} title={`${l}: ${char[k] ? PART[char[k]!].l : 'kosong'}`}>{ic}</button>
               ))}
             </div>
           </div>
@@ -138,40 +139,47 @@ export default function Character() {
             <button className="btn accent sm" style={{ marginTop: 12 }} onClick={() => { upsertReminder({ id: 'quest-' + cls.weakest.k, kind: 'ride', title: QUEST[cls.weakest.k].replace('Quest: ', '⚔ '), time: '06:00', days: [6], enabled: true }); toast('⚔️ Quest diterima', 'Pengingat dipasang Sabtu 06.00'); celebrate(0.7) }}>Terima quest</button>
           </div>
 
-          <div className="card">
+          <div className="card" id="lemari">
             <div className="row between" style={{ marginBottom: 12 }}>
-              <span className="mono">Lemari karakter</span>
+              <div><span className="mono">Lemari karakter · 512 item</span><div className="small muted" style={{ marginTop: 2 }}>{current ? <>Terpilih: <b className="ink2">{PART[current]?.l}</b></> : tab.multi ? 'Bisa pilih beberapa sekaligus' : 'Tanpa item'}</div></div>
               <div className="row" style={{ gap: 6 }}>
+                <button className="iconbtn" disabled={!undo} onClick={() => { if (undo) { setChar(undo); setUndo(null) } }} aria-label="Urungkan"><Undo2 size={16} /></button>
                 <button className="iconbtn" onClick={randomize} aria-label="Acak"><Shuffle size={16} /></button>
                 <button className="iconbtn" style={{ background: 'var(--ink)', color: 'var(--bg)' }} onClick={downloadPng} aria-label="Unduh"><Download size={16} /></button>
               </div>
             </div>
-            <div className="seg-tabs">{PART_TABS.map((t) => <button key={t.k} className={tab === t.k ? 'on' : ''} onClick={() => setTab(t.k)}>{t.l}</button>)}</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))', gap: 10, marginTop: 14 }}>
-              {opts.map((o, i) => {
-                const ok = unlocked(o, lv.lvl, lv.got)
-                const preview = { ...char, [tab]: i, ...(tab === 'hair' || tab === 'hairColor' ? { headgear: 0 } : {}) }
+            <div className="seg-tabs">{TABS.map((t) => <button key={t.k} className={tabK === t.k ? 'on' : ''} onClick={() => setTab(t.k)}>{t.l}{t.k === 'hijab' && char.hijab ? ' •' : ''}</button>)}</div>
+            <div className="row" style={{ background: 'var(--surface-2)', borderRadius: 999, padding: '2px 4px 2px 12px', marginTop: 12 }}>
+              <Search size={15} className="muted" />
+              <input className="input" style={{ border: 0, background: 'transparent', padding: '9px 10px' }} placeholder={`Cari ${tab.l.toLowerCase()}… (${CATS[tab.cat].length})`} value={q} onChange={(e) => setQ(e.target.value)} aria-label={`Cari ${tab.l}`} />
+            </div>
+            {tab.k === 'hijab' && char.hair && <p className="tiny muted" style={{ marginTop: 8 }}>Memilih hijab menyembunyikan rambut & anting. Topi tetap bisa dipakai di atas hijab.</p>}
+            {tab.k === 'hair' && char.hijab && <p className="tiny muted" style={{ marginTop: 8 }}>Memilih rambut akan melepas hijab.</p>}
+            <div className="wardrobe" style={{ marginTop: 12 }}>
+              {(tab.optional || tab.multi) && !q && (
+                <button className={`tile ${!current && !(tab.multi && char[tab.k as 'details' | 'acc'].length) ? 'on' : ''}`} onClick={() => pick(null)} aria-label="Tanpa">
+                  <Ban size={22} className="muted" style={{ marginBottom: 12 }} /><span className="lock" style={{ color: 'var(--muted)' }}>Tanpa</span>
+                </button>
+              )}
+              {items.map((p) => {
+                const ok = isUnlocked(p.id, lv.lvl, lv.got)
+                const on = selected(p.id)
+                const base = on ? char : applyPick(char, tab, p.id)
+                const prev = tab.k === 'hair' || tab.k === 'hijab' || tab.k === 'earrings' ? { ...base, hat: null } : base
                 return (
-                  <button key={i} className={`tile ${char[tab] === i ? 'on' : ''} ${ok ? '' : 'locked'}`} onClick={() => pick(tab, i)} aria-label={o.l} title={ok ? o.l : `${o.l} — ${reqText(o)}`}>
-                    <TilePreview k={tab} c={preview} i={i} />
-                    {!ok ? <span className="lock"><Lock size={9} style={{ verticalAlign: -1 }} /> {reqText(o)}</span> : <span className="lock" style={{ color: 'var(--muted)' }}>{o.l}</span>}
+                  <button key={p.id} className={`tile ${on ? 'on' : ''} ${ok ? '' : 'locked'}`} onClick={() => pick(p.id)} aria-label={ok ? p.l : `${p.l}, terkunci: ${reqLabel(p.id)}`} aria-pressed={on} title={ok ? p.l : `${p.l} — ${reqLabel(p.id)}`}>
+                    <AvatarSvg c={prev} view={tab.focus === 'body' ? [40, 230, 432] : [96, 26, 320]} size={96} label={p.l} />
+                    {on && tab.multi && <span className="tile-check"><Check size={12} /></span>}
+                    {!ok && <span className="lock" aria-hidden><Lock size={9} style={{ verticalAlign: -1 }} /> {reqLabel(p.id)}</span>}
                   </button>
                 )
               })}
+              {items.length === 0 && <div className="empty" style={{ gridColumn: '1 / -1' }}>Tidak ada “{q}”.</div>}
             </div>
-            <p className="tiny muted" style={{ marginTop: 12 }}>Item langka terbuka saat naik level atau mendapat lencana. Gowes lebih banyak = lemari lebih lengkap.</p>
+            <p className="tiny muted" style={{ marginTop: 12 }}>{(() => { const n = CATS[tab.cat].filter((p) => !isUnlocked(p.id, lv.lvl, lv.got)).length; return n ? `${n} item ${tab.l.toLowerCase()} masih terkunci — naik level & kumpulkan lencana untuk membukanya.` : CATS[tab.cat].some((p) => lockOf(p.id)) ? 'Semua item langka di kategori ini sudah kamu buka ✦' : 'Semua item di kategori ini terbuka.' })()}</p>
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-function TilePreview({ k, c, i }: { k: keyof CharConfig; c: CharConfig; i: number }) {
-  if (k === 'jerseyColor' || k === 'skin' || k === 'hairColor') {
-    const col = k === 'jerseyColor' ? JERSEY_COLORS[i] : k === 'skin' ? SKINS[i] : HAIR_COLORS[i]
-    return <span style={{ width: 44, height: 44, borderRadius: '50%', background: col, border: '2.5px solid #111', marginBottom: 14 }} />
-  }
-  if (k === 'jersey' || k === 'acc') return <Portrait c={c} size={66} style={{ marginBottom: 12 }} />
-  return <svg viewBox="40 22 120 130" width="78%" style={{ marginBottom: 12 }}><HeadArt c={c} sw={5} /></svg>
 }

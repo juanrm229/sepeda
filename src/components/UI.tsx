@@ -15,7 +15,7 @@ export function Top({ title, back, right, sub }: { title: ReactNode; back?: stri
         )}
         <div style={{ minWidth: 0 }}>
           {sub && <div className="mono">{sub}</div>}
-          <div className="t">{title}</div>
+          <h1 className="t">{title}</h1>
         </div>
       </div>
       {right}
@@ -34,14 +34,18 @@ export function Avatar({ name, color, size, c }: { name: string; color: string; 
 }
 
 export function Sheet({ open, onClose, children, title, className = '' }: { open: boolean; onClose: () => void; children: ReactNode; title?: ReactNode; className?: string }) {
-  const [shown, setShown] = useState(open)
   const [closing, setClosing] = useState(false)
+  const wasOpen = useRef(open)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
-    if (open) { setShown(true); setClosing(false) }
-    else if (shown) { setClosing(true); const t = setTimeout(() => { setShown(false); setClosing(false) }, 220); return () => clearTimeout(t) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (open) { wasOpen.current = true; setClosing(false); return }
+    if (!wasOpen.current) return
+    wasOpen.current = false
+    setClosing(true)
+    const t = setTimeout(() => setClosing(false), 220)
+    return () => clearTimeout(t)
   }, [open])
+  const shown = open || closing
   useEffect(() => {
     if (!open) return
     const on = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -101,7 +105,7 @@ export function celebrate(power = 1) {
   document.body.appendChild(c)
   const g = c.getContext('2d')!
   g.scale(devicePixelRatio, devicePixelRatio)
-  const colors = ['#ff4d1f', '#111111', '#f3d40b', '#d6f06a', '#2f6fed', '#ffffff']
+  const colors = ['#d93d14', '#111111', '#f3d40b', '#d6f06a', '#2f6fed', '#ffffff']
   const N = Math.round(120 * power)
   const ps = Array.from({ length: N }, () => ({
     x: innerWidth / 2 + (Math.random() - 0.5) * 80, y: innerHeight * 0.35, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 5,

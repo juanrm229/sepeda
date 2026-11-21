@@ -5,7 +5,7 @@ import type { LatLng } from '../lib/types'
 import { centroid, etaMin, fairPoint, fairPointByTime, haversine } from '../lib/geo'
 import { nearbyMeetSpots, type Place } from '../lib/places'
 import { Avatar, Tabs, Top } from '../components/UI'
-import { BaseMap, MeetPin, PersonPin, Ring, Route, SmallPin } from '../components/Map'
+import { AvatarPin, BaseMap, MeetPin, PersonPin, Ring, Route, SmallPin } from '../components/Map'
 import { CreateRide } from './Squad'
 
 type Mode = 'adil' | 'waktu' | 'rata'
@@ -77,11 +77,11 @@ export default function Meet() {
               {rows.map((p) => (
                 <Fragment key={p.id}>
                   <Route track={[p.pos, meetPos]} color={p.color === '#111111' ? '#111' : p.color} weight={2} dash="1 7" />
-                  <PersonPin pos={p.pos} label={p.name.slice(0, 2).toUpperCase()} color={p.color} size={30} />
+                  {p.c ? <AvatarPin pos={p.pos} c={p.c} title={p.id === 'me' ? 'Kamu' : p.name} ring={p.id === 'me' ? '#d93d14' : '#fff'} size={34} /> : <PersonPin pos={p.pos} label={p.name.slice(0, 2).toUpperCase()} color={p.color} size={30} />}
                 </Fragment>
               ))}
               {mode !== 'rata' && computed && !override && <SmallPin pos={computed.c} color="#8a8a85" />}
-              {places?.map((pl) => <SmallPin key={pl.id} pos={pl.pos} color={chosen?.id === pl.id ? '#ff4d1f' : '#111'} onClick={() => setChosen(pl)} />)}
+              {places?.map((pl) => <SmallPin key={pl.id} pos={pl.pos} color={chosen?.id === pl.id ? '#d93d14' : '#111'} onClick={() => setChosen(pl)} />)}
               <MeetPin pos={meetPos} draggable onDrag={(p) => { setOverride(p); setChosen(null); setPlaces(null) }} />
             </BaseMap>
             {addMode && <div className="toast" style={{ position: 'absolute', top: 12 }}>Ketuk peta untuk menambah lokasi tamu</div>}

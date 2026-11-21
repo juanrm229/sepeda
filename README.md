@@ -12,6 +12,12 @@ npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat **data contoh 4 bulan** supaya analitiknya langsung terlihat. Data ini bisa dimuat ulang atau dikosongkan di Profil.
 
+## Yang baru di v5 — Avatar Modular Kit & QA
+
+- **Avatar generator memakai Avatar Modular Kit** (512 bagian: 16 wajah, 66 rambut, 50 hijab, 41 mata/alis/mulut, 66 baju termasuk batik, baju koko, kebaya & jersey, 50 topi termasuk peci, kopiah & cycling cap, kacamata, anting, kalung, kumis, detail, aksesori). Proporsi wajah dikalibrasi, aturan hijab mengikuti spesifikasi kit, ekspresi berubah mengikuti mood, item langka terbuka lewat level & lencana. Aset dioptimasi ke WebP (`public/avatar`, manifest `src/lib/avatar-kit.json`).
+- **QA/QC menyeluruh**: `npm run qa` menjalankan 88 pemeriksaan (fungsi, status kosong, aksesibilitas axe-core, tata letak 360 px, error & 404). Laporan: [`docs/QA-REPORT.md`](docs/QA-REPORT.md).
+- **Aksesibilitas WCAG AA**: token warna diperbarui (aksen `#d93d14`), label aksesibel di peta, tile, & input.
+
 ## Yang baru di v4 (polish profesional)
 
 - **Onboarding** pertama kali: nama, karakter, lokasi & target, pilih data contoh atau mulai bersih.

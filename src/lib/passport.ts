@@ -5,7 +5,7 @@ export interface Landmark { id: string; name: string; area: string; pos: LatLng;
 
 export const LANDMARKS: Landmark[] = [
   { id: 'hi', name: 'Bundaran HI', area: 'Jakarta Pusat', pos: [-6.1950, 106.8230], emoji: '⛲', color: '#2f6fed', rarity: 'umum', hint: 'Ikut Car Free Day hari Minggu' },
-  { id: 'monas', name: 'Monas', area: 'Jakarta Pusat', pos: [-6.1754, 106.8272], emoji: '🗼', color: '#ff4d1f', rarity: 'umum', hint: 'Putari Medan Merdeka' },
+  { id: 'monas', name: 'Monas', area: 'Jakarta Pusat', pos: [-6.1754, 106.8272], emoji: '🗼', color: '#d93d14', rarity: 'umum', hint: 'Putari Medan Merdeka' },
   { id: 'gbk', name: 'GBK Senayan', area: 'Jakarta Selatan', pos: [-6.2186, 106.8026], emoji: '🏟️', color: '#111111', rarity: 'umum', hint: 'Loop ring road GBK' },
   { id: 'kotatua', name: 'Kota Tua', area: 'Jakarta Barat', pos: [-6.1352, 106.8133], emoji: '🏛️', color: '#6b3f1f', rarity: 'langka', hint: 'Coffee ride ke Taman Fatahillah' },
   { id: 'ancol', name: 'Pantai Ancol', area: 'Jakarta Utara', pos: [-6.1225, 106.8350], emoji: '🌊', color: '#2f9bd6', rarity: 'umum', hint: 'Gowes ke pesisir utara' },

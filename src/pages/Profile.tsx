@@ -58,7 +58,7 @@ export default function Profile() {
           <div className="section-h" style={{ marginTop: 10 }}><h3>Lencana</h3><span className="mono">{bs.filter((b) => b.got).length}/{bs.length}</span></div>
           <div className="grid3">
             {bs.map((b) => (
-              <div key={b.id} className={`card ${b.got ? '' : 'flat'}`} style={{ textAlign: 'center', padding: 14, opacity: b.got ? 1 : 0.7 }}>
+              <div key={b.id} className={`card ${b.got ? '' : 'flat'}`} style={{ textAlign: 'center', padding: 14 }}>
                 <div style={{ width: 52, height: 52, borderRadius: '50%', margin: '0 auto', display: 'grid', placeItems: 'center', fontSize: 22, background: b.got ? 'var(--accent)' : 'var(--sunken)', color: b.got ? '#fff' : 'var(--muted)' }}>{b.icon}</div>
                 <div className="small b" style={{ marginTop: 8 }}>{b.name}</div>
                 <div className="tiny muted">{b.desc}</div>
@@ -93,7 +93,7 @@ export default function Profile() {
 
           <div className="card">
             <div className="card-h"><span className="mono">Lokasi rumah (untuk cuaca & titik temu)</span><button className="btn sm ghost" onClick={locate}><Crosshair size={14} /> {locating ? 'Mencari…' : 'Pakai lokasiku'}</button></div>
-            <BaseMap center={settings.home} zoom={12} className="map" onClick={(p) => updateSettings({ home: p, homeLabel: 'Titik pilihan' })}><SmallPin pos={settings.home} color="#ff4d1f" /></BaseMap>
+            <BaseMap center={settings.home} zoom={12} className="map" onClick={(p) => updateSettings({ home: p, homeLabel: 'Titik pilihan' })}><SmallPin pos={settings.home} color="#d93d14" /></BaseMap>
             <div className="tiny muted" style={{ marginTop: 8 }}>Ketuk peta untuk mengubah. Lokasi hanya disimpan di perangkatmu.</div>
           </div>
 

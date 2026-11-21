@@ -80,7 +80,7 @@ export default function Reminders() {
               {sorted.map((r) => {
                 const n = nextOccurrence(r)
                 return (
-                  <div key={r.id} className="li" style={{ opacity: r.enabled ? 1 : 0.5 }}>
+                  <div key={r.id} className={`li ${r.enabled ? '' : 'is-off'}`}>
                     <div className="ico" style={{ background: 'var(--sunken)' }}>{KIND[r.kind].icon}</div>
                     <div className="grow" onClick={() => setEdit(r)} style={{ cursor: 'pointer' }}>
                       <div className="row" style={{ gap: 8, alignItems: 'baseline' }}>
@@ -200,7 +200,7 @@ function DayDial({ dayOff, setDayOff, reminders, groupRides, fc }: { dayOff: num
       <div style={{ display: 'grid', placeItems: 'center', margin: '8px 0' }}>
         <RadialClock size={290} now={dayOff === 0}
           arcs={[{ from: sr, to: ss, color: 'color-mix(in srgb, var(--yellow) 70%, transparent)' }, ...(win ? [{ from: win.start.getHours(), to: win.end.getHours(), color: 'var(--accent)' }] : [])]}
-          pins={[...rs.map((r) => ({ h: toH(r.time), label: `${r.time.replace(':', '.')} ${r.kind === 'ride' ? '🚲' : r.kind === 'maintenance' ? '🔧' : r.kind === 'hydration' ? '💧' : '⏰'}`, dark: true })), ...gs.map((g) => ({ h: new Date(g.datetime).getHours() + new Date(g.datetime).getMinutes() / 60, label: '👥 ' + g.title.split(' ')[0], color: '#ff4433' }))]}
+          pins={[...rs.map((r) => ({ h: toH(r.time), label: `${r.time.replace(':', '.')} ${r.kind === 'ride' ? '🚲' : r.kind === 'maintenance' ? '🔧' : r.kind === 'hydration' ? '💧' : '⏰'}`, dark: true })), ...gs.map((g) => ({ h: new Date(g.datetime).getHours() + new Date(g.datetime).getMinutes() / 60, label: '👥 ' + g.title.split(' ')[0], color: '#d93d14' }))]}
           center={nextR ? <div><div className="mono">berikutnya</div><div className="dot" style={{ fontSize: 40, marginTop: 4 }}>{nextR.time.replace(':', '.')}</div><div className="tiny muted" style={{ maxWidth: 130, margin: '4px auto 0' }}>{nextR.title}</div></div> : <div><div className="mono">kosong</div><div className="tiny muted">Tidak ada pengingat</div></div>} />
       </div>
       <div className="row" style={{ justifyContent: 'space-between', gap: 4 }}>
@@ -209,7 +209,7 @@ function DayDial({ dayOff, setDayOff, reminders, groupRides, fc }: { dayOff: num
           const has = reminders.some((r) => r.enabled && r.days.includes(x.getDay())) || groupRides.some((g) => new Date(g.datetime).toDateString() === x.toDateString())
           return (
             <button key={i} onClick={() => setDayOff(i)} style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${dayOff === i ? 'var(--accent)' : 'var(--line)'}`, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', padding: 0, position: 'relative' }}>
-              <span><span className="mono" style={{ fontSize: 7.5, display: 'block', color: dayOff === i ? 'var(--accent)' : undefined }}>{HARI[x.getDay()]}</span><span style={{ fontWeight: 600, fontSize: 14 }}>{x.getDate()}</span></span>
+              <span><span className="mono" style={{ fontSize: 7.5, display: 'block', color: dayOff === i ? 'var(--ink)' : undefined, fontWeight: dayOff === i ? 700 : undefined }}>{HARI[x.getDay()]}</span><span style={{ fontWeight: 600, fontSize: 14 }}>{x.getDate()}</span></span>
               {has && <i style={{ position: 'absolute', bottom: -6, width: 5, height: 5, borderRadius: 9, background: 'var(--accent)' }} />}
             </button>
           )

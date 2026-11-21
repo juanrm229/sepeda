@@ -248,7 +248,7 @@ export default function Record() {
           <div style={{ position: 'relative' }}>
             <BaseMap center={lastPos ?? settings.home} zoom={15} className="map tall">
               {follow && <Route track={follow.geometry ?? [follow.start.pos, ...follow.checkpoints.map((c) => c.pos), (follow.finish ?? follow.start).pos]} color="#888" weight={4} dash="6 8" />}
-              {follow?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color={reached.includes(c.id) ? '#1f9d6a' : '#ff4d1f'} />)}
+              {follow?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color={reached.includes(c.id) ? '#1f9d6a' : '#d93d14'} />)}
               {pts.length > 1 && <Route track={pts.map((x) => x.p)} />}
               {lastPos && <><LivePin pos={lastPos} /><Follow pos={lastPos} /></>}
             </BaseMap>

@@ -49,7 +49,7 @@ export default function Passport() {
 
       <div className="stamps section">
         {list.map((s, i) => (
-          <button key={s.lm.id} className="stamp-tile" onClick={() => setOpen(s)} aria-label={`${s.lm.name}${s.date ? ', sudah distempel' : ', belum'}`}>
+          <button key={s.lm.id} className="stamp-tile" onClick={() => setOpen(s)}>
             <StampArt s={s} i={i} size={112} />
             <div className="b small" style={{ marginTop: 4 }}>{s.lm.name}</div>
             <div className={`tag ${s.lm.rarity === 'legenda' ? 'accent' : s.lm.rarity === 'langka' ? 'ink' : ''}`} style={{ marginTop: 4 }}>{RAR[s.lm.rarity]}</div>
@@ -60,7 +60,7 @@ export default function Passport() {
       <div className="card section">
         <div className="mono" style={{ marginBottom: 10 }}>Peta landmark</div>
         <BaseMap center={[-6.35, 106.86]} zoom={9} className="map" fit={list.map((s) => s.lm.pos)}>
-          {list.map((s) => <SmallPin key={s.lm.id} pos={s.lm.pos} color={s.date ? s.lm.color : '#9a9a95'} onClick={() => setOpen(s)} />)}
+          {list.map((s) => <SmallPin key={s.lm.id} title={`${s.lm.name}${s.date ? ' (sudah distempel)' : ''}`} pos={s.lm.pos} color={s.date ? s.lm.color : '#9a9a95'} onClick={() => setOpen(s)} />)}
         </BaseMap>
       </div>
 

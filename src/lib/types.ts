@@ -128,16 +128,22 @@ export interface Settings {
   fuelPricePerKm: number // Rp per km bila naik motor
 }
 
+/** Konfigurasi avatar modular (ID bagian dari Avatar Modular Kit). */
 export interface CharConfig {
-  skin: number
-  hair: number
-  hairColor: number
-  headgear: number
-  glasses: number
-  jersey: number
-  jerseyColor: number
-  bike: number
-  acc: number
+  head: string
+  hair: string | null
+  hijab: string | null
+  eyes: string
+  brows: string
+  mouth: string
+  beard: string | null
+  shirt: string
+  hat: string | null
+  eyewear: string | null
+  earrings: string | null
+  neckwear: string | null
+  details: string[]
+  acc: string[]
 }
 
 export type Workout = 'rec' | 'end' | 'tempo' | 'int' | 'long'

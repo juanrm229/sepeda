@@ -5,7 +5,7 @@ import type { CharConfig, GroupRide, LatLng, Rsvp } from '../lib/types'
 import { etaMin, haversine, trackLength } from '../lib/geo'
 import { fmtDate, relDay } from '../lib/util'
 import { Avatar, confirmDialog, toast, Top } from '../components/UI'
-import { BaseMap, MeetPin, PersonPin, Route, SmallPin } from '../components/Map'
+import { AvatarPin, BaseMap, MeetPin, Route, SmallPin } from '../components/Map'
 import { download, groupRideICS } from '../lib/ics'
 import { inviteLink, inviteText, shareOrCopy, waLink } from '../lib/share'
 import { PACE } from './Squad'
@@ -51,11 +51,11 @@ export default function SquadDetail({ id }: { id: string }) {
           <BaseMap center={g.meet.pos} zoom={12} className="map tall" fit={[g.meet.pos, ...people.filter((p) => p.rsvp !== 'tidak').map((p) => p.home)]}>
             {people.filter((p) => p.rsvp !== 'tidak').map((p) => (
               <Fragment key={p.id}>
-                <Route track={[p.home, g.meet.pos]} color={p.id === 'me' ? '#ff4d1f' : '#111'} weight={2} dash="2 6" />
-                <PersonPin pos={p.home} label={p.name.split(' ')[0].slice(0, 2).toUpperCase()} color={p.color} size={30} />
+                <Route track={[p.home, g.meet.pos]} color={p.id === 'me' ? '#d93d14' : '#111'} weight={2} dash="2 6" />
+                <AvatarPin pos={p.home} c={p.c} title={`Rumah ${p.name}`} ring={p.id === 'me' ? '#d93d14' : '#fff'} size={34} />
               </Fragment>
             ))}
-            {g.plan && <Route track={g.plan.geometry ?? [g.plan.start.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#ff4d1f" weight={3.5} />}
+            {g.plan && <Route track={g.plan.geometry ?? [g.plan.start.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#d93d14" weight={3.5} />}
             {g.plan?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color="#111" />)}
             <MeetPin pos={g.meet.pos} />
           </BaseMap>
@@ -180,7 +180,7 @@ export default function SquadDetail({ id }: { id: string }) {
 
 /** Simulasi radar squad: posisi tiap anggota di rute + peringatan no-drop. */
 function LiveSquad({ g }: { g: GroupRide }) {
-  const { friends, settings } = useStore()
+  const { friends, settings, char: myChar } = useStore()
   const [on, setOn] = useState(false)
   const [t, setT] = useState(0)
   const [alert, setAlert] = useState<string | null>(null)
@@ -188,8 +188,8 @@ function LiveSquad({ g }: { g: GroupRide }) {
   const route = useMemo(() => makeLoop(g.meet.pos, Math.min(g.distanceKm, 40), () => 0.5, 300), [g])
   const total = useMemo(() => trackLength(route), [route])
   const members = useMemo(() => [
-    { id: 'me', name: settings.name, color: '#ff4d1f', k: 1 },
-    ...g.participants.filter((p) => p.rsvp !== 'tidak').map((p, i) => { const f = friends.find((x) => x.id === p.friendId); return f ? { id: f.id, name: f.name, color: f.color, k: i === g.participants.length - 1 ? 0.86 : 0.97 + ((i * 7) % 6) / 100 } : null }).filter(Boolean) as { id: string; name: string; color: string; k: number }[],
+    { id: 'me', name: settings.name, color: '#d93d14', k: 1, c: myChar },
+    ...g.participants.filter((p) => p.rsvp !== 'tidak').map((p, i) => { const f = friends.find((x) => x.id === p.friendId); return f ? { id: f.id, name: f.name, color: f.color, k: i === g.participants.length - 1 ? 0.86 : 0.97 + ((i * 7) % 6) / 100, c: f.char } : null }).filter(Boolean) as { id: string; name: string; color: string; k: number; c: CharConfig }[],
   ], [g, friends, settings.name])
 
   useEffect(() => {
@@ -227,7 +227,7 @@ function LiveSquad({ g }: { g: GroupRide }) {
         <>
           <BaseMap center={g.meet.pos} zoom={13} className="map" fit={route}>
             <Route track={route} color="#888" weight={3} />
-            {members.map((m, i) => <PersonPin key={m.id} pos={posAt(fracs[i])} label={m.name.slice(0, 2).toUpperCase()} color={m.color} size={26} />)}
+            {members.map((m, i) => <AvatarPin key={m.id} pos={posAt(fracs[i])} c={m.c} title={m.name} ring={m.id === 'me' ? '#d93d14' : '#fff'} size={30} />)}
           </BaseMap>
           <div className="stack" style={{ gap: 6, marginTop: 12 }}>
             {members.map((m, i) => (

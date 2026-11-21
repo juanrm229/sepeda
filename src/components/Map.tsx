@@ -4,6 +4,8 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { LatLng } from '../lib/types'
 import { useStore } from '../lib/store'
+import type { CharConfig } from '../lib/types'
+import { layers, partUrl } from '../lib/avatar'
 
 export function useTheme(): 'dark' | 'light' {
   return useStore((s) => s.settings.theme)
@@ -49,30 +51,44 @@ export function Follow({ pos }: { pos: LatLng | null }) {
 const icon = (html: string, size: number, anchor?: [number, number]) =>
   L.divIcon({ html, className: '', iconSize: [size, size], iconAnchor: anchor ?? [size / 2, size / 2] })
 
-export function PersonPin({ pos, label, color, size = 34, onClick }: { pos: LatLng; label: string; color: string; size?: number; onClick?: () => void }) {
-  return <Marker position={pos} icon={icon(`<div class="pin" style="width:${size}px;height:${size}px;background:${color}">${label}</div>`, size)} eventHandlers={onClick ? { click: onClick } : undefined} />
+export function PersonPin({ pos, label, color, size = 34, onClick, title }: { pos: LatLng; label: string; color: string; size?: number; onClick?: () => void; title?: string }) {
+  return <Marker title={title ?? `Lokasi ${label}`} position={pos} icon={icon(`<div class="pin" style="width:${size}px;height:${size}px;background:${color}">${label}</div>`, size)} eventHandlers={onClick ? { click: onClick } : undefined} />
 }
 
-export function MeetPin({ pos, label = '★', draggable, onDrag }: { pos: LatLng; label?: string; draggable?: boolean; onDrag?: (p: LatLng) => void }) {
+export function MeetPin({ pos, label = '★', draggable, onDrag, title = 'Titik kumpul' }: { pos: LatLng; label?: string; draggable?: boolean; onDrag?: (p: LatLng) => void; title?: string }) {
   return (
-    <Marker position={pos} draggable={draggable} zIndexOffset={1000}
+    <Marker title={title} position={pos} draggable={draggable} zIndexOffset={1000}
       icon={icon(`<div class="pin meet" style="width:40px;height:40px"><span>${label}</span></div>`, 40, [20, 44])}
       eventHandlers={onDrag ? { dragend: (e) => { const ll = (e.target as L.Marker).getLatLng(); onDrag([ll.lat, ll.lng]) } } : undefined} />
   )
 }
 
-export function SmallPin({ pos, color = '#111', onClick }: { pos: LatLng; color?: string; onClick?: () => void }) {
-  return <Marker position={pos} icon={icon(`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`, 14)} eventHandlers={onClick ? { click: onClick } : undefined} />
+export function SmallPin({ pos, color = '#111', onClick, title = 'Titik di peta' }: { pos: LatLng; color?: string; onClick?: () => void; title?: string }) {
+  return <Marker title={title} position={pos} icon={icon(`<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35)"></div>`, 14)} eventHandlers={onClick ? { click: onClick } : undefined} />
 }
 
 export function LivePin({ pos }: { pos: LatLng }) {
-  return <Marker position={pos} icon={icon('<div class="pulse"></div>', 18)} zIndexOffset={900} />
+  return <Marker title="Posisimu" position={pos} icon={icon('<div class="pulse"></div>', 18)} zIndexOffset={900} />
 }
 
-export function Route({ track, color = '#ff4d1f', weight = 4, dash }: { track: LatLng[]; color?: string; weight?: number; dash?: string }) {
+export function Route({ track, color = '#d93d14', weight = 4, dash }: { track: LatLng[]; color?: string; weight?: number; dash?: string }) {
   return <Polyline positions={track} pathOptions={{ color, weight, lineCap: 'round', lineJoin: 'round', dashArray: dash }} />
 }
 
-export function Ring({ center, km, color = '#ff4d1f' }: { center: LatLng; km: number; color?: string }) {
+export function Ring({ center, km, color = '#d93d14' }: { center: LatLng; km: number; color?: string }) {
   return <Circle center={center} radius={km * 1000} pathOptions={{ color, weight: 1, fillOpacity: 0.06, dashArray: '4 6' }} />
+}
+
+/** Markup SVG statis kepala avatar (untuk ikon Leaflet). */
+function avatarSvg(c: CharConfig): string {
+  const imgs = layers(c).map((p) => p.seg && p.sz
+    ? p.seg.map((sg) => `<svg x="${sg.r[0]}" y="${sg.r[1]}" width="${sg.r[2]}" height="${sg.r[3]}" viewBox="${sg.s[0]} ${sg.s[1]} ${sg.s[2] - sg.s[0]} ${sg.s[3] - sg.s[1]}" preserveAspectRatio="none"><image href="${partUrl(p.id)}" width="${p.sz![0]}" height="${p.sz![1]}" preserveAspectRatio="none"/></svg>`).join('')
+    : `<image href="${partUrl(p.id)}" x="${p.r[0]}" y="${p.r[1]}" width="${p.r[2]}" height="${p.r[3]}" preserveAspectRatio="none"/>`).join('')
+  return `<svg viewBox="106 50 300 300" width="100%" height="100%" aria-hidden="true">${imgs}</svg>`
+}
+
+/** Pin peta berupa kepala karakter. */
+export function AvatarPin({ pos, c, size = 38, title, ring = '#fff', onClick }: { pos: LatLng; c: CharConfig; size?: number; title: string; ring?: string; onClick?: () => void }) {
+  const html = `<div class="pin-av" style="width:${size}px;height:${size}px;border-color:${ring}">${avatarSvg(c)}</div>`
+  return <Marker title={title} position={pos} icon={icon(html, size)} eventHandlers={onClick ? { click: onClick } : undefined} />
 }

@@ -177,7 +177,7 @@ export default function Plan() {
                 return (
                   <div key={h} style={{ textAlign: 'center' }}>
                     <div style={{ height: 6, borderRadius: 9, background: isToday ? 'var(--accent)' : 'color-mix(in srgb, var(--ink) 12%, transparent)', marginBottom: 6 }} />
-                    <div className="mono" style={{ fontSize: 9.5, color: isToday ? 'var(--accent)' : undefined }}>{h}</div>
+                    <div className="mono" style={{ fontSize: 9.5, color: isToday ? 'var(--ink)' : undefined, fontWeight: isToday ? 700 : undefined }}>{h}</div>
                   </div>
                 )
               })}
@@ -201,7 +201,7 @@ export default function Plan() {
                 <button className="iconbtn" style={{ width: 34, height: 34 }} aria-label="Suara" onClick={() => setSound(!sound)}>{sound ? <Volume2 size={15} /> : <VolumeX size={15} />}</button>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <span className="dot" style={{ fontSize: 20 }}><span style={{ opacity: 0.3 }}>H</span>{headDay != null ? String(headDay + 1).padStart(2, '0') : '--'}<span style={{ opacity: 0.3 }}>/14</span></span>
+                <span className="dot" style={{ fontSize: 20 }}><span style={{ opacity: 0.6 }}>H</span>{headDay != null ? String(headDay + 1).padStart(2, '0') : '--'}<span style={{ opacity: 0.6 }}>/14</span></span>
                 <div className="mono" style={{ fontSize: 9 }}>{headReady != null ? `kesiapan ${headReady}` : headDay != null ? 'sudah lewat' : 'putar minggumu'}</div>
               </div>
               <div className="row" style={{ gap: 4 }}>
@@ -238,9 +238,9 @@ export default function Plan() {
           {event && (
             <div className={`card ${verdict?.c === 'good' ? 'lime' : 'ink'}`}>
               <div className="card-h"><span className="mono">Target · hari H</span><Flag size={16} /></div>
-              <input className="input" style={{ background: 'transparent', border: 0, padding: 0, fontSize: 22, fontWeight: 700, fontFamily: 'var(--f-display)' }} value={event.name} onChange={(e) => setEvent({ ...event, name: e.target.value })} />
+              <input aria-label="Nama event" className="input" style={{ background: 'transparent', border: 0, padding: 0, fontSize: 22, fontWeight: 700, fontFamily: 'var(--f-display)' }} value={event.name} onChange={(e) => setEvent({ ...event, name: e.target.value })} />
               <div className="row wrap" style={{ gap: 8, marginTop: 8 }}>
-                <input className="input" type="date" style={{ width: 'auto', padding: '8px 10px', background: 'rgba(127,127,127,.15)', border: 0, colorScheme: 'dark' }} value={event.date.slice(0, 10)} onChange={(e) => setEvent({ ...event, date: new Date(e.target.value + 'T06:00').toISOString() })} />
+                <input aria-label="Tanggal event" className="input" type="date" style={{ width: 'auto', padding: '8px 10px', background: 'rgba(127,127,127,.15)', border: 0, colorScheme: 'dark' }} value={event.date.slice(0, 10)} onChange={(e) => setEvent({ ...event, date: new Date(e.target.value + 'T06:00').toISOString() })} />
                 <span className="small">{fmtDate(event.date)} · {event.km} km</span>
               </div>
               {evForm != null ? (
@@ -264,7 +264,7 @@ export default function Plan() {
               <Knob label="REST" value={restDays} min={1} max={3} onChange={setRest} />
             </div>
             <div className="mono ink" style={{ margin: '16px 0 10px' }}>Fase latihan</div>
-            <DetentSlider value={mode} onChange={setMode} labels={['Base', 'Build', 'Taper']} />
+            <DetentSlider value={mode} onChange={setMode} labels={['Base', 'Build', 'Taper']} label="Fase latihan" />
             <button className="btn ink block" style={{ marginTop: 16 }} onClick={generate}><Wand2 size={16} /> Racik rencana 2 minggu</button>
             <p className="tiny muted" style={{ marginTop: 8 }}>Seret kenop ke atas/bawah. Racikan otomatis menaruh sesi berat setelah hari istirahat, pemulihan setelah sesi berat, dan memangkas volume saat taper.</p>
           </div>
