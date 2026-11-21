@@ -1,5 +1,6 @@
-import type { Bike, Friend, GroupRide, LatLng, Reminder, Ride, RideType, Settings } from './types'
-import { calories } from './analytics'
+import type { Bike, Friend, GroupRide, LatLng, Plan, Reminder, Ride, RideType, Settings } from './types'
+import { calories, rideIF, synthZones, trainingLoad } from './analytics'
+import { clamp, dayKey } from './util'
 import { trackLength } from './geo'
 
 // PRNG deterministik supaya data contoh stabil
@@ -114,16 +115,25 @@ export function seedRides(days = 120): Ride[] {
       friendIds: withFriends ? ['f1', 'f2', 'f3', 'f4', 'f5', 'f6'].filter(() => r() < 0.4) : [],
     })
   }
+  // zona intensitas, RPE & rasa (berkorelasi dengan Form) agar analitik terasa hidup
+  const load = trainingLoad(rides, defaultSettings, days + 5)
+  const tsbOf = new Map(load.map((p) => [p.day, p.tsb]))
+  for (const ride of rides) {
+    ride.zones = synthZones(ride, defaultSettings)
+    ride.rpe = Math.round(clamp(rideIF(ride, defaultSettings) * 9 + (r() - 0.5) * 2, 1, 10))
+    const tsb = tsbOf.get(dayKey(new Date(ride.date))) ?? 0
+    ride.feel = +clamp(0.85 - ((tsb - 9) / 22) ** 2 + (r() - 0.5) * 0.25, 0.05, 1).toFixed(2)
+  }
   return rides
 }
 
 export const seedFriends: Friend[] = [
-  { id: 'f1', name: 'Raka Pratama', color: '#ff4d1f', avgSpeed: 27.5, weeklyKm: 168, home: [-6.4025, 106.7942], homeLabel: 'Depok' },
-  { id: 'f2', name: 'Salsa Nadia', color: '#111111', avgSpeed: 24.2, weeklyKm: 112, home: [-6.3020, 106.6520], homeLabel: 'BSD, Tangsel' },
-  { id: 'f3', name: 'Dimas Ari', color: '#f5c518', avgSpeed: 29.1, weeklyKm: 204, home: [-6.2383, 106.9756], homeLabel: 'Bekasi' },
-  { id: 'f4', name: 'Kirana Putri', color: '#8a8a85', avgSpeed: 22.8, weeklyKm: 86, home: [-6.2607, 106.8136], homeLabel: 'Kemang' },
-  { id: 'f5', name: 'Bayu Saputra', color: '#2f6fed', avgSpeed: 25.6, weeklyKm: 131, home: [-6.1588, 106.9050], homeLabel: 'Kelapa Gading' },
-  { id: 'f6', name: 'Nadia Lestari', color: '#1f9d6a', avgSpeed: 23.4, weeklyKm: 97, home: [-6.3725, 106.8960], homeLabel: 'Cibubur' },
+  { id: 'f1', name: 'Raka Pratama', color: '#ff4d1f', avgSpeed: 27.5, weeklyKm: 168, home: [-6.4025, 106.7942], homeLabel: 'Depok', char: { skin: 2, hair: 1, hairColor: 0, headgear: 1, glasses: 2, jersey: 1, jerseyColor: 1, bike: 0, acc: 0 } },
+  { id: 'f2', name: 'Salsa Nadia', color: '#111111', avgSpeed: 24.2, weeklyKm: 112, home: [-6.3020, 106.6520], homeLabel: 'BSD, Tangsel', char: { skin: 1, hair: 6, hairColor: 1, headgear: 1, glasses: 0, jersey: 0, jerseyColor: 6, bike: 2, acc: 2 } },
+  { id: 'f3', name: 'Dimas Ari', color: '#f5c518', avgSpeed: 29.1, weeklyKm: 204, home: [-6.2383, 106.9756], homeLabel: 'Bekasi', char: { skin: 3, hair: 2, hairColor: 0, headgear: 2, glasses: 3, jersey: 1, jerseyColor: 2, bike: 0, acc: 0 } },
+  { id: 'f4', name: 'Kirana Putri', color: '#8a8a85', avgSpeed: 22.8, weeklyKm: 86, home: [-6.2607, 106.8136], homeLabel: 'Kemang', char: { skin: 1, hair: 3, hairColor: 1, headgear: 0, glasses: 1, jersey: 0, jerseyColor: 3, bike: 3, acc: 0 } },
+  { id: 'f5', name: 'Bayu Saputra', color: '#2f6fed', avgSpeed: 25.6, weeklyKm: 131, home: [-6.1588, 106.9050], homeLabel: 'Kelapa Gading', char: { skin: 2, hair: 0, hairColor: 0, headgear: 3, glasses: 0, jersey: 1, jerseyColor: 4, bike: 1, acc: 2 } },
+  { id: 'f6', name: 'Nadia Lestari', color: '#1f9d6a', avgSpeed: 23.4, weeklyKm: 97, home: [-6.3725, 106.8960], homeLabel: 'Cibubur', char: { skin: 0, hair: 4, hairColor: 2, headgear: 0, glasses: 2, jersey: 0, jerseyColor: 5, bike: 2, acc: 0 } },
 ]
 
 function nextDow(dow: number, h: number, m = 0): string {
@@ -176,6 +186,11 @@ export const seedBikes: Bike[] = [
     ],
   },
 ]
+
+export function seedPlan(): Plan {
+  // 14 hari mulai Senin minggu ini
+  return { cells: ['rec', 'end', null, 'int', null, 'end', 'long', 'rec', 'end', null, 'tempo', null, 'end', 'long'] }
+}
 
 export const seedReminders: Reminder[] = [
   { id: 'r1', kind: 'ride', title: 'Gowes pagi — siapkan bidon & lampu', time: '05:00', days: [0, 6], enabled: true },

@@ -9,7 +9,7 @@ import { BaseMap, MeetPin, PersonPin, Ring, Route, SmallPin } from '../component
 import { CreateRide } from './Squad'
 
 type Mode = 'adil' | 'waktu' | 'rata'
-interface P { id: string; name: string; color: string; pos: LatLng; spd: number }
+interface P { id: string; name: string; color: string; pos: LatLng; spd: number; c?: import('../lib/types').CharConfig }
 
 const KIND_ICON: Record<string, ReactNode> = {
   Minimarket: <Store size={16} />, Kafe: <Coffee size={16} />, SPBU: <Fuel size={16} />, Taman: <Trees size={16} />, 'Bengkel sepeda': <Wrench size={16} />, 'Resto cepat saji': <Utensils size={16} />,
@@ -29,8 +29,8 @@ export default function Meet() {
   const [create, setCreate] = useState(false)
 
   const all: P[] = [
-    { id: 'me', name: settings.name, color: '#111111', pos: settings.home, spd: 25 },
-    ...friends.map((f) => ({ id: f.id, name: f.name, color: f.color, pos: f.home, spd: f.avgSpeed })),
+    { id: 'me', name: settings.name, color: '#111111', pos: settings.home, spd: 25, c: useStore.getState().char },
+    ...friends.map((f) => ({ id: f.id, name: f.name, color: f.color, pos: f.home, spd: f.avgSpeed, c: f.char })),
   ]
   const people = [...all.filter((p) => sel.includes(p.id)), ...guests]
   const key = people.map((p) => p.pos.join(',')).join('|')
@@ -98,7 +98,7 @@ export default function Meet() {
               {all.map((p) => (
                 <button key={p.id} className={`chip ${sel.includes(p.id) ? 'on' : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
                   onClick={() => setSel((s) => (s.includes(p.id) ? s.filter((x) => x !== p.id) : [...s, p.id]))}>
-                  <Avatar name={p.name} color={p.color} size={20} />{p.id === 'me' ? 'Kamu' : p.name.split(' ')[0]}
+                  <Avatar name={p.name} color={p.color} c={p.c} size={22} />{p.id === 'me' ? 'Kamu' : p.name.split(' ')[0]}
                 </button>
               ))}
               {guests.map((g) => <button key={g.id} className="chip on" onClick={() => setGuests((x) => x.filter((y) => y.id !== g.id))}>{g.name} <X size={12} /></button>)}
@@ -131,7 +131,7 @@ export default function Meet() {
                 <div className="list">
                   {rows.sort((a, b) => b.d - a.d).map((r) => (
                     <div key={r.id} className="li">
-                      <Avatar name={r.name} color={r.color} size={32} />
+                      <Avatar name={r.name} color={r.color} c={r.c} size={34} />
                       <div className="grow">
                         <div className="t">{r.id === 'me' ? 'Kamu' : r.name}</div>
                         <div className="meter" style={{ marginTop: 6, height: 5 }}><i style={{ width: `${(r.d / Math.max(maxD, 0.1)) * 100}%`, background: r.d === maxD ? 'var(--accent)' : 'var(--ink)' }} /></div>

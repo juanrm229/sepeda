@@ -18,6 +18,9 @@ export interface Ride {
   elevations?: number[]
   bikeId?: string
   friendIds?: string[]
+  zones?: number[] // zona intensitas 1..5 per segmen waktu
+  rpe?: number // 1..10 seberapa berat
+  feel?: number // 0..1 seberapa enak rasanya
 }
 
 export interface Friend {
@@ -29,6 +32,7 @@ export interface Friend {
   home: LatLng
   homeLabel: string
   phone?: string
+  char: CharConfig
 }
 
 export type Pace = 'santai' | 'sedang' | 'kencang'
@@ -95,3 +99,19 @@ export interface Settings {
   theme: 'dark' | 'light'
   fuelPricePerKm: number // Rp per km bila naik motor
 }
+
+export interface CharConfig {
+  skin: number
+  hair: number
+  hairColor: number
+  headgear: number
+  glasses: number
+  jersey: number
+  jerseyColor: number
+  bike: number
+  acc: number
+}
+
+export type Workout = 'rec' | 'end' | 'tempo' | 'int' | 'long'
+export interface Plan { cells: (Workout | null)[] /* 14 hari mulai Senin minggu ini */ }
+export interface EventGoal { name: string; date: string; km: number }

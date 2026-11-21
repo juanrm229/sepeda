@@ -12,6 +12,23 @@ npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat **data contoh 4 bulan** supaya analitiknya langsung terlihat. Data ini bisa dimuat ulang atau dikosongkan di Profil.
 
+## Yang baru di v2 (diterjemahkan dari board referensi)
+
+| Referensi | Jadi fitur |
+|---|---|
+| Paladin RPG + avatar builder "Humation" | **Karakter pesepeda doodle**: rambut (termasuk hijab), helm/cap/mahkota, kacamata, jersey (polkadot KOM, parang), aksesori, 4 jenis sepeda. Item langka terbuka lewat level/lencana. **Kelas RPG dari data** (Kambing Gunung, Sprinter Kilat, Penjelajah, Komuter Baja, Kapten Squad) + 5 stat, quest mingguan untuk stat terlemah, mood karakter mengikuti kesiapan tubuhmu, unduh PNG |
+| Lomba langkah "Family" | **Adegan balapan squad** beranimasi: karakter teman mengayuh di jalan, posisinya sesuai km mingguan |
+| Beat sequencer "Simple Beat" | **Rencana latihan bergaya sequencer** (5 lane × 14 hari), bisa *diputar* sebagai bunyi, **proyeksi Fitness/Form 3 minggu** dan prediksi Form di hari H event |
+| Dial "Drive mode" + throttle | **Kenop racik** (volume, intensitas, long ride, istirahat) + fase Base/Build/Taper → rencana 2 minggu otomatis |
+| Pola tidur dot-matrix | **Timeline zona intensitas** tiap ride (Z5 oranye di bawah seperti tidur dalam) |
+| Feedback "GOOD" lime | **Cek rasa setelah ride**: wajah yang berubah ekspresi + RPE → **titik manis pribadi** (rentang Form saat kamu paling menikmati ride) |
+| Kyugo "Your morning" | **Jam radial 24 jam** (terang, jendela cuaca terbaik, pengingat, gowes bareng) + **kartu merah aksi cepat**: aku telat 5/15/30 menit (pesan WA dengan ETA), geser 30 menit, batal, ajak |
+| Alarm kuning | **Pemilih jam kuning** besar dengan angka bayangan, tinggal geser |
+| CMF Watch | Beranda bento: angka dot-matrix raksasa, pie progres, kartu Latihan oranye, pil Kesiapan/Form, Daya, Pemulihan |
+| Notifikasi dynamic island | Semua notifikasi in-app tampil sebagai pil hitam ala dynamic island |
+
+**Analitik baru:** estimasi **watt & FTP tanpa power meter** (fisika gulir + aero + gravitasi) dengan kategori W/kg, **cek 80/20** (distribusi intensitas), **efisiensi aerobik** (km/j per detak), **prediksi waktu** 50/100/160 km (Riegel), **jam emas** radial, **perkiraan jam pemulihan**, titik manis rasa vs form.
+
 ## Fitur
 
 | Area | Isi |
@@ -37,8 +54,9 @@ src/
               weather (skor & jendela), notify, ics, share (undangan via URL), places (Overpass)
   charts/     grafik SVG buatan sendiri (bar, garis, heatmap dot, dial, elevasi, skor jam)
   components/ Map (Leaflet + OSM), UI (sheet, toast, toggle, tabs)
-  pages/      Home, Record, Squad, SquadDetail, Meet, Reminders, Weather, Garage, Profile,
-              RideDetail, Rides, Insights, Join
+  components/ Character (karakter doodle SVG prosedural, adegan balapan, wajah rasa), FeelCheck, GroupActions
+  pages/      Home, Character, Plan, Record, Squad, SquadDetail, Meet, Reminders, Weather, Garage,
+              Profile, RideDetail, Rides, Insights, Join
 ```
 
 ## Roadmap (butuh backend)

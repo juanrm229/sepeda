@@ -1,21 +1,27 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Download, Image as ImageIcon, Trash2, Users } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { rideTSS } from '../lib/analytics'
+import { estPower, rideTSS, synthZones } from '../lib/analytics'
+import { FeelCheck } from '../components/FeelCheck'
+import { FeelFace, feelLabel } from '../components/Character'
 import { fmt, fmtDate, fmtDur } from '../lib/util'
 import { Avatar, toast, Top } from '../components/UI'
 import { BaseMap, Route, SmallPin } from '../components/Map'
-import { BarChart, ElevationProfile } from '../charts/Charts'
+import { BarChart, ElevationProfile, ZoneBlocks, ZONE_NAMES } from '../charts/Charts'
 import { download, gpx } from '../lib/ics'
 import { go } from '../lib/router'
 import type { Ride } from '../lib/types'
 
 export default function RideDetail({ id }: { id: string }) {
-  const { rides, settings, friends, deleteRide } = useStore()
+  const { rides, settings, friends, deleteRide, setRideFeel } = useStore()
+  const [feelOpen, setFeelOpen] = useState(false)
   const r = rides.find((x) => x.id === id)
   const splits = useMemo(() => (r ? computeSplits(r) : []), [r])
   if (!r) return <div><Top title="Ride tidak ditemukan" back /></div>
   const tss = rideTSS(r, settings)
+  const watts = estPower(r, settings.weightKg)
+  const zones = r.zones?.length ? r.zones : synthZones(r, settings)
+  const zoneTime = [1, 2, 3, 4, 5].map((z) => zones.filter((x) => x === z).length / zones.length)
   const similar = rides.filter((x) => x.name === r.name && x.id !== r.id)
   const avgSimilar = similar.length ? similar.reduce((a, x) => a + x.avgSpeed, 0) / similar.length : 0
   const crew = (r.friendIds ?? []).map((fid) => friends.find((f) => f.id === fid)).filter(Boolean)
@@ -43,9 +49,20 @@ export default function RideDetail({ id }: { id: string }) {
               <div><div className="mono">Maks</div><div className="num" style={{ fontSize: 22 }}>{r.maxSpeed.toFixed(1)}<span className="unit">km/j</span></div></div>
               <div><div className="mono">Kalori</div><div className="num" style={{ fontSize: 22 }}>{fmt(r.calories)}</div></div>
               <div><div className="mono">Beban (TSS)</div><div className="num" style={{ fontSize: 22 }}>{tss}</div></div>
+              <div><div className="mono">Daya est.</div><div className="num" style={{ fontSize: 22 }}>{watts}<span className="unit">W</span></div></div>
+              <div><div className="mono">W/kg</div><div className="num" style={{ fontSize: 22 }}>{(watts / settings.weightKg).toFixed(1)}</div></div>
+              <div><div className="mono">RPE</div><div className="num" style={{ fontSize: 22 }}>{r.rpe ?? '–'}<span className="unit">/10</span></div></div>
               <div><div className="mono">Detak rata²</div><div className="num" style={{ fontSize: 22 }}>{r.avgHr ?? '–'}<span className="unit">bpm</span></div></div>
               <div><div className="mono">Sepeda</div><div className="small b" style={{ marginTop: 4 }}>{useStore.getState().bikes.find((b) => b.id === r.bikeId)?.name.split('—')[1]?.trim() ?? '–'}</div></div>
             </div>
+          </div>
+          <div className="card">
+            <div className="card-h"><div><div className="mono">Pola intensitas</div><div style={{ fontWeight: 600, fontSize: 17, marginTop: 2 }}>Zona sepanjang ride</div></div></div>
+            <div className="legend" style={{ marginBottom: 10 }}>
+              {[5, 4, 3, 2, 1].map((z) => <span key={z}><i style={{ height: 8, width: 8, borderRadius: 2, background: ['', 'color-mix(in srgb, var(--ink) 18%, var(--surface))', 'color-mix(in srgb, var(--ink) 42%, var(--surface))', 'var(--ink)', 'color-mix(in srgb, var(--accent) 70%, var(--ink))', 'var(--accent)'][z] }} />{ZONE_NAMES[z].split(' ')[0]} {Math.round(zoneTime[z - 1] * 100)}%</span>)}
+            </div>
+            <ZoneBlocks zones={zones} durationSec={r.movingSec} />
+            <p className="tiny muted" style={{ marginTop: 8 }}>Zona dalam (Z5, oranye) di bawah — dibaca seperti grafik pola tidur. {zoneTime[0] + zoneTime[1] > 0.7 ? 'Ride ini didominasi zona ringan: bagus untuk pondasi aerobik.' : zoneTime[3] + zoneTime[4] > 0.25 ? 'Banyak waktu di zona keras: beri 36–48 jam pemulihan.' : 'Campuran tempo: efektif tapi melelahkan bila terlalu sering.'}</p>
           </div>
           {r.elevations && r.elevations.length > 2 && (
             <div className="card"><div className="mono" style={{ marginBottom: 8 }}>Profil elevasi</div><ElevationProfile elev={r.elevations} distanceKm={r.distanceKm} /></div>
@@ -53,6 +70,12 @@ export default function RideDetail({ id }: { id: string }) {
         </div>
 
         <div className="stack" style={{ marginTop: 0 }}>
+          <div className="card lime click" onClick={() => setFeelOpen(true)}>
+            <div className="row between">
+              <div><div className="mono">Cek rasa</div><div className="display" style={{ fontSize: 30, marginTop: 4 }}>{r.feel != null ? feelLabel(r.feel) : 'Belum diisi'}</div><div className="small" style={{ marginTop: 4 }}>{r.feel != null ? `RPE ${r.rpe}/10 · ketuk untuk ubah` : 'Ketuk untuk mengisi, bantu pelatih belajar'}</div></div>
+              <FeelFace v={r.feel ?? 0.5} size={110} />
+            </div>
+          </div>
           {similar.length > 0 && (
             <div className={`card ${r.avgSpeed >= avgSimilar ? 'accent' : 'ink'}`}>
               <div className="mono">Dibanding {similar.length} ride serupa</div>
@@ -70,7 +93,7 @@ export default function RideDetail({ id }: { id: string }) {
           {crew.length > 0 && (
             <div className="card">
               <div className="card-h"><span className="mono">Gowes bareng</span><Users size={15} /></div>
-              <div className="row wrap" style={{ gap: 10 }}>{crew.map((f) => f && <div key={f.id} className="row" style={{ gap: 6 }}><Avatar name={f.name} color={f.color} size={28} /><span className="small">{f.name.split(' ')[0]}</span></div>)}</div>
+              <div className="row wrap" style={{ gap: 10 }}>{crew.map((f) => f && <div key={f.id} className="row" style={{ gap: 6 }}><Avatar name={f.name} color={f.color} c={f.char} size={30} /><span className="small">{f.name.split(' ')[0]}</span></div>)}</div>
             </div>
           )}
           <div className="card">
@@ -83,6 +106,7 @@ export default function RideDetail({ id }: { id: string }) {
           </div>
         </div>
       </div>
+      <FeelCheck open={feelOpen} initial={r.feel ?? 0.6} initialRpe={r.rpe ?? 6} onClose={() => setFeelOpen(false)} onSave={(f, rpe) => { setRideFeel(r.id, f, rpe); setFeelOpen(false); toast('Tersimpan', 'Titik manismu makin akurat') }} />
     </div>
   )
 }

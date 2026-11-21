@@ -65,7 +65,7 @@ export function BarChart({ data, height = 170, unit = '', highlight, goal, fmtTi
 /* ---------- Line chart multi-seri (satu sumbu, satu satuan) ---------- */
 export interface Series { name: string; color: string; values: number[]; dash?: string; width?: number }
 
-export function LineChart({ series, labels, height = 200, zero = false }: { series: Series[]; labels: string[]; height?: number; zero?: boolean }) {
+export function LineChart({ series, labels, height = 200, zero = false, markers = [], shadeFrom }: { series: Series[]; labels: string[]; height?: number; zero?: boolean; markers?: { i: number; label: string; color?: string }[]; shadeFrom?: number }) {
   const [ref, w] = useWidth<HTMLDivElement>()
   const [hover, setHover] = useState<number | null>(null)
   const padL = 30, padR = 64, padB = 20, padT = 10
@@ -93,7 +93,14 @@ export function LineChart({ series, labels, height = 200, zero = false }: { seri
             <text x={padL - 6} y={y(t) + 3} textAnchor="end">{Math.round(t)}</text>
           </g>
         ))}
+        {shadeFrom != null && <rect x={x(shadeFrom)} y={padT} width={x(n - 1) - x(shadeFrom)} height={ih} fill="var(--ink)" opacity={0.04} />}
         {labels.map((l, i) => (i % Math.ceil(n / 5) === 0 ? <text key={i} x={x(i)} y={height - 5} textAnchor="middle">{l}</text> : null))}
+        {markers.map((m) => (
+          <g key={m.label}>
+            <line x1={x(m.i)} x2={x(m.i)} y1={padT} y2={padT + ih} stroke={m.color ?? 'var(--ink)'} strokeWidth={1} strokeDasharray="3 3" />
+            <text x={x(m.i) + 4} y={padT + 9} style={{ fill: m.color ?? 'var(--ink-2)' }}>{m.label}</text>
+          </g>
+        ))}
         {series.map((s) => {
           const d = s.values.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('')
           const last = s.values[s.values.length - 1]
@@ -272,6 +279,143 @@ export function HourBars({ hours, best }: { hours: { time: Date; score: number; 
           Skor <b>{hours[hover].score}</b> · {Math.round(hours[hover].temp)}° · hujan {hours[hover].rain}%
         </div>
       )}
+    </div>
+  )
+}
+
+/* ---------- Timeline zona intensitas ala pola tidur ---------- */
+const ZONE_FILL = ['', 'color-mix(in srgb, var(--ink) 18%, var(--surface))', 'color-mix(in srgb, var(--ink) 42%, var(--surface))', 'var(--ink)', 'color-mix(in srgb, var(--accent) 70%, var(--ink))', 'var(--accent)']
+export const ZONE_NAMES = ['', 'Z1 Pulih', 'Z2 Endurance', 'Z3 Tempo', 'Z4 Ambang', 'Z5 Maks']
+
+export function ZoneBlocks({ zones, height = 150, durationSec }: { zones: number[]; height?: number; durationSec: number }) {
+  const [ref, w] = useWidth<HTMLDivElement>()
+  const [hover, setHover] = useState<number | null>(null)
+  if (!zones.length) return null
+  const padB = 18
+  const rowH = (height - padB) / 5
+  const segW = w / zones.length
+  // gabungkan segmen berurutan dengan zona sama menjadi blok
+  const blocks: { z: number; s: number; e: number }[] = []
+  zones.forEach((z, i) => { const b = blocks[blocks.length - 1]; if (b && b.z === z) b.e = i + 1; else blocks.push({ z, s: i, e: i + 1 }) })
+  const y = (z: number) => (z - 1) * rowH // Z1 di atas, Z5 di bawah (seperti tidur dalam)
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <svg className="chart" width={w} height={height} onPointerLeave={() => setHover(null)}
+        onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover(Math.max(0, Math.min(zones.length - 1, Math.floor((e.clientX - r.left) / segW)))) }}>
+        {blocks.map((b, i) => {
+          const next = blocks[i + 1]
+          return (
+            <g key={i}>
+              <rect x={b.s * segW + 1} y={y(b.z) + 2} width={Math.max(2, (b.e - b.s) * segW - 2)} height={rowH - 4} fill={ZONE_FILL[b.z]} />
+              {next && <line x1={b.e * segW} x2={b.e * segW} y1={Math.min(y(b.z), y(next.z)) + 2} y2={Math.max(y(b.z), y(next.z)) + rowH - 2} stroke="var(--ink)" strokeWidth={1.5} />}
+            </g>
+          )
+        })}
+        {hover != null && <line x1={(hover + 0.5) * segW} x2={(hover + 0.5) * segW} y1={0} y2={height - padB} stroke="var(--ink)" opacity={0.3} />}
+        <text x={0} y={height - 4}>00:00 MULAI</text>
+        <text x={w} y={height - 4} textAnchor="end">{Math.floor(durationSec / 3600)}:{String(Math.floor((durationSec % 3600) / 60)).padStart(2, '0')} SELESAI</text>
+      </svg>
+      {hover != null && (
+        <div className="tip" style={{ left: Math.min(Math.max((hover + 0.5) * segW, 60), w - 60), top: y(zones[hover]) }}>
+          <div className="mono">menit {Math.round((hover / zones.length) * durationSec / 60)}</div>{ZONE_NAMES[zones[hover]]}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ---------- Bar tersegmentasi (satu keseluruhan) ---------- */
+export function SegBar({ parts, height = 14 }: { parts: { v: number; color: string; label: string }[]; height?: number }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 2, height, borderRadius: 99, overflow: 'hidden' }}>
+        {parts.map((p) => <div key={p.label} title={`${p.label} ${Math.round(p.v * 100)}%`} style={{ flex: Math.max(0.001, p.v), background: p.color }} />)}
+      </div>
+      <div className="legend" style={{ marginTop: 8 }}>
+        {parts.map((p) => <span key={p.label}><i style={{ background: p.color, height: 8, width: 8, borderRadius: 2 }} />{p.label} <b>{Math.round(p.v * 100)}%</b></span>)}
+      </div>
+    </div>
+  )
+}
+
+/* ---------- Jam radial 24 jam ---------- */
+export function RadialClock({ values, size = 220, arcs = [], pins = [], now = true, center }: {
+  values?: number[]; size?: number
+  arcs?: { from: number; to: number; color: string; label?: string }[] // jam desimal
+  pins?: { h: number; label: string; color?: string; dark?: boolean }[]
+  now?: boolean; center?: ReactNode
+}) {
+  const c = size / 2
+  const R = size / 2 - 26
+  const ang = (h: number) => ((h / 24) * 360 - 90) * (Math.PI / 180)
+  const pt = (h: number, r: number): [number, number] => [c + Math.cos(ang(h)) * r, c + Math.sin(ang(h)) * r]
+  const max = values ? Math.max(1, ...values) : 1
+  const arcPath = (a: number, b: number, r: number) => {
+    const [x0, y0] = pt(a, r), [x1, y1] = pt(b, r)
+    const large = (b - a + 24) % 24 > 12 ? 1 : 0
+    return `M${x0},${y0} A${r},${r} 0 ${large} 1 ${x1},${y1}`
+  }
+  const hNow = new Date().getHours() + new Date().getMinutes() / 60
+  return (
+    <div style={{ position: 'relative', width: size, height: size }}>
+      <svg width={size} height={size} className="chart" aria-label="Jam 24 jam">
+        <circle cx={c} cy={c} r={R + 14} fill="var(--surface-2)" />
+        {Array.from({ length: 96 }, (_, i) => {
+          const h = i / 4
+          const major = i % 12 === 0
+          const [x0, y0] = pt(h, R + 12), [x1, y1] = pt(h, R + (major ? 4 : 8))
+          return <line key={i} x1={x0} y1={y0} x2={x1} y2={y1} stroke="var(--muted)" strokeWidth={major ? 1.5 : 0.8} opacity={major ? 0.9 : 0.5} />
+        })}
+        {[0, 6, 12, 18].map((h) => { const [x, y] = pt(h, R - 8); return <text key={h} x={x} y={y + 3} textAnchor="middle">{String(h).padStart(2, '0')}</text> })}
+        {arcs.map((a, i) => <path key={i} d={arcPath(a.from, a.to, R + 8)} stroke={a.color} strokeWidth={8} fill="none" strokeLinecap="round" />)}
+        {values?.map((v, h) => {
+          if (v <= 0) return null
+          const r0 = R - 22, r1 = r0 - (v / max) * (R - 50)
+          const [x0, y0] = pt(h + 0.5, r0), [x1, y1] = pt(h + 0.5, r1)
+          return <line key={h} x1={x0} y1={y0} x2={x1} y2={y1} stroke={v === max ? 'var(--accent)' : 'var(--ink)'} strokeWidth={Math.max(3, (2 * Math.PI * r0) / 24 - 5)} strokeLinecap="round" />
+        })}
+        {now && (() => { const [x, y] = pt(hNow, R + 8); return <><line x1={c} y1={c} x2={x} y2={y} stroke="var(--accent)" strokeWidth={1.2} opacity={0.5} /><circle cx={x} cy={y} r={5} fill="var(--accent)" stroke="var(--surface-2)" strokeWidth={2} /></> })()}
+      </svg>
+      {pins.map((p, i) => {
+        const [x, y] = pt(p.h, R + 8)
+        return <div key={i} style={{ position: 'absolute', left: x, top: y, transform: 'translate(-50%,-50%)', background: p.dark ? 'var(--ink)' : p.color ?? 'var(--accent)', color: '#fff', borderRadius: 99, padding: '3px 8px', fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap', boxShadow: '0 4px 10px -4px rgba(0,0,0,.4)' }}>{p.label}</div>
+      })}
+      {center && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', pointerEvents: 'none' }}>{center}</div>}
+    </div>
+  )
+}
+
+/* ---------- Titik konsistensi (ukuran = km) ala Air OS ---------- */
+export function DotRows({ days, cols = 14, color = 'var(--accent)' }: { days: { day: string; km: number }[]; cols?: number; color?: string }) {
+  const max = Math.max(1, ...days.map((d) => d.km))
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 6, alignItems: 'center', justifyItems: 'center' }}>
+      {days.map((d) => {
+        const s = d.km > 0 ? 6 + (d.km / max) * 10 : 5
+        return <i key={d.day} title={`${d.day}: ${d.km.toFixed(1)} km`} style={{ width: s, height: s, borderRadius: '50%', background: d.km > 0 ? color : 'color-mix(in srgb, var(--ink) 14%, transparent)', display: 'block' }} />
+      })}
+    </div>
+  )
+}
+
+/* ---------- Sebaran rasa vs form, dengan zona titik manis ---------- */
+export function SweetScatter({ pts, lo, hi, height = 190 }: { pts: { tsb: number; feel: number }[]; lo: number; hi: number; height?: number }) {
+  const [ref, w] = useWidth<HTMLDivElement>()
+  const padL = 30, padB = 22, padT = 8
+  const xs = pts.map((p) => p.tsb)
+  const x0 = Math.floor(Math.min(...xs, -30) / 10) * 10, x1 = Math.ceil(Math.max(...xs, 25) / 10) * 10
+  const x = (v: number) => padL + ((v - x0) / (x1 - x0)) * (w - padL - 8)
+  const y = (v: number) => padT + (1 - v) * (height - padT - padB)
+  return (
+    <div ref={ref}>
+      <svg className="chart" width={w} height={height} role="img" aria-label="Rasa vs form">
+        <rect x={x(lo)} y={padT} width={x(hi) - x(lo)} height={height - padT - padB} fill="var(--lime)" opacity={0.55} rx={8} />
+        <text x={(x(lo) + x(hi)) / 2} y={padT + 12} textAnchor="middle" style={{ fill: 'var(--lime-ink)', fontWeight: 700 }}>TITIK MANIS</text>
+        {[0, 0.5, 1].map((v) => <g key={v}><line x1={padL} x2={w} y1={y(v)} y2={y(v)} stroke="var(--grid)" /><text x={padL - 6} y={y(v) + 3} textAnchor="end">{v === 1 ? '😄' : v === 0 ? '😩' : '😐'}</text></g>)}
+        {[x0, 0, x1].map((v) => <text key={v} x={x(v)} y={height - 6} textAnchor="middle">{v > 0 ? '+' : ''}{v}</text>)}
+        <line x1={x(0)} x2={x(0)} y1={padT} y2={height - padB} stroke="var(--line)" />
+        {pts.map((p, i) => <circle key={i} cx={x(p.tsb)} cy={y(p.feel)} r={4.5} fill={p.tsb >= lo && p.tsb <= hi ? 'var(--ink)' : 'var(--muted)'} stroke="var(--surface)" strokeWidth={2} opacity={0.9} />)}
+      </svg>
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { CalendarPlus, Clock, Share2, MessageCircle, Trash2, Radio, Bell, Navigation, CloudRain, Thermometer, Wind } from 'lucide-react'
 import { useStore } from '../lib/store'
-import type { GroupRide, LatLng, Rsvp } from '../lib/types'
+import type { CharConfig, GroupRide, LatLng, Rsvp } from '../lib/types'
 import { etaMin, haversine, trackLength } from '../lib/geo'
 import { fmtDate, relDay } from '../lib/util'
 import { Avatar, toast, Top } from '../components/UI'
@@ -12,6 +12,7 @@ import { PACE } from './Squad'
 import { makeLoop } from '../lib/seed'
 import { go } from '../lib/router'
 import { useForecast } from '../lib/useForecast'
+import { GroupActionCard } from '../components/GroupActions'
 import { notify, speak } from '../lib/notify'
 
 const RSVP_L: Record<Rsvp, string> = { ikut: 'Ikut', mungkin: 'Mungkin', tidak: 'Tidak', menunggu: 'Belum jawab' }
@@ -30,8 +31,8 @@ export default function SquadDetail({ id }: { id: string }) {
   const link = inviteLink(g, settings.name)
   const text = inviteText(g, link)
   const people = [
-    { id: 'me', name: settings.name + ' (kamu)', color: '#111', rsvp: g.myRsvp, home: settings.home, spd: 25 },
-    ...g.participants.map((p) => { const f = friends.find((x) => x.id === p.friendId); return f ? { id: f.id, name: f.name, color: f.color, rsvp: p.rsvp, home: f.home, spd: f.avgSpeed } : null }).filter(Boolean) as { id: string; name: string; color: string; rsvp: Rsvp; home: LatLng; spd: number }[],
+    { id: 'me', name: settings.name + ' (kamu)', color: '#111', rsvp: g.myRsvp, home: settings.home, spd: 25, c: useStore.getState().char },
+    ...g.participants.map((p) => { const f = friends.find((x) => x.id === p.friendId); return f ? { id: f.id, name: f.name, color: f.color, rsvp: p.rsvp, home: f.home, spd: f.avgSpeed, c: f.char } : null }).filter(Boolean) as { id: string; name: string; color: string; rsvp: Rsvp; home: LatLng; spd: number; c: CharConfig }[],
   ]
 
   function leaveReminder() {
@@ -98,6 +99,7 @@ export default function SquadDetail({ id }: { id: string }) {
         </div>
 
         <div className="stack" style={{ marginTop: 0 }}>
+          {g.myRsvp === 'ikut' && new Date(g.datetime).getTime() > Date.now() && <GroupActionCard g={g} compact />}
           <div className="card">
             <div className="mono" style={{ marginBottom: 10 }}>Kamu ikut?</div>
             <div className="grid3">
@@ -114,7 +116,7 @@ export default function SquadDetail({ id }: { id: string }) {
                 const d = haversine(p.home, g.meet.pos)
                 return (
                   <div key={p.id} className="li">
-                    <Avatar name={p.name} color={p.color} size={34} />
+                    <Avatar name={p.name} color={p.color} c={p.c} size={36} />
                     <div className="grow"><div className="t">{p.name}</div><div className="tiny muted">{d.toFixed(1)} km · ±{etaMin(d, p.spd * 0.8)} mnt ke meet point</div></div>
                     <span className={`tag ${p.rsvp === 'ikut' ? 'good' : p.rsvp === 'tidak' ? 'bad' : p.rsvp === 'mungkin' ? 'warn' : ''}`}>{RSVP_L[p.rsvp]}</span>
                   </div>

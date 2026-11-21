@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, MapPin, Trophy, UserPlus, Gauge, CalendarPlus } from 'lucide-react'
+import { Plus, MapPin, UserPlus, Gauge, CalendarPlus } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { Friend, GroupRide, Pace } from '../lib/types'
 import { fmtDate, relDay, uid } from '../lib/util'
@@ -7,6 +7,8 @@ import { Avatar, Sheet, Tabs, Toggle, toast, Top } from '../components/UI'
 import { BaseMap, MeetPin, SmallPin } from '../components/Map'
 import { weekly } from '../lib/analytics'
 import { go } from '../lib/router'
+import { seededChar } from '../lib/character'
+import { HeadBadge, RaceScene } from '../components/Character'
 import { haversine } from '../lib/geo'
 
 export const PACE: Record<Pace, { l: string; spd: string }> = {
@@ -16,7 +18,7 @@ export const PACE: Record<Pace, { l: string; spd: string }> = {
 }
 
 export default function Squad() {
-  const { groupRides, friends, rides, settings, addFriend } = useStore()
+  const { groupRides, friends, rides, settings, addFriend, char } = useStore()
   const [tab, setTab] = useState<'jadwal' | 'teman' | 'liga'>('jadwal')
   const [create, setCreate] = useState(false)
   const [addF, setAddF] = useState(false)
@@ -25,7 +27,7 @@ export default function Squad() {
   const myWeek = weekly(rides, 1)[0]
   const mySpeed = useMemo(() => { const last = rides.slice(-15); return last.reduce((a, r) => a + r.avgSpeed, 0) / Math.max(1, last.length) }, [rides])
 
-  const league = [...friends.map((f) => ({ id: f.id, name: f.name, color: f.color, km: f.weeklyKm * (0.55 + (((new Date().getDay() + 6) % 7) / 6) * 0.45) })), { id: 'me', name: settings.name + ' (kamu)', color: '#ff4d1f', km: myWeek.km }].sort((a, b) => b.km - a.km)
+  const league = [...friends.map((f) => ({ id: f.id, name: f.name, c: f.char, km: f.weeklyKm * (0.5 + (((new Date().getDay() + 6) % 7) / 6) * 0.5) })), { id: 'me', name: settings.name + ' (kamu)', c: char, km: myWeek.km }].sort((a, b) => b.km - a.km)
 
   return (
     <div className="fadein">
@@ -61,7 +63,7 @@ export default function Squad() {
                 const dist = haversine(settings.home, f.home)
                 return (
                   <div key={f.id} className="li">
-                    <Avatar name={f.name} color={f.color} />
+                    <Avatar name={f.name} color={f.color} c={f.char} />
                     <div className="grow">
                       <div className="t">{f.name}</div>
                       <div className="tiny muted">{f.homeLabel} · {dist.toFixed(1)} km · {f.avgSpeed} km/j · {f.weeklyKm} km/mgg</div>
@@ -85,26 +87,38 @@ export default function Squad() {
 
       {tab === 'liga' && (
         <div className="stack section" style={{ marginTop: 16 }}>
-          <div className="card accent">
-            <div className="card-h"><span className="mono">Liga Squad · minggu ini</span><Trophy size={16} /></div>
-            <div className="row" style={{ alignItems: 'flex-end', gap: 14 }}>
-              {league.slice(0, 3).map((p, i) => (
-                <div key={p.id} style={{ flex: 1, textAlign: 'center' }}>
-                  <div style={{ display: 'grid', placeItems: 'center' }}><Avatar name={p.name} color={p.id === 'me' ? '#111' : p.color} size={i === 0 ? 54 : 42} /></div>
-                  <div className="tiny b" style={{ marginTop: 6 }}>{p.name.split(' ')[0]}</div>
-                  <div style={{ background: 'rgba(255,255,255,.18)', borderRadius: '14px 14px 4px 4px', height: [96, 70, 52][i], marginTop: 6, display: 'grid', placeItems: 'center' }}>
-                    <span className="dot" style={{ fontSize: 30 }}>{i + 1}</span>
-                  </div>
-                </div>
-              ))}
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 18px 4px' }}>
+              <div className="row" style={{ justifyContent: 'space-between' }}>
+                {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((d, i) => {
+                  const ws = new Date(); ws.setDate(ws.getDate() - ((ws.getDay() + 6) % 7) + i)
+                  const mine = rides.find((r) => new Date(r.date).toDateString() === ws.toDateString())
+                  const future = ws > new Date()
+                  const crew = mine?.friendIds?.[0] ? friends.find((f) => f.id === mine.friendIds![0]) : null
+                  return (
+                    <div key={i} style={{ textAlign: 'center' }}>
+                      <div className="mono" style={{ fontSize: 9 }}>{d}</div>
+                      <div style={{ marginTop: 4 }}>
+                        {mine ? <HeadBadge c={crew ? crew.char : char} size={34} bg={crew ? 'var(--accent-2)' : 'var(--sunken)'} /> : <span style={{ width: 34, height: 34, borderRadius: '50%', display: 'inline-grid', placeItems: 'center', background: 'var(--sunken)', opacity: future ? 0.5 : 1, fontWeight: 700, color: 'var(--muted)' }}>{future ? '' : '?'}</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <div style={{ textAlign: 'center', marginTop: 14 }}>
+                <div className="small muted">Km kamu minggu ini</div>
+                <div className="dot" style={{ fontSize: 56, marginTop: 4 }}>{myWeek.km.toFixed(1).replace('.', ',')}</div>
+                <div className="small muted" style={{ marginTop: 4 }}>Liga berakhir {7 - ((new Date().getDay() + 6) % 7)} hari lagi</div>
+              </div>
             </div>
+            <RaceScene racers={league.map((p) => ({ id: p.id, name: p.name, c: p.c, km: p.km, me: p.id === 'me' }))} height={260} />
           </div>
           <div className="card" style={{ paddingTop: 4, paddingBottom: 4 }}>
             <div className="list">
               {league.map((p, i) => (
                 <div key={p.id} className="li">
-                  <span className="dot" style={{ fontSize: 22, width: 26 }}>{i + 1}</span>
-                  <Avatar name={p.name} color={p.id === 'me' ? '#111' : p.color} size={32} />
+                  <span className="dot" style={{ fontSize: 22, width: 26, color: i === 0 ? 'var(--accent)' : undefined }}>{i + 1}</span>
+                  <HeadBadge c={p.c} size={36} bg="var(--sunken)" />
                   <div className="grow"><div className="t" style={{ fontWeight: p.id === 'me' ? 700 : 600 }}>{p.name}</div>
                     <div className="meter" style={{ marginTop: 6, height: 5 }}><i style={{ width: `${(p.km / league[0].km) * 100}%`, background: p.id === 'me' ? 'var(--accent)' : 'var(--ink)' }} /></div>
                   </div>
@@ -140,7 +154,7 @@ function GroupCard({ g, friends, faded }: { g: GroupRide; friends: Friend[]; fad
       </div>
       <div className="row between" style={{ marginTop: 14 }}>
         <div className="row" style={{ gap: 8 }}>
-          <div className="avatars">{going.slice(0, 5).map((p) => { const f = friends.find((x) => x.id === p.friendId); return f ? <Avatar key={f.id} name={f.name} color={f.color} /> : null })}</div>
+          <div className="avatars">{going.slice(0, 5).map((p) => { const f = friends.find((x) => x.id === p.friendId); return f ? <Avatar key={f.id} name={f.name} color={f.color} c={f.char} /> : null })}</div>
           <span className="tiny muted">{going.length + (g.myRsvp === 'ikut' ? 1 : 0)} ikut</span>
         </div>
         <div className="row" style={{ gap: 6 }}>
@@ -202,7 +216,7 @@ export function CreateRide({ open, onClose, preset }: { open: boolean; onClose: 
         <div className="field"><span className="mono">Undang teman</span>
           <div className="chips">{friends.map((f) => (
             <button key={f.id} className={`chip ${inv.includes(f.id) ? 'on' : ''}`} onClick={() => setInv((t) => (t.includes(f.id) ? t.filter((x) => x !== f.id) : [...t, f.id]))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Avatar name={f.name} color={f.color} size={20} />{f.name.split(' ')[0]}
+              <Avatar name={f.name} color={f.color} c={f.char} size={20} />{f.name.split(' ')[0]}
             </button>
           ))}</div>
         </div>
@@ -228,7 +242,7 @@ function AddFriend({ open, onClose, onAdd }: { open: boolean; onClose: () => voi
         <label className="field"><span className="mono">Kecepatan rata-rata · {spd} km/j</span><input type="range" min={15} max={35} value={spd} onChange={(e) => setSpd(+e.target.value)} /></label>
         <div className="mono">Ketuk perkiraan lokasi rumahnya (untuk titik temu)</div>
         <BaseMap center={pos} zoom={11} className="map" onClick={setPos}><SmallPin pos={pos} color="#ff4d1f" /></BaseMap>
-        <button className="btn ink block" disabled={!name.trim()} onClick={() => { onAdd({ id: uid(), name: name.trim(), color: COLORS[Math.floor(Math.random() * COLORS.length)], avgSpeed: spd, weeklyKm: 80, home: pos, homeLabel: area || 'Jakarta' }); setName(''); setArea(''); onClose() }}>Tambah</button>
+        <button className="btn ink block" disabled={!name.trim()} onClick={() => { onAdd({ id: uid(), name: name.trim(), color: COLORS[Math.floor(Math.random() * COLORS.length)], avgSpeed: spd, weeklyKm: 80, home: pos, homeLabel: area || 'Jakarta', char: seededChar(Date.now() % 1000) }); setName(''); setArea(''); onClose() }}>Tambah</button>
       </div>
     </Sheet>
   )

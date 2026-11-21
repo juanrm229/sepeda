@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { RadialClock } from '../charts/Charts'
 import { Bell, BellOff, CalendarPlus, Plus, Trash2, Bike, Wrench, Droplets, Sparkles } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { Reminder, ReminderKind } from '../lib/types'
@@ -17,7 +18,8 @@ const KIND: Record<ReminderKind, { l: string; icon: ReactNode }> = {
 }
 
 export default function Reminders() {
-  const { reminders, upsertReminder, deleteReminder, bikes, settings } = useStore()
+  const { reminders, upsertReminder, deleteReminder, bikes, settings, groupRides } = useStore()
+  const [dayOff, setDayOff] = useState(0)
   const [perm, setPerm] = useState<string>(notifSupported() ? Notification.permission : 'unsupported')
   const [edit, setEdit] = useState<Reminder | null>(null)
   const fc = useForecast(settings.home)
@@ -59,7 +61,9 @@ export default function Reminders() {
     <div className="fadein">
       <Top title="Pengingat" sub="Jadwal & perawatan" right={<button className="btn ink sm" onClick={() => setEdit({ id: uid(), kind: 'ride', title: '', time: '05:30', days: [6], enabled: true })}><Plus size={15} /> Baru</button>} />
 
-      <div className="row-d">
+      <DayDial dayOff={dayOff} setDayOff={setDayOff} reminders={reminders} groupRides={groupRides} fc={fc} />
+
+      <div className="row-d section">
         <div className="stack">
           {perm !== 'granted' && (
             <div className="card accent">
@@ -117,25 +121,101 @@ export default function Reminders() {
   )
 }
 
+function Wheel({ value, max, step = 1, onChange }: { value: number; max: number; step?: number; onChange: (v: number) => void }) {
+  const st = useRef<{ y: number; v: number } | null>(null)
+  const wrap = (v: number) => ((v % (max + 1)) + (max + 1)) % (max + 1)
+  const p = (v: number) => String(wrap(v)).padStart(2, '0')
+  return (
+    <div className="wheel" role="spinbutton" aria-valuenow={value} tabIndex={0}
+      onKeyDown={(e) => { if (e.key === 'ArrowUp') onChange(wrap(value + step)); if (e.key === 'ArrowDown') onChange(wrap(value - step)) }}
+      onWheel={(e) => onChange(wrap(value + (e.deltaY > 0 ? step : -step)))}
+      onPointerDown={(e) => { (e.currentTarget as Element).setPointerCapture(e.pointerId); st.current = { y: e.clientY, v: value } }}
+      onPointerMove={(e) => { if (!st.current) return; const d = Math.round((st.current.y - e.clientY) / 28); onChange(wrap(st.current.v + d * step)) }}
+      onPointerUp={() => (st.current = null)}>
+      <span className="ghost" onClick={() => onChange(wrap(value - step))}>{p(value - step)}</span>
+      <span className="cur">{p(value)}</span>
+      <span className="ghost" onClick={() => onChange(wrap(value + step))}>{p(value + step)}</span>
+    </div>
+  )
+}
+
 function EditSheet({ r, onClose, onSave, onDelete }: { r: Reminder | null; onClose: () => void; onSave: (r: Reminder) => void; onDelete: (id: string) => void }) {
   const [x, setX] = useState<Reminder | null>(r)
   useEffect(() => setX(r), [r])
   if (!x) return null
   const exists = useStore.getState().reminders.some((y) => y.id === x.id)
+  const [h, m] = x.time.split(':').map(Number)
+  const setTime = (hh: number, mm: number) => setX({ ...x, time: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}` })
   return (
-    <Sheet open={!!r} onClose={onClose} title={exists ? 'Ubah pengingat' : 'Pengingat baru'}>
+    <Sheet open={!!r} onClose={onClose} className="yellowsheet">
       <div className="stack">
-        <div className="chips">{(Object.keys(KIND) as ReminderKind[]).map((k) => <button key={k} className={`chip ${x.kind === k ? 'on' : ''}`} onClick={() => setX({ ...x, kind: k })}>{KIND[k].l}</button>)}</div>
-        <label className="field"><span className="mono">Judul</span><input className="input" value={x.title} placeholder="mis. Gowes pagi ke CFD" onChange={(e) => setX({ ...x, title: e.target.value })} /></label>
-        <label className="field"><span className="mono">Jam</span><input className="input" type="time" value={x.time} onChange={(e) => setX({ ...x, time: e.target.value })} /></label>
-        <div className="field"><span className="mono">Hari</span>
-          <div className="daypick">{HARI.map((h, i) => <button key={h} className={x.days.includes(i) ? 'on' : ''} onClick={() => setX({ ...x, days: x.days.includes(i) ? x.days.filter((d) => d !== i) : [...x.days, i].sort() })}>{h}</button>)}</div>
+        <div className="row between"><h3 style={{ fontSize: 26 }}>{exists ? 'Ubah' : 'Buat'}</h3><span className="mono">{KIND[x.kind].l}</span></div>
+        <div className="row" style={{ justifyContent: 'center', gap: 6, margin: '4px 0 0' }}>
+          <Wheel value={h} max={23} onChange={(v) => setTime(v, m)} />
+          <span className="cur" style={{ fontSize: 80, fontWeight: 300, paddingBottom: 6 }}>:</span>
+          <Wheel value={m - (m % 5)} max={55} step={5} onChange={(v) => setTime(h, v)} />
         </div>
-        <div className="grid2" style={{ marginTop: 6 }}>
-          {exists ? <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={() => onDelete(x.id)}><Trash2 size={16} /> Hapus</button> : <button className="btn ghost" onClick={onClose}><BellOff size={16} /> Batal</button>}
-          <button className="btn ink" disabled={!x.title.trim() || !x.days.length} onClick={() => onSave(x)}>Simpan</button>
+        <div style={{ height: 3, background: 'rgba(0,0,0,.12)', borderRadius: 9, position: 'relative', margin: '0 30px' }}><i style={{ position: 'absolute', left: `${((h * 60 + m) / 1440) * 100}%`, top: -6, width: 3, height: 15, background: '#ff3b1f', borderRadius: 2 }} /></div>
+        <div className="chips" style={{ justifyContent: 'center' }}>{(Object.keys(KIND) as ReminderKind[]).map((k) => <button key={k} className={`chip ${x.kind === k ? 'on' : ''}`} style={{ borderColor: 'rgba(0,0,0,.2)' }} onClick={() => setX({ ...x, kind: k })}>{KIND[k].l}</button>)}</div>
+        <input className="input" style={{ background: 'rgba(255,255,255,.55)', border: 0 }} value={x.title} placeholder="mis. Gowes pagi ke CFD" onChange={(e) => setX({ ...x, title: e.target.value })} />
+        <div className="daypick" style={{ justifyContent: 'center' }}>{HARI.map((hh, i) => <button key={hh} style={{ borderColor: 'rgba(0,0,0,.2)' }} className={x.days.includes(i) ? 'on' : ''} onClick={() => setX({ ...x, days: x.days.includes(i) ? x.days.filter((d) => d !== i) : [...x.days, i].sort() })}>{hh}</button>)}</div>
+        <div className="row between" style={{ marginTop: 10 }}>
+          <button className="btn circle" style={{ background: 'rgba(0,0,0,.08)' }} aria-label={exists ? 'Hapus' : 'Batal'} onClick={() => (exists ? onDelete(x.id) : onClose())}>{exists ? <Trash2 size={18} /> : <BellOff size={18} />}</button>
+          <span className="mono">{x.days.length ? `${x.days.length} hari / minggu` : 'Pilih hari'}</span>
+          <button className="btn ink circle" aria-label="Simpan" disabled={!x.title.trim() || !x.days.length} onClick={() => onSave(x)}>✓</button>
         </div>
       </div>
     </Sheet>
   )
 }
+
+function DayDial({ dayOff, setDayOff, reminders, groupRides, fc }: { dayOff: number; setDayOff: (n: number) => void; reminders: Reminder[]; groupRides: { id: string; title: string; datetime: string }[]; fc: ReturnType<typeof useForecast> }) {
+  const d = new Date(); d.setDate(d.getDate() + dayOff)
+  const dow = d.getDay()
+  const rs = reminders.filter((r) => r.enabled && r.days.includes(dow))
+  const gs = groupRides.filter((g) => new Date(g.datetime).toDateString() === d.toDateString())
+  const dayHours = fc?.hours.filter((h) => h.time.toDateString() === d.toDateString()) ?? []
+  const win = dayHours.length ? bestWindow(dayHours, 2) : null
+  const sr = 5.7, ss = 17.85
+  const toH = (t: string) => { const [a, b] = t.split(':').map(Number); return a + b / 60 }
+  const nextR = [...rs].sort((a, b) => toH(a.time) - toH(b.time)).find((r) => dayOff > 0 || toH(r.time) > new Date().getHours() + new Date().getMinutes() / 60)
+  return (
+    <div className="card" style={{ background: 'color-mix(in srgb, var(--yellow) 10%, var(--surface))' }}>
+      <div className="row between" style={{ alignItems: 'flex-start' }}>
+        <div>
+          <div className="display" style={{ fontSize: 26 }}>{dayOff === 0 ? 'Harimu' : HARI_LONG[dow]}</div>
+          <div className="row" style={{ gap: 8, marginTop: 8 }}>
+            <div style={{ width: 54, height: 54, borderRadius: '50%', background: 'var(--surface-2)', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+              <div><div className="mono" style={{ fontSize: 8 }}>{HARI[dow]}</div><div className="num" style={{ fontSize: 22 }}>{d.getDate()}</div></div>
+            </div>
+            {win && <span className="tag accent">☀ {String(win.start.getHours()).padStart(2, '0')}–{String(win.end.getHours()).padStart(2, '0')} terbaik</span>}
+          </div>
+        </div>
+        <div className="legend" style={{ flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+          <span><i style={{ background: 'var(--yellow)', height: 6 }} />Terang</span>
+          <span><i style={{ background: 'var(--accent)', height: 6 }} />Cuaca terbaik</span>
+        </div>
+      </div>
+      <div style={{ display: 'grid', placeItems: 'center', margin: '8px 0' }}>
+        <RadialClock size={290} now={dayOff === 0}
+          arcs={[{ from: sr, to: ss, color: 'color-mix(in srgb, var(--yellow) 70%, transparent)' }, ...(win ? [{ from: win.start.getHours(), to: win.end.getHours(), color: 'var(--accent)' }] : [])]}
+          pins={[...rs.map((r) => ({ h: toH(r.time), label: `${r.time.replace(':', '.')} ${r.kind === 'ride' ? '🚲' : r.kind === 'maintenance' ? '🔧' : r.kind === 'hydration' ? '💧' : '⏰'}`, dark: true })), ...gs.map((g) => ({ h: new Date(g.datetime).getHours() + new Date(g.datetime).getMinutes() / 60, label: '👥 ' + g.title.split(' ')[0], color: '#ff4433' }))]}
+          center={nextR ? <div><div className="mono">berikutnya</div><div className="dot" style={{ fontSize: 40, marginTop: 4 }}>{nextR.time.replace(':', '.')}</div><div className="tiny muted" style={{ maxWidth: 130, margin: '4px auto 0' }}>{nextR.title}</div></div> : <div><div className="mono">kosong</div><div className="tiny muted">Tidak ada pengingat</div></div>} />
+      </div>
+      <div className="row" style={{ justifyContent: 'space-between', gap: 4 }}>
+        {Array.from({ length: 7 }, (_, i) => {
+          const x = new Date(); x.setDate(x.getDate() + i)
+          const has = reminders.some((r) => r.enabled && r.days.includes(x.getDay())) || groupRides.some((g) => new Date(g.datetime).toDateString() === x.toDateString())
+          return (
+            <button key={i} onClick={() => setDayOff(i)} style={{ width: 44, height: 44, borderRadius: '50%', border: `2px solid ${dayOff === i ? 'var(--accent)' : 'var(--line)'}`, background: 'var(--surface-2)', display: 'grid', placeItems: 'center', padding: 0, position: 'relative' }}>
+              <span><span className="mono" style={{ fontSize: 7.5, display: 'block', color: dayOff === i ? 'var(--accent)' : undefined }}>{HARI[x.getDay()]}</span><span style={{ fontWeight: 600, fontSize: 14 }}>{x.getDate()}</span></span>
+              {has && <i style={{ position: 'absolute', bottom: -6, width: 5, height: 5, borderRadius: 9, background: 'var(--accent)' }} />}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const HARI_LONG = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu']

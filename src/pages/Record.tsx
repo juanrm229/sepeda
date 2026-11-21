@@ -11,12 +11,14 @@ import { notify, speak } from '../lib/notify'
 import { waLink } from '../lib/share'
 import { makeLoop } from '../lib/seed'
 import { go } from '../lib/router'
+import { FeelCheck } from '../components/FeelCheck'
 
 type Phase = 'idle' | 'rec' | 'pause'
 interface Pt { p: LatLng; t: number; alt: number | null; spd: number | null }
 
 export default function Record() {
-  const { settings, addRide, bikes, activeBikeId, friends } = useStore()
+  const { settings, addRide, bikes, activeBikeId, friends, setRideFeel } = useStore()
+  const [feelFor, setFeelFor] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [pts, setPts] = useState<Pt[]>([])
   const [moving, setMoving] = useState(0)
@@ -204,8 +206,8 @@ export default function Record() {
     if (r.distanceKm < 0.05) { toast('Ride terlalu pendek untuk disimpan'); return }
     addRide(r)
     setSaveOpen(false); setPhase('idle'); setPts([])
-    toast('Ride tersimpan 🎉')
-    go('ride/' + r.id)
+    toast('🎉 Ride tersimpan', `+${Math.round(r.distanceKm * 10 + r.elevationM)} XP untuk karaktermu`)
+    setFeelFor(r.id)
   }
 
   function discard() {
@@ -311,7 +313,7 @@ export default function Record() {
           <div className="field"><span className="mono">Gowes bareng siapa?</span>
             <div className="chips">{friends.map((f) => (
               <button key={f.id} className={`chip ${tagged.includes(f.id) ? 'on' : ''}`} onClick={() => setTagged((t) => (t.includes(f.id) ? t.filter((x) => x !== f.id) : [...t, f.id]))} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                <Avatar name={f.name} color={f.color} size={20} />{f.name.split(' ')[0]}
+                <Avatar name={f.name} color={f.color} c={f.char} size={22} />{f.name.split(' ')[0]}
               </button>
             ))}</div>
           </div>
@@ -321,6 +323,8 @@ export default function Record() {
           </div>
         </div>
       </Sheet>
+
+      <FeelCheck open={!!feelFor} onClose={() => { const id = feelFor; setFeelFor(null); if (id) go('ride/' + id) }} onSave={(f, rpe) => { const id = feelFor!; setRideFeel(id, f, rpe); setFeelFor(null); go('ride/' + id) }} />
 
       {sos != null && (
         <div className="sos" role="alertdialog">

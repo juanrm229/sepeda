@@ -203,3 +203,167 @@ export function level(rides: Ride[]): { lvl: number; xp: number; next: number; c
 
 export const LEVEL_TITLES = ['Pemula', 'Penggowes', 'Penjelajah', 'Pemburu Tanjakan', 'Road Warrior', 'Kapten Squad', 'Legenda Aspal', 'Dewa Kayuh']
 export const levelTitle = (l: number) => LEVEL_TITLES[Math.min(LEVEL_TITLES.length - 1, Math.floor((l - 1) / 2))]
+
+/* ======================= Analitik lanjutan ======================= */
+
+/** Estimasi daya (watt) dari fisika: rolling + aero + gravitasi, tanpa power meter. */
+export function estPower(r: Ride, weightKg: number): number {
+  const m = weightKg + 9
+  const v = r.avgSpeed / 3.6
+  const crr = r.type === 'gravel' || r.type === 'mtb' ? 0.009 : 0.0055
+  const cda = r.type === 'commute' ? 0.42 : 0.33
+  const rho = 1.15 // udara panas tropis
+  const roll = crr * m * 9.81 * v
+  const aero = 0.5 * rho * cda * v * v * v * 1.12 // faktor variabilitas kecepatan
+  const climb = (m * 9.81 * r.elevationM) / Math.max(1, r.movingSec)
+  return Math.round((roll + aero + climb) / 0.97)
+}
+
+export function estFTP(rides: Ride[], weightKg: number): { ftp: number; wkg: number; cat: string; catIdx: number } {
+  const since = Date.now() - 90 * 86400000
+  const cands = rides.filter((r) => r.movingSec >= 40 * 60 && new Date(r.date).getTime() >= since).map((r) => {
+    const p = estPower(r, weightKg)
+    const hrs = r.movingSec / 3600
+    // daya rata-rata ride panjang < FTP; koreksi berdasarkan durasi
+    return p * (hrs > 2.5 ? 1.18 : hrs > 1.5 ? 1.1 : 1.04)
+  })
+  const ftp = Math.round(cands.length ? Math.max(...cands) * 0.95 : 150)
+  const wkg = ftp / weightKg
+  const cats = ['Pemula', 'Rekreasi', 'Penggemar', 'Kompetitif', 'Elite']
+  const catIdx = wkg < 2 ? 0 : wkg < 2.8 ? 1 : wkg < 3.5 ? 2 : wkg < 4.3 ? 3 : 4
+  return { ftp, wkg, cat: cats[catIdx], catIdx }
+}
+
+/** Intensity factor kasar 0.4–1.15 */
+export function rideIF(r: Ride, s: Settings): number {
+  const hours = r.movingSec / 3600
+  return Math.sqrt(rideTSS(r, s) / Math.max(0.1, hours) / 100)
+}
+
+/** Distribusi intensitas (berbobot waktu): ringan / sedang / berat — cek aturan 80/20. */
+export function polarization(rides: Ride[], s: Settings, days = 28): { easy: number; mod: number; hard: number } {
+  const since = Date.now() - days * 86400000
+  let e = 0, m = 0, h = 0
+  for (const r of rides.filter((x) => new Date(x.date).getTime() >= since)) {
+    const z = r.zones ?? []
+    if (z.length) {
+      const seg = r.movingSec / z.length
+      for (const k of z) { if (k <= 2) e += seg; else if (k === 3) m += seg; else h += seg }
+    } else {
+      const f = rideIF(r, s)
+      if (f < 0.75) e += r.movingSec; else if (f < 0.88) m += r.movingSec; else h += r.movingSec
+    }
+  }
+  const t = e + m + h || 1
+  return { easy: e / t, mod: m / t, hard: h / t }
+}
+
+/** Efisiensi aerobik: km/j per 100 bpm — naik = jantung makin efisien. */
+export function efficiencyTrend(rides: Ride[], weeks = 12): { label: string; ef: number }[] {
+  const ws = weekly(rides, weeks)
+  return ws.map((w) => {
+    const rs = rides.filter((r) => r.avgHr && weekStart(new Date(r.date)).getTime() === w.start.getTime() && r.elevationM / Math.max(1, r.distanceKm) < 8)
+    const ef = rs.length ? rs.reduce((a, r) => a + (r.avgSpeed / (r.avgHr ?? 1)) * 100, 0) / rs.length : NaN
+    return { label: `${w.start.getDate()}/${w.start.getMonth() + 1}`, ef }
+  }).filter((x) => !Number.isNaN(x.ef))
+}
+
+/** Prediksi waktu tempuh jarak lain (rumus Riegel) dari performa terbaik 30 hari. */
+export function predictTimes(rides: Ride[], targets = [50, 100, 160]): { km: number; sec: number; spd: number }[] {
+  const since = Date.now() - 45 * 86400000
+  const rs = rides.filter((r) => new Date(r.date).getTime() >= since && r.distanceKm >= 15)
+  if (!rs.length) return []
+  // pilih ride dengan skor performa (kecepatan disesuaikan jarak) tertinggi, koreksi tanjakan
+  const best = rs.reduce((b, r) => {
+    const adj = (x: Ride) => x.avgSpeed * Math.pow(x.distanceKm, 0.06) * (1 + x.elevationM / Math.max(1, x.distanceKm) / 100)
+    return adj(r) > adj(b) ? r : b
+  })
+  const flatSpd = best.avgSpeed * (1 + best.elevationM / Math.max(1, best.distanceKm) / 100)
+  const t1 = (best.distanceKm / flatSpd) * 3600
+  return targets.map((km) => {
+    const sec = t1 * Math.pow(km / best.distanceKm, 1.06)
+    return { km, sec, spd: km / (sec / 3600) }
+  })
+}
+
+/** Titik manis: rentang Form saat kamu merasa paling enak (dari cek-rasa setelah ride). */
+export function feelSweetSpot(rides: Ride[], load: LoadPoint[]): { pts: { tsb: number; feel: number }[]; lo: number; hi: number; avgIn: number; avgOut: number } | null {
+  const byDay = new Map(load.map((p) => [p.day, p.tsb]))
+  const pts = rides.filter((r) => r.feel != null).map((r) => ({ tsb: byDay.get(dayKey(new Date(r.date))) ?? NaN, feel: r.feel! })).filter((p) => !Number.isNaN(p.tsb))
+  if (pts.length < 8) return null
+  let best = { lo: 0, hi: 10, score: -1 }
+  for (let lo = -30; lo <= 20; lo += 2) {
+    const hi = lo + 14
+    const inn = pts.filter((p) => p.tsb >= lo && p.tsb <= hi)
+    if (inn.length < 4) continue
+    const avg = inn.reduce((a, p) => a + p.feel, 0) / inn.length
+    if (avg > best.score) best = { lo, hi, score: avg }
+  }
+  const out = pts.filter((p) => p.tsb < best.lo || p.tsb > best.hi)
+  return { pts, lo: best.lo, hi: best.hi, avgIn: best.score, avgOut: out.length ? out.reduce((a, p) => a + p.feel, 0) / out.length : 0 }
+}
+
+/** Perkiraan jam pemulihan tersisa dari ride terakhir yang berat. */
+export function recovery(rides: Ride[], s: Settings): { hoursLeft: number; total: number; pct: number } {
+  const last = rides[rides.length - 1]
+  if (!last) return { hoursLeft: 0, total: 0, pct: 1 }
+  const tss = rideTSS(last, s)
+  const total = Math.round(Math.min(72, tss < 50 ? tss * 0.25 + 2 : tss * 0.35))
+  const end = new Date(last.date).getTime() + last.movingSec * 1000
+  const elapsed = (Date.now() - end) / 3600000
+  const left = Math.max(0, Math.round(total - elapsed))
+  return { hoursLeft: left, total, pct: clamp(elapsed / total, 0, 1) }
+}
+
+/** Jam-jam favoritmu gowes (24 bucket, km). */
+export function rideClock(rides: Ride[]): number[] {
+  const b = new Array(24).fill(0)
+  for (const r of rides) {
+    const st = new Date(r.date)
+    const hrs = r.movingSec / 3600
+    for (let i = 0; i < Math.ceil(hrs); i++) b[(st.getHours() + i) % 24] += r.distanceKm / Math.ceil(hrs)
+  }
+  return b
+}
+
+/** Zona intensitas sintetis dari profil elevasi & kecepatan (untuk ride tanpa sensor). */
+export function synthZones(r: Ride, s: Settings, n = 40): number[] {
+  const el = r.elevations ?? []
+  const f = rideIF(r, s)
+  const base = f < 0.65 ? 1.3 : f < 0.75 ? 1.8 : f < 0.85 ? 2.4 : 3.0
+  const out: number[] = []
+  for (let i = 0; i < n; i++) {
+    const a = Math.floor((i / n) * Math.max(0, el.length - 1))
+    const b = Math.floor(((i + 1) / n) * Math.max(0, el.length - 1))
+    const grade = el.length > 1 ? (el[b] - el[a]) / ((r.distanceKm * 1000) / n) : 0
+    const warm = i < 3 ? -0.8 : i > n - 3 ? -1 : 0
+    const wob = Math.sin(i * 1.3 + r.distanceKm) * 0.6
+    out.push(Math.round(clamp(base + grade * 32 + warm + wob, 1, 5)))
+  }
+  return out
+}
+
+export const WORKOUTS = {
+  rec: { l: 'Pemulihan', short: 'REC', tss: 25, min: 40, desc: 'Zona 1, kaki berputar ringan' },
+  end: { l: 'Endurance', short: 'END', tss: 65, min: 90, desc: 'Zona 2, bisa sambil ngobrol' },
+  tempo: { l: 'Tempo', short: 'TMP', tss: 80, min: 75, desc: 'Zona 3, napas berat tapi stabil' },
+  int: { l: 'Interval', short: 'INT', tss: 90, min: 70, desc: '5×4 menit zona 4–5' },
+  long: { l: 'Long ride', short: 'LNG', tss: 170, min: 210, desc: 'Ride panjang akhir pekan' },
+} as const
+
+/** Proyeksi CTL/ATL/TSB ke depan memakai rencana latihan. */
+export function project(load: LoadPoint[], plannedTss: number[]): LoadPoint[] {
+  const last = load[load.length - 1]
+  let ctl = last?.ctl ?? 0
+  let atl = last?.atl ?? 0
+  const out: LoadPoint[] = []
+  const d0 = new Date()
+  plannedTss.forEach((tss, i) => {
+    const d = new Date(d0); d.setDate(d.getDate() + i + 1)
+    const tsb = ctl - atl
+    ctl += (tss - ctl) / 42
+    atl += (tss - atl) / 7
+    out.push({ day: dayKey(d), tss, ctl, atl, tsb })
+  })
+  return out
+}

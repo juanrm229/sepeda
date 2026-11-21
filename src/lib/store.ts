@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Bike, Friend, GroupRide, Reminder, Ride, Rsvp, Settings } from './types'
-import { applyRidesToBikes, defaultSettings, seedBikes, seedFriends, seedGroupRides, seedReminders, seedRides } from './seed'
+import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, Rsvp, Settings } from './types'
+import { applyRidesToBikes, defaultSettings, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
+import { defaultChar } from './character'
 
 interface State {
   rides: Ride[]
@@ -12,6 +13,13 @@ interface State {
   settings: Settings
   activeBikeId: string
   onboarded: boolean
+  char: CharConfig
+  plan: Plan
+  event: EventGoal | null
+  setChar: (c: CharConfig) => void
+  setPlan: (p: Plan) => void
+  setEvent: (e: EventGoal | null) => void
+  setRideFeel: (id: string, feel: number, rpe: number) => void
   addRide: (r: Ride) => void
   deleteRide: (id: string) => void
   addFriend: (f: Friend) => void
@@ -37,6 +45,8 @@ function demo() {
     groupRides: seedGroupRides(),
     reminders: seedReminders,
     bikes: applyRidesToBikes(seedBikes, rides),
+    plan: seedPlan(),
+    event: { name: 'Gran Fondo Sentul', date: (() => { const d = new Date(); d.setDate(d.getDate() + 13); d.setHours(6, 0, 0, 0); return d.toISOString() })(), km: 100 } as EventGoal,
   }
 }
 
@@ -47,6 +57,11 @@ export const useStore = create<State>()(
       settings: defaultSettings,
       activeBikeId: 'bike-1',
       onboarded: false,
+      char: defaultChar,
+      setChar: (c) => set({ char: c }),
+      setPlan: (p) => set({ plan: p }),
+      setEvent: (e) => set({ event: e }),
+      setRideFeel: (id, feel, rpe) => set((s) => ({ rides: s.rides.map((r) => (r.id === id ? { ...r, feel, rpe } : r)) })),
       addRide: (r) =>
         set((s) => ({
           rides: [...s.rides, r].sort((a, b) => a.date.localeCompare(b.date)),
@@ -74,6 +89,6 @@ export const useStore = create<State>()(
       resetDemo: () => set({ ...demo() }),
       clearAll: () => set({ rides: [], groupRides: [], bikes: seedBikes }),
     }),
-    { name: 'kayuh-v1' },
+    { name: 'kayuh-v2' },
   ),
 )
