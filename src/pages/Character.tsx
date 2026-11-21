@@ -141,7 +141,7 @@ export default function Character() {
 
           <div className="card" id="lemari">
             <div className="row between" style={{ marginBottom: 12 }}>
-              <div><span className="mono">Lemari karakter · 512 item</span><div className="small muted" style={{ marginTop: 2 }}>{current ? <>Terpilih: <b className="ink2">{PART[current]?.l}</b></> : tab.multi ? 'Bisa pilih beberapa sekaligus' : 'Tanpa item'}</div></div>
+              <div><span className="mono">Lemari karakter · {Object.values(CATS).reduce((a, x) => a + x.length, 0)} item</span><div className="small muted" style={{ marginTop: 2 }}>{current ? <>Terpilih: <b className="ink2">{PART[current]?.l}</b></> : tab.multi ? 'Bisa pilih beberapa sekaligus' : 'Tanpa item'}</div></div>
               <div className="row" style={{ gap: 6 }}>
                 <button className="iconbtn" disabled={!undo} onClick={() => { if (undo) { setChar(undo); setUndo(null) } }} aria-label="Urungkan"><Undo2 size={16} /></button>
                 <button className="iconbtn" onClick={randomize} aria-label="Acak"><Shuffle size={16} /></button>

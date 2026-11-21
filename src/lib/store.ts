@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings } from './types'
 import { applyRidesToBikes, defaultSettings, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
-import { defaultChar, isCharConfig, randomChar } from './avatar'
+import { defaultChar, isCharConfig, randomChar, sanitizeChar } from './avatar'
 
 interface State {
   rides: Ride[]
@@ -99,7 +99,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'kayuh-v2',
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown) => {
         const p = (persisted ?? {}) as Partial<State>
         const d = demo()
@@ -108,8 +108,8 @@ export const useStore = create<State>()(
           routes: p.routes ?? [],
           onboarded: p.onboarded ?? true,
           plan: p.plan?.cells?.length === 14 ? p.plan : d.plan,
-          char: isCharConfig(p.char) ? p.char : defaultChar,
-          friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, char: isCharConfig(f.char) ? f.char : d.friends.find((x) => x.id === f.id)?.char ?? randomChar(i * 7919 + 13) })),
+          char: isCharConfig(p.char) ? sanitizeChar(p.char) : defaultChar,
+          friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, char: isCharConfig(f.char) ? sanitizeChar(f.id === 'f5' && f.char.neckwear === 'neckwear-22' ? { ...f.char, neckwear: 'neckwear-16' } : f.char) : d.friends.find((x) => x.id === f.id)?.char ?? randomChar(i * 7919 + 13) })),
           groupRides: (p.groupRides ?? d.groupRides).map((g) => ({ ...g, plan: g.plan ?? d.groupRides.find((x) => x.id === g.id)?.plan })),
           settings: { ...defaultSettings, ...(p.settings ?? {}) },
         } as State

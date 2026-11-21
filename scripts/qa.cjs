@@ -14,7 +14,7 @@ const rec = (area, name, ok, note = '') => { results.push({ area, name, ok, note
 
 async function newPage(b, opts = {}) {
   const ctx = await b.newContext({ ...(opts.device ?? devices['iPhone 13']), ...(opts.ctx ?? {}) })
-  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 4 })) })
+  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 5 })) })
   const p = await ctx.newPage()
   p._errs = []; p._404 = []
   p.on('pageerror', (e) => p._errs.push('PAGEERR ' + e.message))

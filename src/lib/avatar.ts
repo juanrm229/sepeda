@@ -62,6 +62,18 @@ export const defaultChar: CharConfig = {
   shirt: 'shirts-66', hat: 'hats-15', eyewear: null, earrings: null, neckwear: null, details: [], acc: [],
 }
 
+/** Bersihkan ID yang tidak ada lagi di katalog (mis. aset rusak yang dikeluarkan). */
+export function sanitizeChar(c: CharConfig): CharConfig {
+  const ok = (id: string | null) => (id && PART[id] ? id : null)
+  return {
+    ...c,
+    head: ok(c.head) ?? defaultChar.head, eyes: ok(c.eyes) ?? defaultChar.eyes, brows: ok(c.brows) ?? defaultChar.brows,
+    mouth: ok(c.mouth) ?? defaultChar.mouth, shirt: ok(c.shirt) ?? defaultChar.shirt,
+    hair: ok(c.hair), hijab: ok(c.hijab), beard: ok(c.beard), hat: ok(c.hat), eyewear: ok(c.eyewear), earrings: ok(c.earrings), neckwear: ok(c.neckwear),
+    details: (c.details ?? []).filter((d) => PART[d]), acc: (c.acc ?? []).filter((d) => PART[d]),
+  }
+}
+
 export function isCharConfig(x: unknown): x is CharConfig {
   return !!x && typeof (x as CharConfig).head === 'string' && !!PART[(x as CharConfig).head]
 }
@@ -93,7 +105,7 @@ const MOOD: Record<MoodKey, Partial<Pick<CharConfig, 'eyes' | 'brows' | 'mouth'>
   segar: { eyes: 'eyes-21', brows: 'brows-08', mouth: 'mouths-16' },
   oke: {},
   lelah: { eyes: 'eyes-33', brows: 'brows-27', mouth: 'mouths-35' },
-  kangen: { eyes: 'eyes-28', brows: 'brows-05', mouth: 'mouths-23' },
+  kangen: { eyes: 'eyes-28', brows: 'brows-05', mouth: 'mouths-06' },
 }
 
 /** Daftar bagian siap gambar, urut zIndex. */

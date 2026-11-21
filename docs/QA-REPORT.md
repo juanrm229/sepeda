@@ -1,6 +1,6 @@
 # Laporan QA / QC — Kayuh
 
-**Tanggal:** 21 Nov 2026 · **Build:** v5 (Avatar Modular Kit) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
+**Tanggal:** 21 Nov 2026 · **Build:** v5.1 (Avatar Modular Kit, kalibrasi proporsi) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
 
 **Hasil akhir: 88/88 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
 
@@ -39,6 +39,10 @@
 | 12 | Pin peta masih inisial, tidak konsisten dengan karakter | Rendah (UX) | ✅ Pin = kepala karakter |
 | 13 | Teks "0 item masih terkunci" | Rendah | ✅ Diperbaiki |
 | 14 | Proporsi kit: mata & alis terlalu besar dan menempel, mulut terlalu kecil & dekat dagu | Sedang (visual) | ✅ Dikalibrasi saat build (mata −12%, alis naik, mulut naik & +25%, kumis menyesuaikan) |
+| 15 | **Manifest kit men-stretch gambar tidak proporsional**: baju melar ~1,5× ke samping (leher terlihat kecil), topi 1,26×, kumis 1,25×, detail 1,33×, headphone 2,7× | Tinggi (visual) | ✅ Rasio aspek asli dipertahankan, jangkar per kategori |
+| 16 | Rambut terlalu besar (1,37× lebar tengkorak) | Sedang (visual) | ✅ Rambut 92% dijangkar di garis telinga, topi 94%, kepala 105% dari leher |
+| 17 | Sport hijab 21–25 tidak menutup ubun-ubun | Sedang | ✅ Dinaikkan 10 px & 104% |
+| 18 | 7 aset kit rusak (mulut 18/20/23/33 hanya garis 3–4 px; headphone leher 22–24 terpotong) | Tinggi | ✅ Dikeluarkan dari katalog; avatar tersimpan yang memakainya dimigrasi otomatis |
 
 ## Belum bisa diverifikasi otomatis (perlu uji perangkat nyata)
 - GPS asli, getaran, deteksi jatuh (akselerometer), notifikasi sistem di iOS/Android.
@@ -47,4 +51,4 @@
 
 ## Kinerja
 - Bundle utama ~275 KB (gzip ~87 KB); halaman lain dimuat sesuai kebutuhan.
-- Avatar: 512 bagian PNG (22 MB) → WebP 3,9 MB total; satu avatar memuat ±7 file kecil.
+- Avatar: 505 bagian valid (dari 512) → WebP 4,2 MB total; satu avatar memuat ±7 file kecil. Build ulang: `python3 scripts/build-avatar-kit.py <folder kit>`.
