@@ -10,7 +10,7 @@ import { HeadBadge, HoloOrb, Portrait, RaceScene, type Racer } from '../componen
 import { useCountUp } from '../components/UI'
 import { useEffect, useRef, useState } from 'react'
 import { QUEST } from '../lib/character'
-import { CP_KIND } from './RoutePlanner'
+import { CP_KIND } from '../lib/plan'
 import { characterLevel, moodOf, riderClass, riderStats } from '../lib/character'
 import { GroupActionCard } from '../components/GroupActions'
 import { go } from '../lib/router'
@@ -268,7 +268,7 @@ function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windTex
               <div className="row" style={{ gap: 8, marginTop: 8 }}><span className="tag accent">Skor {win.score} · {scoreLabel(win.score)}</span><span className="small">{relDay(win.start.toISOString())} s.d. {String(win.end.getHours()).padStart(2, '0')}.00</span></div>
               {windText && <div className="small" style={{ marginTop: 10, opacity: 0.7 }}><Wind size={13} style={{ verticalAlign: -2 }} /> {windText}</div>}
             </div>
-          ) : <div className="small" style={{ marginTop: 'auto', opacity: 0.7 }}>Memuat prakiraan…</div>}
+          ) : <div style={{ marginTop: 'auto' }} className="stack"><span className="skel" style={{ height: 80, width: '70%', borderRadius: 14, opacity: 0.25 }} /><span className="skel" style={{ height: 18, width: '50%', borderRadius: 9, opacity: 0.25 }} /></div>}
         </a>
         <a href={next ? '#/squad/' + next.id : '#/rute'} className="story card" style={{ textDecoration: 'none', color: '#fff', background: '#6b3f1f' }}>
           {bars}

@@ -140,10 +140,11 @@ function Wheel({ value, max, step = 1, onChange }: { value: number; max: number;
 }
 
 function EditSheet({ r, onClose, onSave, onDelete }: { r: Reminder | null; onClose: () => void; onSave: (r: Reminder) => void; onDelete: (id: string) => void }) {
+  const reminders = useStore((s) => s.reminders)
   const [x, setX] = useState<Reminder | null>(r)
   useEffect(() => setX(r), [r])
   if (!x) return null
-  const exists = useStore.getState().reminders.some((y) => y.id === x.id)
+  const exists = reminders.some((y) => y.id === x.id)
   const [h, m] = x.time.split(':').map(Number)
   const setTime = (hh: number, mm: number) => setX({ ...x, time: `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}` })
   return (
@@ -180,7 +181,7 @@ function DayDial({ dayOff, setDayOff, reminders, groupRides, fc }: { dayOff: num
   const toH = (t: string) => { const [a, b] = t.split(':').map(Number); return a + b / 60 }
   const nextR = [...rs].sort((a, b) => toH(a.time) - toH(b.time)).find((r) => dayOff > 0 || toH(r.time) > new Date().getHours() + new Date().getMinutes() / 60)
   return (
-    <div className="card" style={{ background: 'color-mix(in srgb, var(--yellow) 10%, var(--surface))' }}>
+    <div className="card dial-card">
       <div className="row between" style={{ alignItems: 'flex-start' }}>
         <div>
           <div className="display" style={{ fontSize: 26 }}>{dayOff === 0 ? 'Harimu' : HARI_LONG[dow]}</div>

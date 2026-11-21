@@ -16,7 +16,7 @@ const KIND_ICON: Record<string, ReactNode> = {
 }
 
 export default function Meet() {
-  const { friends, settings } = useStore()
+  const { friends, settings, char } = useStore()
   const [sel, setSel] = useState<string[]>(['me', 'f1', 'f2', 'f5'])
   const [guests, setGuests] = useState<P[]>([])
   const [addMode, setAddMode] = useState(false)
@@ -29,7 +29,7 @@ export default function Meet() {
   const [create, setCreate] = useState(false)
 
   const all: P[] = [
-    { id: 'me', name: settings.name, color: '#111111', pos: settings.home, spd: 25, c: useStore.getState().char },
+    { id: 'me', name: settings.name, color: '#111111', pos: settings.home, spd: 25, c: char },
     ...friends.map((f) => ({ id: f.id, name: f.name, color: f.color, pos: f.home, spd: f.avgSpeed, c: f.char })),
   ]
   const people = [...all.filter((p) => sel.includes(p.id)), ...guests]

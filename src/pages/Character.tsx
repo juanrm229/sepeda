@@ -6,7 +6,7 @@ import { characterLevel, moodOf, OPTIONS, PART_TABS, QUEST, reqText, riderClass,
 import { levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
 import { HeadArt, HeadSticker, HoloOrb, Portrait } from '../components/Character'
-import { toast, Top } from '../components/UI'
+import { celebrate, toast, Top } from '../components/UI'
 import type { Mood } from '../lib/character'
 
 const Spark = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
@@ -130,7 +130,7 @@ export default function Character() {
             <div className="mono">Quest minggu ini · perkuat {cls.weakest.l.toLowerCase()}</div>
             <div style={{ fontWeight: 600, fontSize: 18, marginTop: 6 }}>{QUEST[cls.weakest.k]}</div>
             <div className="small" style={{ opacity: 0.7, marginTop: 4 }}>Stat terlemahmu adalah {cls.weakest.l.toLowerCase()} ({cls.weakest.v}). Pesepeda seimbang lebih jarang cedera dan lebih cepat naik level.</div>
-            <button className="btn accent sm" style={{ marginTop: 12 }} onClick={() => { upsertReminder({ id: 'quest-' + cls.weakest.k, kind: 'ride', title: QUEST[cls.weakest.k].replace('Quest: ', '⚔ '), time: '06:00', days: [6], enabled: true }); toast('⚔️ Quest diterima', 'Pengingat dipasang Sabtu 06.00') }}>Terima quest</button>
+            <button className="btn accent sm" style={{ marginTop: 12 }} onClick={() => { upsertReminder({ id: 'quest-' + cls.weakest.k, kind: 'ride', title: QUEST[cls.weakest.k].replace('Quest: ', '⚔ '), time: '06:00', days: [6], enabled: true }); toast('⚔️ Quest diterima', 'Pengingat dipasang Sabtu 06.00'); celebrate(0.7) }}>Terima quest</button>
           </div>
 
           <div className="card">

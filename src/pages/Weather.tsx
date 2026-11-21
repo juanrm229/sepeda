@@ -3,7 +3,7 @@ import { useStore } from '../lib/store'
 import { useForecast } from '../lib/useForecast'
 import { bestWindow, scoreLabel, windAdvice } from '../lib/weather'
 import { HourBars, Dial } from '../charts/Charts'
-import { Top } from '../components/UI'
+import { Skeleton, Top } from '../components/UI'
 import { relDay } from '../lib/util'
 
 const hh = (d: Date) => `${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')}`
@@ -11,7 +11,11 @@ const hh = (d: Date) => `${String(d.getHours()).padStart(2, '0')}.${String(d.get
 export default function Weather() {
   const { settings } = useStore()
   const fc = useForecast(settings.home)
-  if (!fc) return <div><Top title="Cuaca gowes" back /><div className="empty">Memuat prakiraan…</div></div>
+  if (!fc) return (
+    <div><Top title="Cuaca gowes" sub="Memuat prakiraan…" back />
+      <div className="stack"><Skeleton h={200} r={26} /><Skeleton h={160} r={26} /><div className="grid2"><Skeleton h={110} r={26} /><Skeleton h={110} r={26} /></div></div>
+    </div>
+  )
   const win = bestWindow(fc.hours, 2)
   const win3 = bestWindow(fc.hours, 3)
   const now = fc.hours.find((h) => h.time.getTime() >= Date.now() - 3600000) ?? fc.hours[0]

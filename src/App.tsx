@@ -1,27 +1,50 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee } from 'lucide-react'
 import { useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { dueReminders, notify } from './lib/notify'
 import { dayKey } from './lib/util'
-import { Toaster, toast } from './components/UI'
+import { celebrate, ConfirmHost, ErrorBoundary, Skeleton, Toaster, toast } from './components/UI'
+import { level, levelTitle, weekly } from './lib/analytics'
 import Home from './pages/Home'
-import Record from './pages/Record'
-import Squad from './pages/Squad'
-import SquadDetail from './pages/SquadDetail'
-import Meet from './pages/Meet'
-import Reminders from './pages/Reminders'
-import Garage from './pages/Garage'
-import Profile from './pages/Profile'
-import RideDetail from './pages/RideDetail'
-import Weather from './pages/Weather'
-import Insights from './pages/Insights'
-import Rides from './pages/Rides'
-import Join from './pages/Join'
-import CharacterPage from './pages/Character'
-import Plan from './pages/Plan'
-import RoutePlanner, { RouteList } from './pages/RoutePlanner'
+const Record = lazy(() => import('./pages/Record'))
+const Squad = lazy(() => import('./pages/Squad'))
+const SquadDetail = lazy(() => import('./pages/SquadDetail'))
+const Meet = lazy(() => import('./pages/Meet'))
+const Reminders = lazy(() => import('./pages/Reminders'))
+const Garage = lazy(() => import('./pages/Garage'))
+const Profile = lazy(() => import('./pages/Profile'))
+const RideDetail = lazy(() => import('./pages/RideDetail'))
+const Weather = lazy(() => import('./pages/Weather'))
+const Insights = lazy(() => import('./pages/Insights'))
+const Rides = lazy(() => import('./pages/Rides'))
+const Join = lazy(() => import('./pages/Join'))
+const CharacterPage = lazy(() => import('./pages/Character'))
+const Plan = lazy(() => import('./pages/Plan'))
+const RoutePlanner = lazy(() => import('./pages/RoutePlanner'))
+const RouteList = lazy(() => import('./pages/RoutePlanner').then((m) => ({ default: m.RouteList })))
+const Onboarding = lazy(() => import('./components/Onboarding'))
 import { HeadBadge } from './components/Character'
+
+function useAchievements() {
+  useEffect(() => {
+    let prev = useStore.getState().rides
+    return useStore.subscribe((s) => {
+      if (s.rides === prev) return
+      const before = prev
+      prev = s.rides
+      if (s.rides.length <= before.length) return
+      const lvA = level(before).lvl, lvB = level(s.rides).lvl
+      const wkA = weekly(before, 1)[0].km, wkB = weekly(s.rides, 1)[0].km
+      const goal = s.settings.weeklyGoalKm
+      setTimeout(() => {
+        if (lvB > lvA) { celebrate(1.4); toast(`🆙 Naik ke level ${lvB}!`, `Kamu sekarang ${levelTitle(lvB)} — cek item baru di lemari`) }
+        else if (wkA < goal && wkB >= goal) { celebrate(1.2); toast('🎯 Target mingguan tembus!', `${Math.round(wkB)} / ${goal} km — karaktermu semangat`) }
+        else celebrate(0.6)
+      }, 600)
+    })
+  }, [])
+}
 
 function useReminderLoop() {
   useEffect(() => {
@@ -43,7 +66,9 @@ export default function App() {
   const route = useRoute()
   const theme = useStore((s) => s.settings.theme)
   const char = useStore((s) => s.char)
+  const onboarded = useStore((s) => s.onboarded)
   useReminderLoop()
+  useAchievements()
   useEffect(() => {
     document.documentElement.dataset.theme = theme
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#e8e7e3')
@@ -90,7 +115,11 @@ export default function App() {
         <a href="#/profile" className={on('profile')}><User size={18} /> Profil</a>
         <a href="#/record" className="btn accent rec" style={{ color: '#fff', justifyContent: 'center' }}><Zap size={18} /> Mulai rekam</a>
       </aside>
-      <main className="main">{page}</main>
+      <main className="main">
+        <ErrorBoundary key={route.join('/')}>
+          <Suspense fallback={<PageSkeleton />}>{page}</Suspense>
+        </ErrorBoundary>
+      </main>
       <nav className="bottomnav" aria-label="Navigasi utama">
         <i className="nav-ind" style={{ transform: `translateX(${[0, 60, 120, 186, 246][Math.max(0, navIdx)]}px)`, opacity: navIdx < 0 || navIdx === 2 ? 0 : 1 }} />
         <a href="#/" className={on(undefined)} aria-label="Beranda"><HomeIcon size={21} /></a>
@@ -100,6 +129,19 @@ export default function App() {
         <a href="#/karakter" className={on('karakter')} aria-label="Karakter" style={{ opacity: 1 }}><HeadBadge c={char} size={32} bg="#2a2a28" ring={false} /></a>
       </nav>
       <Toaster />
+      <ConfirmHost />
+      {!onboarded && <Suspense fallback={null}><Onboarding /></Suspense>}
+    </div>
+  )
+}
+
+function PageSkeleton() {
+  return (
+    <div className="page-skel" aria-busy="true" aria-label="Memuat">
+      <Skeleton h={14} w={120} /><Skeleton h={34} w={220} r={12} />
+      <Skeleton h={260} r={26} />
+      <div className="grid2"><Skeleton h={140} r={26} /><Skeleton h={140} r={26} /></div>
+      <Skeleton h={180} r={26} />
     </div>
   )
 }

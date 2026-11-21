@@ -5,7 +5,7 @@ import { estPower, rideTSS, synthZones } from '../lib/analytics'
 import { FeelCheck } from '../components/FeelCheck'
 import { FeelFace, feelLabel } from '../components/Character'
 import { fmt, fmtDate, fmtDur } from '../lib/util'
-import { Avatar, toast, Top } from '../components/UI'
+import { Avatar, confirmDialog, toast, Top } from '../components/UI'
 import { BaseMap, Route, SmallPin } from '../components/Map'
 import { BarChart, ElevationProfile, ZoneBlocks, ZONE_NAMES } from '../charts/Charts'
 import { download, gpx } from '../lib/ics'
@@ -13,7 +13,7 @@ import { go } from '../lib/router'
 import type { Ride } from '../lib/types'
 
 export default function RideDetail({ id }: { id: string }) {
-  const { rides, settings, friends, deleteRide, setRideFeel } = useStore()
+  const { rides, settings, friends, deleteRide, setRideFeel, bikes } = useStore()
   const [feelOpen, setFeelOpen] = useState(false)
   const r = rides.find((x) => x.id === id)
   const splits = useMemo(() => (r ? computeSplits(r) : []), [r])
@@ -53,7 +53,7 @@ export default function RideDetail({ id }: { id: string }) {
               <div><div className="mono">W/kg</div><div className="num" style={{ fontSize: 22 }}>{(watts / settings.weightKg).toFixed(1)}</div></div>
               <div><div className="mono">RPE</div><div className="num" style={{ fontSize: 22 }}>{r.rpe ?? '–'}<span className="unit">/10</span></div></div>
               <div><div className="mono">Detak rata²</div><div className="num" style={{ fontSize: 22 }}>{r.avgHr ?? '–'}<span className="unit">bpm</span></div></div>
-              <div><div className="mono">Sepeda</div><div className="small b" style={{ marginTop: 4 }}>{useStore.getState().bikes.find((b) => b.id === r.bikeId)?.name.split('—')[1]?.trim() ?? '–'}</div></div>
+              <div><div className="mono">Sepeda</div><div className="small b" style={{ marginTop: 4 }}>{bikes.find((b) => b.id === r.bikeId)?.name.split('—')[1]?.trim() ?? '–'}</div></div>
             </div>
           </div>
           <div className="card">
@@ -101,7 +101,7 @@ export default function RideDetail({ id }: { id: string }) {
             <div className="stack" style={{ gap: 8 }}>
               <button className="btn ink" onClick={() => shareCard(r, settings.name)}><ImageIcon size={16} /> Kartu story (PNG)</button>
               <button className="btn ghost" onClick={() => download(`${r.name}.gpx`, gpx(r.name, r.track, r.date), 'application/gpx+xml')}><Download size={16} /> Ekspor GPX (Strava/Garmin)</button>
-              <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={() => { if (confirm('Hapus ride ini?')) { deleteRide(r.id); toast('Ride dihapus'); go('') } }}><Trash2 size={16} /> Hapus</button>
+              <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={async () => { if (await confirmDialog('Hapus ride ini?', { body: 'Statistik, level, dan analitik akan dihitung ulang.', ok: 'Hapus', danger: true })) { deleteRide(r.id); toast('🗑️ Ride dihapus'); go('') } }}><Trash2 size={16} /> Hapus</button>
             </div>
           </div>
         </div>

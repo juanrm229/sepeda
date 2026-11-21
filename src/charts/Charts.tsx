@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { niceMax, useWidth } from './useWidth'
 
 /* ---------- Bar chart: satu seri, bar terakhir/terpilih diberi aksen ---------- */
@@ -45,7 +45,7 @@ export function BarChart({ data, height = 170, unit = '', highlight, goal, fmtTi
           return (
             <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onClick={() => setHover(i)}>
               <rect x={padL + band * i} y={padT} width={band} height={ih} fill="transparent" />
-              <path d={path} fill={isHl ? 'var(--accent)' : 'var(--ink)'} opacity={hover == null || hover === i ? 1 : 0.35} />
+              <path d={path} className="grow" style={{ animationDelay: `${i * 35}ms`, transition: 'opacity .2s' }} fill={isHl ? 'var(--accent)' : 'var(--ink)'} opacity={hover == null || hover === i ? 1 : 0.35} />
               {((data.length - 1 - i) % Math.ceil(data.length / 6) === 0) && (
                 <text x={x + bw / 2} y={height - 5} textAnchor="middle">{d.label}</text>
               )}
@@ -106,8 +106,8 @@ export function LineChart({ series, labels, height = 200, zero = false, markers 
           const last = s.values[s.values.length - 1]
           return (
             <g key={s.name}>
-              <path d={d} fill="none" stroke={s.color} strokeWidth={s.width ?? 2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dash} />
-              <circle cx={x(n - 1)} cy={y(last)} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
+              <path d={d} pathLength={1} className={s.dash ? undefined : 'draw'} fill="none" stroke={s.color} strokeWidth={s.width ?? 2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dash} />
+              <circle className="pop" style={{ animationDelay: '1s' }} cx={x(n - 1)} cy={y(last)} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
               <text x={x(n - 1) + 8} y={y(last) + 3} style={{ fill: 'var(--ink-2)' }}>{s.name} {Math.round(last)}</text>
             </g>
           )
@@ -154,7 +154,7 @@ export function DotHeatmap({ days, weeks = 17 }: { days: { day: string; km: numb
           const col = Math.floor(k / 7), row = k % 7
           const L = lvl(c.km)
           return (
-            <circle key={c.day} cx={22 + col * (size + gap) + size / 2} cy={row * (size + gap) + size / 2} r={L === 0 ? size * 0.22 : size / 2}
+            <circle key={c.day} className="pop" style={{ animationDelay: `${col * 25}ms` }} cx={22 + col * (size + gap) + size / 2} cy={row * (size + gap) + size / 2} r={L === 0 ? size * 0.22 : size / 2}
               fill={fills[L]} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onClick={() => setHover(i)} />
           )
         })}
@@ -208,8 +208,8 @@ export function ElevationProfile({ elev, distanceKm, height = 130 }: { elev: num
       <svg className="chart" width={w} height={height} onPointerLeave={() => setHover(null)}
         onPointerMove={(e) => { const r = e.currentTarget.getBoundingClientRect(); setHover(Math.max(0, Math.min(elev.length - 1, Math.round(((e.clientX - r.left - padL) / (w - padL)) * (elev.length - 1))))) }}>
         {[lo, top].map((t) => (<g key={t}><line x1={padL} x2={w} y1={y(t)} y2={y(t)} stroke="var(--grid)" /><text x={padL - 6} y={y(t) + 3} textAnchor="end">{Math.round(t)}</text></g>))}
-        <path d={area} fill="var(--ink)" opacity={0.1} />
-        <path d={line} fill="none" stroke="var(--ink)" strokeWidth={2} strokeLinejoin="round" />
+        <path d={area} fill="var(--ink)" opacity={0.1} className="grow" />
+        <path d={line} pathLength={1} className="draw" fill="none" stroke="var(--ink)" strokeWidth={2} strokeLinejoin="round" />
         <text x={padL} y={height - 4}>0 KM</text>
         <text x={w} y={height - 4} textAnchor="end">{distanceKm.toFixed(0)} KM</text>
         {hover != null && <circle cx={x(hover)} cy={y(elev[hover])} r={4.5} fill="var(--accent)" stroke="var(--surface)" strokeWidth={2} />}
@@ -228,7 +228,9 @@ export function Dial({ value, max = 100, size = 150, label, sub, color = 'var(--
   const c = size / 2
   const r = size / 2 - 8
   const start = 135, sweep = 270
-  const frac = Math.max(0, Math.min(1, value / max))
+  const target = Math.max(0, Math.min(1, value / max))
+  const [frac, setFrac] = useState(0)
+  useEffect(() => { const t = requestAnimationFrame(() => setFrac(target)); return () => cancelAnimationFrame(t) }, [target])
   return (
     <div style={{ position: 'relative', width: size, height: size }}>
       <svg width={size} height={size} aria-hidden>
@@ -236,7 +238,7 @@ export function Dial({ value, max = 100, size = 150, label, sub, color = 'var(--
           const a = ((start + (sweep * i) / ticks) * Math.PI) / 180
           const on = i / ticks <= frac
           const r1 = r - (i % 5 === 0 ? 10 : 6)
-          return <line key={i} x1={c + Math.cos(a) * r1} y1={c + Math.sin(a) * r1} x2={c + Math.cos(a) * r} y2={c + Math.sin(a) * r} stroke={on ? color : 'var(--line)'} strokeWidth={i % 5 === 0 ? 2.5 : 2} strokeLinecap="round" />
+          return <line key={i} className="dial-tick" style={{ transitionDelay: `${i * 18}ms` }} x1={c + Math.cos(a) * r1} y1={c + Math.sin(a) * r1} x2={c + Math.cos(a) * r} y2={c + Math.sin(a) * r} stroke={on ? color : 'var(--line)'} strokeWidth={i % 5 === 0 ? 2.5 : 2} strokeLinecap="round" />
         })}
         {(() => {
           const a = ((start + sweep * frac) * Math.PI) / 180
@@ -267,7 +269,7 @@ export function HourBars({ hours, best }: { hours: { time: Date; score: number; 
           return (
             <g key={i} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)} onClick={() => setHover(i)}>
               <rect x={band * i} y={0} width={band} height={height} fill="transparent" />
-              <rect x={x} y={height - padB - bh} width={bw} height={bh} rx={Math.min(4, bw / 2)} fill={inBest ? 'var(--accent)' : h.score >= 60 ? 'var(--ink)' : 'var(--line)'} />
+              <rect className="grow" style={{ animationDelay: `${i * 18}ms` }} x={x} y={height - padB - bh} width={bw} height={bh} rx={Math.min(4, bw / 2)} fill={inBest ? 'var(--accent)' : h.score >= 60 ? 'var(--ink)' : 'var(--line)'} />
               {h.time.getHours() % 6 === 0 && <text x={x + bw / 2} y={height - 4} textAnchor="middle">{String(h.time.getHours()).padStart(2, '0')}</text>}
             </g>
           )
@@ -306,7 +308,7 @@ export function ZoneBlocks({ zones, height = 150, durationSec }: { zones: number
           const next = blocks[i + 1]
           return (
             <g key={i}>
-              <rect x={b.s * segW + 1} y={y(b.z) + 2} width={Math.max(2, (b.e - b.s) * segW - 2)} height={rowH - 4} fill={ZONE_FILL[b.z]} />
+              <rect className="pop" style={{ animationDelay: `${i * 20}ms` }} x={b.s * segW + 1} y={y(b.z) + 2} width={Math.max(2, (b.e - b.s) * segW - 2)} height={rowH - 4} fill={ZONE_FILL[b.z]} />
               {next && <line x1={b.e * segW} x2={b.e * segW} y1={Math.min(y(b.z), y(next.z)) + 2} y2={Math.max(y(b.z), y(next.z)) + rowH - 2} stroke="var(--ink)" strokeWidth={1.5} />}
             </g>
           )
@@ -392,7 +394,7 @@ export function DotRows({ days, cols = 14, color = 'var(--accent)' }: { days: { 
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 6, alignItems: 'center', justifyItems: 'center' }}>
       {days.map((d) => {
         const s = d.km > 0 ? 6 + (d.km / max) * 10 : 5
-        return <i key={d.day} title={`${d.day}: ${d.km.toFixed(1)} km`} style={{ width: s, height: s, borderRadius: '50%', background: d.km > 0 ? color : 'color-mix(in srgb, var(--ink) 14%, transparent)', display: 'block' }} />
+        return <i key={d.day} className="pop" title={`${d.day}: ${d.km.toFixed(1)} km`} style={{ animationDelay: `${days.indexOf(d) * 18}ms`, width: s, height: s, borderRadius: '50%', background: d.km > 0 ? color : 'color-mix(in srgb, var(--ink) 14%, transparent)', display: 'block' }} />
       })}
     </div>
   )
@@ -414,7 +416,7 @@ export function SweetScatter({ pts, lo, hi, height = 190 }: { pts: { tsb: number
         {[0, 0.5, 1].map((v) => <g key={v}><line x1={padL} x2={w} y1={y(v)} y2={y(v)} stroke="var(--grid)" /><text x={padL - 6} y={y(v) + 3} textAnchor="end">{v === 1 ? '😄' : v === 0 ? '😩' : '😐'}</text></g>)}
         {[x0, 0, x1].map((v) => <text key={v} x={x(v)} y={height - 6} textAnchor="middle">{v > 0 ? '+' : ''}{v}</text>)}
         <line x1={x(0)} x2={x(0)} y1={padT} y2={height - padB} stroke="var(--line)" />
-        {pts.map((p, i) => <circle key={i} cx={x(p.tsb)} cy={y(p.feel)} r={4.5} fill={p.tsb >= lo && p.tsb <= hi ? 'var(--ink)' : 'var(--muted)'} stroke="var(--surface)" strokeWidth={2} opacity={0.9} />)}
+        {pts.map((p, i) => <circle key={i} className="pop" style={{ animationDelay: `${i * 15}ms` }} cx={x(p.tsb)} cy={y(p.feel)} r={4.5} fill={p.tsb >= lo && p.tsb <= hi ? 'var(--ink)' : 'var(--muted)'} stroke="var(--surface)" strokeWidth={2} opacity={0.9} />)}
       </svg>
     </div>
   )

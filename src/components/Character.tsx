@@ -304,7 +304,7 @@ export function HoloOrb({ size = 220, children, spin = true }: { size?: number; 
 export function HeadSticker({ c, mood = 'oke', size = 64, bg = 'var(--surface-2)', tilt = 0 }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; tilt?: number }) {
   return (
     <span className="sticker" style={{ width: size, height: size, background: bg, transform: `rotate(${tilt}deg)` }}>
-      <svg viewBox="40 30 120 120" width={size * 1.04} height={size * 1.04} style={{ marginTop: size * 0.14 }}><HeadArt c={c} mood={mood} sw={5} /></svg>
+      <svg viewBox="30 22 140 140" width={size} height={size} style={{ marginTop: size * 0.1 }}><HeadArt c={c} mood={mood} sw={5.5} /></svg>
     </span>
   )
 }

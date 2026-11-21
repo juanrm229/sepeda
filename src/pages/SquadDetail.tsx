@@ -4,7 +4,7 @@ import { useStore } from '../lib/store'
 import type { CharConfig, GroupRide, LatLng, Rsvp } from '../lib/types'
 import { etaMin, haversine, trackLength } from '../lib/geo'
 import { fmtDate, relDay } from '../lib/util'
-import { Avatar, toast, Top } from '../components/UI'
+import { Avatar, confirmDialog, toast, Top } from '../components/UI'
 import { BaseMap, MeetPin, PersonPin, Route, SmallPin } from '../components/Map'
 import { download, groupRideICS } from '../lib/ics'
 import { inviteLink, inviteText, shareOrCopy, waLink } from '../lib/share'
@@ -13,13 +13,13 @@ import { makeLoop } from '../lib/seed'
 import { go } from '../lib/router'
 import { useForecast } from '../lib/useForecast'
 import { GroupActionCard } from '../components/GroupActions'
-import { CP_KIND, gmapsDirections, timeline } from './RoutePlanner'
+import { CP_KIND, gmapsDirections, timeline } from '../lib/plan'
 import { notify, speak } from '../lib/notify'
 
 const RSVP_L: Record<Rsvp, string> = { ikut: 'Ikut', mungkin: 'Mungkin', tidak: 'Tidak', menunggu: 'Belum jawab' }
 
 export default function SquadDetail({ id }: { id: string }) {
-  const { groupRides, friends, settings, setMyRsvp, deleteGroupRide, upsertReminder } = useStore()
+  const { groupRides, friends, settings, setMyRsvp, deleteGroupRide, upsertReminder, char: myChar } = useStore()
   const g = groupRides.find((x) => x.id === id)
   const fc = useForecast(g?.meet.pos ?? settings.home)
   if (!g) return <div><Top title="Tidak ditemukan" back="squad" /><div className="empty">Jadwal ini sudah dihapus.</div></div>
@@ -32,7 +32,7 @@ export default function SquadDetail({ id }: { id: string }) {
   const link = inviteLink(g, settings.name)
   const text = inviteText(g, link)
   const people = [
-    { id: 'me', name: settings.name + ' (kamu)', color: '#111', rsvp: g.myRsvp, home: settings.home, spd: 25, c: useStore.getState().char },
+    { id: 'me', name: settings.name + ' (kamu)', color: '#111', rsvp: g.myRsvp, home: settings.home, spd: 25, c: myChar },
     ...g.participants.map((p) => { const f = friends.find((x) => x.id === p.friendId); return f ? { id: f.id, name: f.name, color: f.color, rsvp: p.rsvp, home: f.home, spd: f.avgSpeed, c: f.char } : null }).filter(Boolean) as { id: string; name: string; color: string; rsvp: Rsvp; home: LatLng; spd: number; c: CharConfig }[],
   ]
 
@@ -170,7 +170,7 @@ export default function SquadDetail({ id }: { id: string }) {
           <LiveSquad g={g} />
 
           {g.host === 'me' && (
-            <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={() => { if (confirm('Hapus jadwal ini?')) { deleteGroupRide(g.id); go('squad') } }}><Trash2 size={16} /> Hapus jadwal</button>
+            <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={async () => { if (await confirmDialog('Hapus jadwal ini?', { body: 'Undangan yang sudah terkirim tidak ikut terhapus di HP teman.', ok: 'Hapus', danger: true })) { deleteGroupRide(g.id); toast('🗑️ Jadwal dihapus'); go('squad') } }}><Trash2 size={16} /> Hapus jadwal</button>
           )}
         </div>
       </div>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pause, Play, Square, ShieldAlert, Volume2, Droplets, Activity, Share2, Lock, FlaskConical } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { LatLng, Ride, RoutePlan } from '../lib/types'
-import { CP_KIND } from './RoutePlanner'
+import { CP_KIND } from '../lib/plan'
 import { haversine } from '../lib/geo'
 import { calories } from '../lib/analytics'
 import { fmtClock, uid } from '../lib/util'
@@ -181,7 +181,7 @@ export default function Record() {
       i = Math.min(loop.length - 1, i + 1)
       alt += Math.sin(i / 40) * 0.8
       setPts((arr) => [...arr, { p: loop[i], t: Date.now(), alt, spd: null }])
-    }, 1000)
+    }, 600)
     // percepat waktu supaya data demo terasa realistis (~26 km/j)
   }
 
@@ -223,7 +223,7 @@ export default function Record() {
       elevations: pts.filter((_, i) => i % Math.max(1, Math.floor(pts.length / 120)) === 0).map((x) => Math.round(x.alt ?? 10)),
       bikeId, friendIds: tagged,
     }
-    if (r.distanceKm < 0.05) { toast('Ride terlalu pendek untuk disimpan'); return }
+    if (r.distanceKm < 0.05) { toast('Ride terlalu pendek', 'Minimal 50 m — lanjutkan dulu atau buang'); return }
     addRide(r)
     setSaveOpen(false); setPhase('idle'); setPts([])
     toast('🎉 Ride tersimpan', `+${Math.round(r.distanceKm * 10 + r.elevationM)} XP untuk karaktermu`)

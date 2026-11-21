@@ -9,7 +9,7 @@ import { go } from '../lib/router'
 
 /** Kartu merah ala Kyugo: peserta + aksi cepat (telat, jadwal ulang, batal, ajak). */
 export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolean }) {
-  const { friends, settings, setMyRsvp, upsertGroupRide } = useStore()
+  const { friends, settings, setMyRsvp, upsertGroupRide, char } = useStore()
   const [late, setLate] = useState(15)
   const going = g.participants.filter((p) => p.rsvp === 'ikut').map((p) => friends.find((f) => f.id === p.friendId)).filter(Boolean)
   const start = new Date(g.datetime)
@@ -43,7 +43,7 @@ export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolea
 
       <div className="row" style={{ background: 'rgba(0,0,0,.14)', borderRadius: 999, padding: 6, marginTop: 14, gap: 8 }}>
         <div className="avatars" style={{ paddingLeft: 4 }}>
-          <Avatar name={settings.name} color="#111" c={useStore.getState().char} size={30} />
+          <Avatar name={settings.name} color="#111" c={char} size={30} />
           {going.slice(0, 4).map((f) => f && <Avatar key={f.id} name={f.name} color={f.color} c={f.char} size={30} />)}
         </div>
         <span className="small" style={{ flex: 1 }}>{going.length + (g.myRsvp === 'ikut' ? 1 : 0)} ikut</span>

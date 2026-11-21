@@ -20,6 +20,7 @@ interface State {
   upsertRoute: (r: RoutePlan) => void
   deleteRoute: (id: string) => void
   setChar: (c: CharConfig) => void
+  finishOnboarding: (useDemo: boolean) => void
   setPlan: (p: Plan) => void
   setEvent: (e: EventGoal | null) => void
   setRideFeel: (id: string, feel: number, rpe: number) => void
@@ -65,6 +66,7 @@ export const useStore = create<State>()(
       upsertRoute: (r) => set((s) => ({ routes: s.routes.some((x) => x.id === r.id) ? s.routes.map((x) => (x.id === r.id ? r : x)) : [r, ...s.routes] })),
       deleteRoute: (id) => set((s) => ({ routes: s.routes.filter((r) => r.id !== id) })),
       setChar: (c) => set({ char: c }),
+      finishOnboarding: (useDemo) => set(useDemo ? { onboarded: true } : { onboarded: true, rides: [], groupRides: [], routes: [], bikes: seedBikes.map((b) => ({ ...b, odometerKm: 0, components: b.components.map((c) => ({ ...c, usedKm: 0 })) })) }),
       setPlan: (p) => set({ plan: p }),
       setEvent: (e) => set({ event: e }),
       setRideFeel: (id, feel, rpe) => set((s) => ({ rides: s.rides.map((r) => (r.id === id ? { ...r, feel, rpe } : r)) })),
@@ -95,6 +97,23 @@ export const useStore = create<State>()(
       resetDemo: () => set({ ...demo() }),
       clearAll: () => set({ rides: [], groupRides: [], bikes: seedBikes }),
     }),
-    { name: 'kayuh-v2' },
+    {
+      name: 'kayuh-v2',
+      version: 3,
+      migrate: (persisted: unknown) => {
+        const p = (persisted ?? {}) as Partial<State>
+        const d = demo()
+        return {
+          ...p,
+          routes: p.routes ?? [],
+          onboarded: p.onboarded ?? true,
+          plan: p.plan?.cells?.length === 14 ? p.plan : d.plan,
+          char: p.char ?? defaultChar,
+          friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, char: f.char ?? d.friends[i % d.friends.length].char })),
+          groupRides: (p.groupRides ?? d.groupRides).map((g) => ({ ...g, plan: g.plan ?? d.groupRides.find((x) => x.id === g.id)?.plan })),
+          settings: { ...defaultSettings, ...(p.settings ?? {}) },
+        } as State
+      },
+    },
   ),
 )

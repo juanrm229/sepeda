@@ -3,85 +3,32 @@ import { ArrowDown, ArrowUp, Coffee, Flag, Loader2, MapPin, Navigation, Plus, Re
 import { useStore } from '../lib/store'
 import type { Checkpoint, CheckpointKind, GroupRide, LatLng, RoutePlan } from '../lib/types'
 import { getBikeRoute, kmAlong, pointAtKm } from '../lib/routing'
+import { CP_KIND, defaultPlan, gmapsDirections, hhmm, itineraryText, timeline } from '../lib/plan'
+export { CP_KIND, gmapsDirections, timeline } from '../lib/plan'
 import { nearbyPlaces, type Place, type PlaceCat } from '../lib/places'
 import { prayerTimes, type PrayerTime } from '../lib/prayer'
 import { haversine } from '../lib/geo'
 import { fmt, fmtDate, uid } from '../lib/util'
 import { BaseMap, MeetPin, Route, SmallPin } from '../components/Map'
-import { Sheet, toast, Top } from '../components/UI'
+import { confirmDialog, Sheet, toast, Top } from '../components/UI'
 import { waLink, shareOrCopy } from '../lib/share'
 import { go } from '../lib/router'
 import { CreateRide } from './Squad'
 import { Marker } from 'react-leaflet'
 import L from 'leaflet'
 
-export const CP_KIND: Record<CheckpointKind, { l: string; emoji: string; stop: number; cat: PlaceCat }> = {
-  rehat: { l: 'Rehat', emoji: '⏸', stop: 10, cat: 'minimarket' },
-  kopi: { l: 'Coffee break', emoji: '☕', stop: 20, cat: 'kopi' },
-  makan: { l: 'Makan', emoji: '🍜', stop: 35, cat: 'makan' },
-  air: { l: 'Isi air', emoji: '💧', stop: 5, cat: 'air' },
-  foto: { l: 'Foto', emoji: '📸', stop: 5, cat: 'kumpul' },
-  sholat: { l: 'Sholat', emoji: '🕌', stop: 15, cat: 'masjid' },
-  bengkel: { l: 'Bengkel', emoji: '🔧', stop: 15, cat: 'bengkel' },
-}
 const CAT_TABS: { c: PlaceCat; l: string; icon: ReactNode }[] = [
   { c: 'kopi', l: 'Kopi', icon: <Coffee size={14} /> }, { c: 'makan', l: 'Makan', icon: <Utensils size={14} /> }, { c: 'minimarket', l: 'Minimarket', icon: <Store size={14} /> },
   { c: 'masjid', l: 'Masjid', icon: <Moon size={14} /> }, { c: 'bengkel', l: 'Bengkel', icon: <Wrench size={14} /> }, { c: 'air', l: 'Air & toilet', icon: <Droplets size={14} /> },
 ]
 const CAT_TO_KIND: Record<PlaceCat, CheckpointKind> = { kopi: 'kopi', makan: 'makan', minimarket: 'rehat', masjid: 'sholat', bengkel: 'bengkel', air: 'air', kumpul: 'rehat' }
 
-const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')}`
 
 function cpIcon(n: number, kind: CheckpointKind, active: boolean) {
-  const html = `<div style="display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:${active ? '#ff4d1f' : '#111'};color:#fff;font:700 12px var(--f-ui);border:2.5px solid #fff;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);transform:rotate(-6deg)"><span style="font-size:11px;line-height:1">${CP_KIND[kind].emoji}</span><span style="font-size:9px;line-height:1;margin-top:1px">${n}</span></div>`
+  const html = `<div class="drop"><div style="display:grid;place-items:center;width:34px;height:34px;border-radius:12px;background:${active ? '#ff4d1f' : '#111'};color:#fff;font:700 12px var(--f-ui);border:2.5px solid #fff;box-shadow:0 6px 14px -4px rgba(0,0,0,.5);transform:rotate(-6deg)"><span style="font-size:11px;line-height:1">${CP_KIND[kind].emoji}</span><span style="font-size:9px;line-height:1;margin-top:1px">${n}</span></div></div>`
   return L.divIcon({ html, className: '', iconSize: [34, 34], iconAnchor: [17, 17] })
 }
 const finishIcon = L.divIcon({ html: '<div style="width:30px;height:30px;border-radius:50%;background:repeating-conic-gradient(#111 0 25%,#fff 0 50%) 50%/12px 12px;border:3px solid #111;box-shadow:0 4px 10px rgba(0,0,0,.4)"></div>', className: '', iconSize: [30, 30], iconAnchor: [15, 15] })
-
-export function defaultPlan(start: { name: string; pos: LatLng }, startTime?: string): RoutePlan {
-  const t = new Date(); t.setDate(t.getDate() + ((6 - t.getDay() + 7) % 7 || 7)); t.setHours(5, 30, 0, 0)
-  return { id: uid(), name: 'Rute baru', start, finish: null, checkpoints: [], speed: 24, startTime: startTime ?? t.toISOString() }
-}
-
-/** Hitung ETA tiap checkpoint dari legs jarak. */
-export function timeline(plan: RoutePlan) {
-  const legs = plan.legsKm ?? []
-  let t = new Date(plan.startTime).getTime()
-  let km = 0
-  const rows = plan.checkpoints.map((c, i) => {
-    const leg = legs[i] ?? 0
-    km += leg
-    t += (leg / plan.speed) * 3600000
-    const arrive = new Date(t)
-    t += c.stopMin * 60000
-    return { c, leg, km, arrive, leave: new Date(t) }
-  })
-  const lastLeg = legs[plan.checkpoints.length] ?? 0
-  km += lastLeg
-  t += (lastLeg / plan.speed) * 3600000
-  const stopMin = plan.checkpoints.reduce((a, c) => a + c.stopMin, 0)
-  return { rows, lastLeg, totalKm: km, finish: new Date(t), stopMin, rideMin: Math.round((km / plan.speed) * 60) }
-}
-
-export function itineraryText(plan: RoutePlan, title?: string) {
-  const tl = timeline(plan)
-  const g = (p: LatLng) => `https://maps.google.com/?q=${p[0].toFixed(5)},${p[1].toFixed(5)}`
-  const lines = [
-    `🚲 *${title ?? plan.name}* — ${fmtDate(plan.startTime)}`,
-    `${tl.totalKm.toFixed(1)} km · ${Math.floor(tl.rideMin / 60)}j ${tl.rideMin % 60}m gowes + ${tl.stopMin} mnt rehat · finish ±${hhmm(tl.finish)}`,
-    '',
-    `🟢 ${hhmm(new Date(plan.startTime))} Start — ${plan.start.name}`,
-    ...tl.rows.map((r, i) => `${CP_KIND[r.c.kind].emoji} ${hhmm(r.arrive)} CP${i + 1} ${r.c.place?.name ?? r.c.name} (km ${r.km.toFixed(1)}, ${r.c.stopMin} mnt) ${g(r.c.place?.pos ?? r.c.pos)}`),
-    `🏁 ${hhmm(tl.finish)} Finish — ${plan.finish?.name ?? plan.start.name}`,
-  ]
-  return lines.join('\n')
-}
-
-export function gmapsDirections(plan: RoutePlan) {
-  const s = plan.start.pos, f = (plan.finish ?? plan.start).pos
-  const wp = plan.checkpoints.map((c) => (c.place?.pos ?? c.pos).map((x) => x.toFixed(5)).join(',')).join('|')
-  return `https://www.google.com/maps/dir/?api=1&origin=${s[0]},${s[1]}&destination=${f[0]},${f[1]}${wp ? `&waypoints=${encodeURIComponent(wp)}` : ''}&travelmode=bicycling`
-}
 
 export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: string }) {
   const { routes, upsertRoute, groupRides, upsertGroupRide, settings, friends } = useStore()
@@ -96,10 +43,12 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
   const [every, setEvery] = useState(20)
   const [prayers, setPrayers] = useState<PrayerTime[]>([])
   const [create, setCreate] = useState(false)
-  const [dirty, setDirty] = useState(false)
+  const [saved, setSaved] = useState<'idle' | 'saving' | 'saved'>('idle')
+  const [initialFit] = useState<LatLng[] | undefined>(() => { const p0 = existing ?? group?.plan; return p0 && p0.checkpoints.length ? [p0.start.pos, ...p0.checkpoints.map((c) => c.pos)] : undefined })
+  const first = useRef(true)
   const reqId = useRef(0)
 
-  const setPlan = (p: RoutePlan) => { setPlanState(p); setDirty(true) }
+  const setPlan = (p: RoutePlan) => setPlanState(p)
   const pts: LatLng[] = useMemo(() => [plan.start.pos, ...plan.checkpoints.map((c) => c.pos), (plan.finish ?? plan.start).pos], [plan.start.pos, plan.checkpoints, plan.finish])
   const ptsKey = pts.map((p) => p.join(',')).join('|')
 
@@ -118,6 +67,22 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
   }, [ptsKey])
 
   const tl = timeline(plan)
+
+  // simpan otomatis (debounce) — tidak ada perubahan yang hilang
+  useEffect(() => {
+    if (first.current) { first.current = false; return }
+    setSaved('saving')
+    const t = setTimeout(() => { persist(plan); setSaved('saved') }, 700)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan])
+  function persist(p: RoutePlan) {
+    if (group) {
+      const live = useStore.getState().groupRides.find((x) => x.id === group.id) ?? group
+      const t2 = timeline(p)
+      upsertGroupRide({ ...live, plan: p, distanceKm: Math.round(t2.totalKm) || live.distanceKm, route: p.checkpoints.map((c) => c.place?.name ?? c.name).join(' – ') || live.route })
+    } else upsertRoute(p)
+  }
 
   useEffect(() => { prayerTimes(plan.start.pos, new Date(plan.startTime)).then(setPrayers) }, [plan.start.pos, plan.startTime])
   const rideStart = new Date(plan.startTime).getTime()
@@ -189,14 +154,9 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
   }
 
   function save() {
-    if (group) {
-      upsertGroupRide({ ...group, plan, distanceKm: Math.round(tl.totalKm) || group.distanceKm, route: plan.checkpoints.map((c) => c.place?.name ?? c.name).join(' – ') || group.route })
-      toast('💾 Rute tersimpan di gowes bareng', `${plan.checkpoints.length} checkpoint · ${tl.totalKm.toFixed(1)} km`)
-    } else {
-      upsertRoute(plan)
-      toast('💾 Rute tersimpan', `${plan.checkpoints.length} checkpoint · ${tl.totalKm.toFixed(1)} km`)
-    }
-    setDirty(false)
+    persist(plan)
+    setSaved('saved')
+    toast(group ? '💾 Rute tersimpan di gowes bareng' : '💾 Rute tersimpan', `${plan.checkpoints.length} checkpoint · ${tl.totalKm.toFixed(1)} km`)
   }
 
   const cbCp = plan.checkpoints.find((c) => c.id === cbFor) ?? null
@@ -204,13 +164,13 @@ export default function RoutePlanner({ id, groupId }: { id?: string; groupId?: s
   return (
     <div className="fadein">
       <Top title={group ? 'Rute & checkpoint' : 'Perencana rute'} sub={group ? group.title : 'Checkpoint & coffee break'} back={group ? 'squad/' + group.id : 'rute'}
-        right={<button className="btn ink sm" onClick={save}><Save size={15} /> Simpan{dirty ? ' •' : ''}</button>} />
+        right={<span className={`savechip ${saved}`} aria-live="polite">{saved === 'saving' ? <><Loader2 size={13} className="spin" /> Menyimpan</> : saved === 'saved' ? <>✓ Tersimpan</> : <><Save size={13} /> Otomatis</>}</span>} />
 
       <div className="row-d">
         <div className="stack">
           {!group && <input className="input" style={{ fontFamily: 'var(--f-display)', fontWeight: 700, fontSize: 20 }} value={plan.name} onChange={(e) => setPlan({ ...plan, name: e.target.value })} aria-label="Nama rute" />}
           <div style={{ position: 'relative' }}>
-            <BaseMap center={plan.start.pos} zoom={13} className="map full" onClick={onMap} fit={plan.checkpoints.length ? pts : undefined}>
+            <BaseMap center={plan.start.pos} zoom={13} className="map full" onClick={onMap} fit={initialFit}>
               {plan.geometry && <><Route track={plan.geometry} color="#111" weight={7} /><Route track={plan.geometry} color="#ff4d1f" weight={3.5} /></>}
               <MeetPin pos={plan.start.pos} label="S" draggable onDrag={(p) => setPlan({ ...plan, start: { ...plan.start, pos: p } })} />
               {plan.finish && <Marker position={plan.finish.pos} icon={finishIcon} draggable eventHandlers={{ dragend: (e) => { const ll = (e.target as L.Marker).getLatLng(); setPlan({ ...plan, finish: { ...plan.finish!, pos: [ll.lat, ll.lng] } }) } }} />}
@@ -466,7 +426,7 @@ export function RouteList() {
               </div>
               <div className="row between" style={{ marginTop: 12 }}>
                 <span className="mono">{r.checkpoints.length} checkpoint · rehat {tl.stopMin} mnt · finish {hhmm(tl.finish)}</span>
-                <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label="Hapus rute" onClick={(e) => { e.stopPropagation(); if (confirm('Hapus rute ini?')) deleteRoute(r.id) }}><Trash2 size={14} /></button>
+                <button className="iconbtn" style={{ width: 32, height: 32 }} aria-label="Hapus rute" onClick={async (e) => { e.stopPropagation(); if (await confirmDialog(`Hapus “${r.name}”?`, { ok: 'Hapus', danger: true })) { deleteRoute(r.id); toast('🗑️ Rute dihapus') } }}><Trash2 size={14} /></button>
               </div>
             </div>
           )

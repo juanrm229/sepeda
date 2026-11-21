@@ -3,7 +3,9 @@ import { Crosshair, Download, RefreshCw, Trash2, Moon, Sun } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { badges, level, levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
-import { Avatar, toast, Top } from '../components/UI'
+import { confirmDialog, toast, Top } from '../components/UI'
+import { HeadSticker } from '../components/Character'
+import { go } from '../lib/router'
 import { BaseMap, SmallPin } from '../components/Map'
 import { download } from '../lib/ics'
 
@@ -19,8 +21,8 @@ export default function Profile() {
   function locate() {
     setLocating(true)
     navigator.geolocation?.getCurrentPosition(
-      (p) => { updateSettings({ home: [p.coords.latitude, p.coords.longitude], homeLabel: 'Lokasi saya' }); setLocating(false); toast('Lokasi rumah diperbarui') },
-      () => { setLocating(false); toast('Tidak bisa mengambil lokasi') },
+      (p) => { updateSettings({ home: [p.coords.latitude, p.coords.longitude], homeLabel: 'Lokasi saya' }); setLocating(false); toast('📍 Lokasi rumah diperbarui', 'Cuaca & titik temu memakai lokasi baru') },
+      () => { setLocating(false); toast('Tidak bisa mengambil lokasi', 'Izinkan akses lokasi, atau ketuk peta') },
       { enableHighAccuracy: true, timeout: 10000 },
     )
   }
@@ -33,12 +35,12 @@ export default function Profile() {
 
   return (
     <div className="fadein">
-      <Top title="Profil" sub="Kamu" right={<button className="iconbtn" onClick={() => updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })} aria-label="Ganti tema">{settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>} />
+      <Top title="Profil" sub="Pengaturan & pencapaian" back="karakter" right={<button className="iconbtn" onClick={() => updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })} aria-label="Ganti tema">{settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>} />
       <div className="row-d">
         <div className="stack">
           <div className="card ink">
             <div className="row" style={{ gap: 14 }}>
-              <Avatar name={settings.name} color="#ff4d1f" size={64} />
+              <HeadSticker c={st.char} mood="segar" size={68} tilt={-6} bg="var(--yellow)" />
               <div>
                 <div style={{ fontSize: 24, fontWeight: 600 }}>{settings.name}</div>
                 <div className="mono">Level {lv.lvl} · {levelTitle(lv.lvl)}</div>
@@ -99,8 +101,9 @@ export default function Profile() {
             <div className="mono" style={{ marginBottom: 12 }}>Data</div>
             <div className="stack" style={{ gap: 8 }}>
               <button className="btn ghost" onClick={() => download('kayuh-data.json', JSON.stringify({ rides: st.rides, friends: st.friends, groupRides: st.groupRides, reminders: st.reminders, bikes: st.bikes, settings: st.settings }, null, 2), 'application/json')}><Download size={16} /> Ekspor semua data (JSON)</button>
-              <button className="btn ghost" onClick={() => { st.resetDemo(); toast('Data contoh dimuat ulang') }}><RefreshCw size={16} /> Muat ulang data contoh</button>
-              <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={() => { if (confirm('Hapus semua ride & jadwal? Data contoh akan hilang.')) { st.clearAll(); toast('Data dikosongkan') } }}><Trash2 size={16} /> Mulai dari nol</button>
+              <button className="btn ghost" onClick={() => { useStore.setState({ onboarded: false }); go('') }}>✨ Ulangi perkenalan</button>
+              <button className="btn ghost" onClick={() => { st.resetDemo(); toast('🔄 Data contoh dimuat ulang') }}><RefreshCw size={16} /> Muat ulang data contoh</button>
+              <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={async () => { if (await confirmDialog('Mulai dari nol?', { body: 'Semua ride, jadwal, dan rute contoh akan dihapus. Karakter & pengaturan tetap.', ok: 'Kosongkan', danger: true })) { st.clearAll(); toast('🧹 Data dikosongkan', 'Siap mencatat ride pertamamu') } }}><Trash2 size={16} /> Mulai dari nol</button>
             </div>
           </div>
         </div>
