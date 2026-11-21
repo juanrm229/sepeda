@@ -91,16 +91,14 @@ Deliverable: audit tiap halaman → versi tenang; token baru `--surface-quiet`, 
 - **Pendaftaran event komunitas** (gran fondo, fun ride).
 - **Kartu darurat** (golongan darah, kontak, alergi) yang bisa dibuka dari layar kunci (shortcut PWA).
 
-## 6. Avatar — pindah ke DiceBear **Lorelei** (dipilih)
-- Paket: `@dicebear/core` + `@dicebear/lorelei` v9 (kode MIT, desain Lisa Wischofsky **CC0** — bebas komersial tanpa kredit). SVG, offline, deterministik dari seed.
-- Pilihan bawaan: rambut 48 · mata 24 · alis 13 · mulut 27 (happy/sad → **ekspresi mood**) · hidung 6 · bentuk kepala 4 · kacamata 5 · anting 3 · kumis/janggut 2 · bintik 1 · aksesori rambut (bunga) 1. **Warna bebas (hex)** untuk kulit, rambut, mata, alis, kacamata, anting, dll.
-- **Tidak ada di Lorelei:** hijab, topi/helm, dan baju (hanya garis leher/bahu). Untuk Kayuh perlu **lapisan tambahan buatan sendiri** dalam gaya garis Lorelei (stroke hitam, isi datar), dirender di atas/bawah SVG Lorelei pada koordinat yang sama:
-  - Hijab: sport, pashmina, segi empat, khimar (warna bebas) — menyembunyikan rambut & anting.
-  - Kepala: cycling cap, helm road, helm MTB, peci, kopiah, beanie, bucket hat.
-  - Baju (dada atas): jersey, kaos, hoodie, kemeja, batik, baju koko — kerah mengikuti leher Lorelei.
-  - Uji konsistensi: setiap lapisan dicek di 4 bentuk kepala × 48 rambut.
-- Implementasi: tipe `CharConfig` baru (opsi Lorelei + lapisan Kayuh), migrasi otomatis dari avatar kit lama (warna kulit/rambut dipetakan), mood → kombinasi mulut/mata/alis, item terkunci (warna & lapisan langka), ekspor PNG, pin peta, ikon/OG.
-- Aset kit lama (`public/avatar`, 4,2 MB) dihapus setelah migrasi → app lebih ringan.
+## 6. Avatar — pindah ke DiceBear **Lorelei** (diputuskan)
+- Paket: `@dicebear/core` + `@dicebear/lorelei` v9 (kode MIT, desain Lisa Wischofsky **CC0** — bebas komersial tanpa kredit). SVG, offline, deterministik.
+- **Pakai apa adanya** — avatar hanya untuk profil. Tanpa lapisan tambahan (hijab/topi/baju tidak dibuat).
+- Pilihan di lemari karakter: bentuk kepala 4 · rambut 48 · mata 24 · alis 13 · mulut 27 · hidung 6 · kacamata 5 · anting 3 · kumis/janggut 2 · bintik · bunga rambut; warna kulit, rambut, kacamata, anting (palet terkurasi + pemilih warna).
+- Mood → kombinasi mulut (happy/sad) + mata + alis Lorelei.
+- Item terkunci: sebagian warna rambut & aksesori terbuka lewat level/lencana.
+- Implementasi: tipe `CharConfig` baru, migrasi otomatis dari avatar kit (warna kulit & rambut dipetakan, sisanya acak dari seed nama), render SVG di kartu karakter/stiker/daftar/pin peta/balapan, ekspor PNG, regenerasi ikon & OG.
+- Hapus aset kit lama (`public/avatar`, 4,2 MB), `src/lib/avatar-kit.json`, dan `scripts/build-avatar-kit.py` → app lebih ringan.
 
 ---
 
@@ -115,6 +113,6 @@ Deliverable: audit tiap halaman → versi tenang; token baru `--surface-quiet`, 
 | 5 | Supabase (auth, backup, RSVP, voting, radar) | Project URL + anon key | besar |
 | 6 | Peta rawan + kafe terverifikasi | Supabase | sedang |
 | 7 | KRL/MRT, CFD, Wrapped, sensor Bluetooth, cek pagi | data jadwal kereta (opsional) | sedang |
-| 8 | Avatar Lorelei + lapisan hijab/topi/baju gaya Kayuh | — | sedang |
+| 8 | Avatar Lorelei (apa adanya, untuk profil) | — | kecil |
 
 Verifikasi: satu putaran `npm run qa` + tes perangkat nyata setelah semua item selesai; laporan diperbarui di `docs/QA-REPORT.md`.
