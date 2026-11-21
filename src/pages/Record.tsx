@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pause, Play, Square, ShieldAlert, Volume2, Droplets, Activity, Share2, Lock, FlaskConical } from 'lucide-react'
 import { useStore } from '../lib/store'
-import type { LatLng, Ride } from '../lib/types'
+import type { LatLng, Ride, RoutePlan } from '../lib/types'
+import { CP_KIND } from './RoutePlanner'
 import { haversine } from '../lib/geo'
 import { calories } from '../lib/analytics'
 import { fmtClock, uid } from '../lib/util'
-import { BaseMap, Follow, LivePin, Route } from '../components/Map'
+import { BaseMap, Follow, LivePin, Route, SmallPin } from '../components/Map'
 import { Sheet, Toggle, toast, Top, Avatar } from '../components/UI'
 import { notify, speak } from '../lib/notify'
 import { waLink } from '../lib/share'
@@ -17,7 +18,10 @@ type Phase = 'idle' | 'rec' | 'pause'
 interface Pt { p: LatLng; t: number; alt: number | null; spd: number | null }
 
 export default function Record() {
-  const { settings, addRide, bikes, activeBikeId, friends, setRideFeel } = useStore()
+  const { settings, addRide, bikes, activeBikeId, friends, setRideFeel, routes, groupRides } = useStore()
+  const plans = [...routes, ...groupRides.filter((g) => g.plan && new Date(g.datetime).getTime() > Date.now() - 12 * 3600000).map((g) => ({ ...g.plan!, name: g.title }))]
+  const [follow, setFollow] = useState<RoutePlan | null>(null)
+  const [reached, setReached] = useState<string[]>([])
   const [feelFor, setFeelFor] = useState<string | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
   const [pts, setPts] = useState<Pt[]>([])
@@ -93,6 +97,22 @@ export default function Record() {
       if (voice) speak('Waktunya makan sedikit. Pisang atau gel energi.')
     }
   }, [stats.dist, moving, voice, hydr, phase, stats.avg])
+
+  // ---- checkpoint terdekat dari rute yang diikuti
+  const lastP = pts[pts.length - 1]?.p
+  const nextCp = follow?.checkpoints.find((c) => !reached.includes(c.id))
+  const nextDist = nextCp && lastP ? haversine(lastP, nextCp.place?.pos ?? nextCp.pos) : null
+  useEffect(() => {
+    if (!nextCp || nextDist == null || phase !== 'rec') return
+    if (nextDist < 0.15) {
+      setReached((r) => [...r, nextCp.id])
+      const msg = `Sampai di ${nextCp.place?.name ?? nextCp.name}. Waktunya ${CP_KIND[nextCp.kind].l.toLowerCase()} ${nextCp.stopMin} menit.`
+      toast(`${CP_KIND[nextCp.kind].emoji} Checkpoint tercapai`, msg)
+      notify('Checkpoint tercapai', msg)
+      if (voice) speak(msg)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextDist])
 
   // ---- deteksi jatuh (akselerometer)
   useEffect(() => {
@@ -227,6 +247,8 @@ export default function Record() {
         <div className="stack">
           <div style={{ position: 'relative' }}>
             <BaseMap center={lastPos ?? settings.home} zoom={15} className="map tall">
+              {follow && <Route track={follow.geometry ?? [follow.start.pos, ...follow.checkpoints.map((c) => c.pos), (follow.finish ?? follow.start).pos]} color="#888" weight={4} dash="6 8" />}
+              {follow?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color={reached.includes(c.id) ? '#1f9d6a' : '#ff4d1f'} />)}
               {pts.length > 1 && <Route track={pts.map((x) => x.p)} />}
               {lastPos && <><LivePin pos={lastPos} /><Follow pos={lastPos} /></>}
             </BaseMap>
@@ -251,6 +273,23 @@ export default function Record() {
             </div>
           </div>
 
+          {nextCp && phase !== 'idle' && (
+            <div className="card" style={{ background: '#6b3f1f', color: '#fff' }}>
+              <div className="row between">
+                <div><div className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>Checkpoint berikutnya</div><div style={{ fontWeight: 600, fontSize: 18 }}>{CP_KIND[nextCp.kind].emoji} {nextCp.place?.name ?? nextCp.name}</div><div className="tiny" style={{ opacity: 0.75 }}>{CP_KIND[nextCp.kind].l} · rehat {nextCp.stopMin} mnt</div></div>
+                <div style={{ textAlign: 'right' }}><div className="dot" style={{ fontSize: 34 }}>{nextDist != null ? nextDist.toFixed(1) : '–'}</div><div className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>km lagi</div></div>
+              </div>
+            </div>
+          )}
+          {phase === 'idle' && plans.length > 0 && (
+            <div className="card">
+              <div className="mono" style={{ marginBottom: 8 }}>Ikuti rute dengan checkpoint (opsional)</div>
+              <div className="chips">
+                <button className={`chip ${!follow ? 'on' : ''}`} onClick={() => setFollow(null)}>Bebas</button>
+                {plans.map((p) => <button key={p.id} className={`chip ${follow?.id === p.id ? 'on' : ''}`} onClick={() => { setFollow(p); setReached([]) }}>☕ {p.name} · {p.checkpoints.length} CP</button>)}
+              </div>
+            </div>
+          )}
           {gpsErr && <div className="card flat small"><b>GPS:</b> {gpsErr} Beralih ke mode demo agar kamu tetap bisa mencoba.</div>}
 
           <div className="row" style={{ justifyContent: 'center', gap: 14, marginTop: 4 }}>

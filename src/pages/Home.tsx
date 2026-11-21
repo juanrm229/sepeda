@@ -1,12 +1,16 @@
 import { useMemo } from 'react'
-import { Bed, Bike, ChevronRight, CloudSun, Gauge, Leaf, Moon, Smile, Frown, Meh, Sun, Wind, Zap, Users, MapPin, CalendarClock, Sliders } from 'lucide-react'
+import { Bed, Bike, ChevronRight, Gauge, Leaf, Moon, Smile, Frown, Meh, Sun, Wind, Zap, Users, Coffee, CalendarClock, Sliders } from 'lucide-react'
 import { useStore } from '../lib/store'
 import { CO2_PER_KM_MOTOR, dailyKm, estFTP, estPower, insights, KCAL_NASI_GORENG, readiness, recovery, trainingLoad, weekly } from '../lib/analytics'
 import { BAR_LABEL, fmt, fmtDur, relDay } from '../lib/util'
 import { BarChart, DotRows, LineChart } from '../charts/Charts'
 import { useForecast } from '../lib/useForecast'
 import { bestWindow, scoreLabel, windAdvice } from '../lib/weather'
-import { HeadBadge, RaceScene, RiderSolo, type Racer } from '../components/Character'
+import { HeadBadge, HoloOrb, Portrait, RaceScene, type Racer } from '../components/Character'
+import { useCountUp } from '../components/UI'
+import { useEffect, useRef, useState } from 'react'
+import { QUEST } from '../lib/character'
+import { CP_KIND } from './RoutePlanner'
 import { characterLevel, moodOf, riderClass, riderStats } from '../lib/character'
 import { GroupActionCard } from '../components/GroupActions'
 import { go } from '../lib/router'
@@ -59,6 +63,8 @@ export default function Home() {
   const myRank = [...racers].sort((a, b) => b.km - a.km).findIndex((r) => r.me) + 1
   const FaceIcon = ready.score >= 70 ? Smile : ready.score >= 45 ? Meh : Frown
   const daysLeftWeek = 7 - ((new Date().getDay() + 6) % 7)
+  const kmCount = useCountUp(thisW.km)
+
 
   return (
     <div className="fadein">
@@ -75,7 +81,7 @@ export default function Home() {
           {/* Hero angka ala CMF */}
           <div className="row between" style={{ alignItems: 'flex-start', marginTop: 4 }}>
             <div>
-              <div className="dot" style={{ fontSize: 'clamp(84px, 24vw, 132px)' }}>{thisW.km.toFixed(1).replace('.', ',')}</div>
+              <div className="dot" style={{ fontSize: 'clamp(84px, 24vw, 132px)' }}>{kmCount.toFixed(1).replace('.', ',')}</div>
               <div className="mono ink" style={{ marginTop: 8 }}>KM minggu ini · target {settings.weeklyGoalKm}</div>
             </div>
             <a href="#/insights" style={{ marginTop: 10 }}><Pie pct={pct} size={68} /></a>
@@ -85,18 +91,19 @@ export default function Home() {
             <span className="num" style={{ fontSize: 34 }}>{fmt(kcalW)}<span className="unit">Kcal</span></span>
             <span className="num" style={{ fontSize: 34 }}>{fmt(thisW.elev)}<span className="unit">m naik</span></span>
           </div>
+          <div className="ticker" style={{ marginTop: 18 }} aria-label="Ringkasan hari ini">
+            <div className="ticker-track">
+              <span>● Kesiapan <b>{ready.score}</b> {ready.label}</span>
+              {win && <span>☀ Jendela terbaik <b>{String(win.start.getHours()).padStart(2, '0')}.00</b></span>}
+              {next && <span>👥 {next.title} <b>{relDay(next.datetime)}</b></span>}
+              {next?.plan?.checkpoints.find((c) => c.kind === 'kopi') && <span>☕ Coffee break <b>{next.plan.checkpoints.find((c) => c.kind === 'kopi')!.place?.name ?? next.plan.checkpoints.find((c) => c.kind === 'kopi')!.name}</b></span>}
+              <span>⚔ Quest <b>{cls.weakest.l}</b></span>
+              <span>🏆 Liga peringkat <b>#{myRank}</b></span>
+            </div>
+          </div>
         </div>
 
-        {/* Kartu karakter */}
-        <a href="#/karakter" className="card outline click" style={{ textDecoration: 'none', display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 10, alignItems: 'center', marginTop: 20, padding: 14 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 18 }}><RiderSolo c={char} mood={mood} width={148} /></div>
-          <div style={{ minWidth: 0 }}>
-            <div className="mono">Lv {lv.lvl} · {cls.main.emblem} kelas</div>
-            <div className="display" style={{ fontSize: 24, marginTop: 2 }}>{cls.main.name}</div>
-            <div className="xpbar" style={{ marginTop: 10, height: 12 }}><i style={{ width: `${(lv.cur / lv.next) * 100}%` }} /></div>
-            <div className="small" style={{ marginTop: 10, lineHeight: 1.35 }}>“{line}”</div>
-          </div>
-        </a>
+        <StoryDeck char={char} mood={mood} line={line} clsName={cls.main.name} emblem={cls.main.emblem} lvl={lv.lvl} xpPct={lv.cur / lv.next} win={win} windText={nowHour ? windAdvice(nowHour.windDir, nowHour.wind).split('.').slice(0, 2).join('.') + '.' : ''} next={next} quest={QUEST[cls.weakest.k]} weakest={cls.weakest.l} />
       </div>
 
       {/* Bento ala CMF */}
@@ -147,20 +154,6 @@ export default function Home() {
         </div>
 
         <div className="stack" style={{ marginTop: 0 }}>
-          <div className="card ink click" onClick={() => go('weather')}>
-            <div className="card-h"><span className="mono">Waktu terbaik gowes</span><CloudSun size={16} /></div>
-            {win ? (
-              <>
-                <div className="row" style={{ alignItems: 'flex-end', gap: 10 }}>
-                  <div className="dot" style={{ fontSize: 54 }}>{String(win.start.getHours()).padStart(2, '0')}.00</div>
-                  <span className="tag accent" style={{ marginBottom: 8 }}>{win.score} · {scoreLabel(win.score)}</span>
-                </div>
-                <div className="small" style={{ marginTop: 6 }}>{relDay(win.start.toISOString())} s.d. {String(win.end.getHours()).padStart(2, '0')}.00</div>
-                {nowHour && <div className="tiny" style={{ marginTop: 8, opacity: 0.7 }}><Wind size={12} style={{ verticalAlign: -2 }} /> {windAdvice(nowHour.windDir, nowHour.wind).split('.').slice(0, 2).join('.')}.</div>}
-              </>
-            ) : <div className="muted small">Memuat prakiraan…</div>}
-          </div>
-
           <div className="card">
             <div className="card-h"><div><div className="mono">Hari aktif</div><div className="mono" style={{ marginTop: 2 }}>28 hari terakhir</div></div><span className="mono">{Math.round((activeDays / 28) * 100)}%</span></div>
             <div className="row" style={{ alignItems: 'flex-end', justifyContent: 'flex-end' }}><span className="num" style={{ fontSize: 64 }}>{activeDays}</span></div>
@@ -168,7 +161,7 @@ export default function Home() {
           </div>
 
           <div className="grid2" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-            {[{ i: <Zap size={20} />, l: 'Rekam', h: 'record' }, { i: <Users size={20} />, l: 'Squad', h: 'squad' }, { i: <MapPin size={20} />, l: 'Titik temu', h: 'meet' }, { i: <CalendarClock size={20} />, l: 'Rencana', h: 'rencana' }].map((a) => (
+            {[{ i: <Zap size={20} />, l: 'Rekam', h: 'record' }, { i: <Users size={20} />, l: 'Squad', h: 'squad' }, { i: <Coffee size={20} />, l: 'Rute & kopi', h: 'rute' }, { i: <CalendarClock size={20} />, l: 'Rencana', h: 'rencana' }].map((a) => (
               <a key={a.h} href={'#/' + a.h} className="card flat" style={{ padding: 12, textAlign: 'center', textDecoration: 'none' }}>
                 <div className="ico" style={{ margin: '0 auto 6px' }}>{a.i}</div><div className="tiny b">{a.l}</div>
               </a>
@@ -230,6 +223,81 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+import type { CharConfig, GroupRide } from '../lib/types'
+import type { Mood } from '../lib/character'
+import type { Window as WWindow } from '../lib/weather'
+
+function StoryDeck({ char, mood, line, clsName, emblem, lvl, xpPct, win, windText, next, quest, weakest }: { char: CharConfig; mood: Mood; line: string; clsName: string; emblem: string; lvl: number; xpPct: number; win: WWindow | null; windText: string; next?: GroupRide; quest: string; weakest: string }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [i, setI] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const count = 4
+  useEffect(() => {
+    if (paused) return
+    const t = window.setTimeout(() => { const n = (i + 1) % count; ref.current?.scrollTo({ left: n * ref.current.clientWidth, behavior: 'smooth' }); setI(n) }, 6000)
+    return () => clearTimeout(t)
+  }, [i, paused])
+  const onScroll = () => { const el = ref.current; if (el) setI(Math.round(el.scrollLeft / el.clientWidth)) }
+  const bars = <div className="story-bars">{Array.from({ length: count }, (_, k) => <i key={k + '-' + i} className={k < i ? 'done' : k === i && !paused ? 'cur' : k === i ? 'done' : ''} />)}</div>
+  const kopi = next?.plan?.checkpoints.filter((c) => c.kind === 'kopi' || c.kind === 'makan') ?? []
+  return (
+    <div style={{ marginTop: 20, position: 'relative' }} onPointerDown={() => setPaused(true)} onPointerUp={() => setPaused(false)} onPointerLeave={() => setPaused(false)}>
+      <div className="stories" ref={ref} onScroll={onScroll}>
+        <a href="#/karakter" className="story card outline dotgrid-bg" style={{ textDecoration: 'none', color: 'inherit' }}>
+          {bars}
+          <div className="row between"><span className="mono">Lv {lvl} · {emblem} {clsName}</span><span className="mono">1/4</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 14, alignItems: 'center', marginTop: 10, flex: 1 }}>
+            <HoloOrb size={150}><Portrait c={char} mood={mood} size={128} style={{ marginBottom: -6 }} /></HoloOrb>
+            <div>
+              <div className="bubble small" style={{ lineHeight: 1.35 }}>{line}</div>
+              <div className="xpbar" style={{ marginTop: 14, height: 12 }}><i style={{ width: `${xpPct * 100}%` }} /></div>
+            </div>
+          </div>
+        </a>
+        <a href="#/weather" className="story card ink" style={{ textDecoration: 'none' }}>
+          {bars}
+          <div className="row between"><span className="mono">Waktu terbaik gowes</span><span className="mono">2/4</span></div>
+          {win ? (
+            <div style={{ marginTop: 'auto' }}>
+              <div className="dot" style={{ fontSize: 88 }}>{String(win.start.getHours()).padStart(2, '0')}.00</div>
+              <div className="row" style={{ gap: 8, marginTop: 8 }}><span className="tag accent">Skor {win.score} · {scoreLabel(win.score)}</span><span className="small">{relDay(win.start.toISOString())} s.d. {String(win.end.getHours()).padStart(2, '0')}.00</span></div>
+              {windText && <div className="small" style={{ marginTop: 10, opacity: 0.7 }}><Wind size={13} style={{ verticalAlign: -2 }} /> {windText}</div>}
+            </div>
+          ) : <div className="small" style={{ marginTop: 'auto', opacity: 0.7 }}>Memuat prakiraan…</div>}
+        </a>
+        <a href={next ? '#/squad/' + next.id : '#/rute'} className="story card" style={{ textDecoration: 'none', color: '#fff', background: '#6b3f1f' }}>
+          {bars}
+          <div className="row between"><span className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>Coffee ride berikutnya</span><span className="mono" style={{ color: 'rgba(255,255,255,.7)' }}>3/4</span></div>
+          {next ? (
+            <div style={{ marginTop: 'auto' }}>
+              <div className="display" style={{ fontSize: 30 }}>{next.title}</div>
+              <div className="small" style={{ opacity: 0.8, marginTop: 4 }}>{relDay(next.datetime)} · {next.meet.name}</div>
+              <div className="stack" style={{ gap: 6, marginTop: 14 }}>
+                {(next.plan?.checkpoints ?? []).slice(0, 4).map((c, k) => (
+                  <div key={c.id} className="row" style={{ gap: 8 }}><span style={{ width: 26, height: 26, borderRadius: 9, background: 'rgba(255,255,255,.16)', display: 'grid', placeItems: 'center', fontSize: 13 }}>{CP_KIND[c.kind].emoji}</span><span className="small" style={{ flex: 1 }}>{k + 1}. {c.place?.name ?? c.name}</span><span className="mono" style={{ color: 'rgba(255,255,255,.6)' }}>{c.stopMin}m</span></div>
+                ))}
+                {kopi.length === 0 && <span className="small" style={{ opacity: 0.7 }}>Belum ada coffee break — tambahkan di rute.</span>}
+              </div>
+            </div>
+          ) : <div style={{ marginTop: 'auto' }}><div className="display" style={{ fontSize: 30 }}>Rencanakan coffee ride ☕</div><div className="small" style={{ opacity: 0.8 }}>Checkpoint sebanyak apa pun + kafe terdekat.</div></div>}
+        </a>
+        <a href="#/karakter" className="story card lime" style={{ textDecoration: 'none' }}>
+          {bars}
+          <div className="row between"><span className="mono">Quest minggu ini · {weakest.toLowerCase()}</span><span className="mono">4/4</span></div>
+          <div style={{ marginTop: 'auto' }}>
+            <div style={{ fontSize: 46, lineHeight: 1 }}>⚔</div>
+            <div className="display" style={{ fontSize: 28, marginTop: 8 }}>{quest.replace('Quest: ', '')}</div>
+            <div className="small" style={{ marginTop: 6 }}>Selesaikan untuk naik level & membuka item lemari karakter.</div>
+          </div>
+        </a>
+      </div>
+      <div className="row" style={{ position: 'absolute', right: 10, bottom: 10, gap: 4 }}>
+        {Array.from({ length: count }, (_, k) => <button key={k} aria-label={`Cerita ${k + 1}`} onClick={() => { ref.current?.scrollTo({ left: k * ref.current.clientWidth, behavior: 'smooth' }); setI(k) }} style={{ width: k === i ? 18 : 7, height: 7, borderRadius: 9, border: 0, padding: 0, background: k === i ? 'var(--accent)' : 'rgba(127,127,127,.4)', transition: 'width .3s' }} />)}
       </div>
     </div>
   )

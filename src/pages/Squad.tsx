@@ -186,6 +186,7 @@ export function CreateRide({ open, onClose, preset }: { open: boolean; onClose: 
     const g: GroupRide = {
       id: uid(), title, datetime: new Date(dt).toISOString(), meet: { name: meetName, pos }, pace, distanceKm: km, route, notes, noDrop,
       participants: inv.map((id) => ({ friendId: id, rsvp: 'menunggu' })), myRsvp: 'ikut', host: 'me',
+      plan: preset?.plan ? { ...preset.plan, start: { name: meetName, pos }, startTime: new Date(dt).toISOString() } : undefined,
     }
     upsertGroupRide(g)
     onClose()

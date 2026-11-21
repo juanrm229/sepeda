@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile } from 'lucide-react'
+import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee } from 'lucide-react'
 import { useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { dueReminders, notify } from './lib/notify'
@@ -20,6 +20,7 @@ import Rides from './pages/Rides'
 import Join from './pages/Join'
 import CharacterPage from './pages/Character'
 import Plan from './pages/Plan'
+import RoutePlanner, { RouteList } from './pages/RoutePlanner'
 import { HeadBadge } from './components/Character'
 
 function useReminderLoop() {
@@ -48,7 +49,7 @@ export default function App() {
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#e8e7e3')
   }, [theme])
 
-  const [a, b] = route
+  const [a, b, c] = route
   let page
   switch (a) {
     case undefined: page = <Home />; break
@@ -65,9 +66,11 @@ export default function App() {
     case 'join': page = <Join code={b} />; break
     case 'karakter': page = <CharacterPage />; break
     case 'rencana': page = <Plan />; break
+    case 'rute': page = !b ? <RouteList /> : b === 'g' ? <RoutePlanner key={'g' + c} groupId={c} /> : <RoutePlanner key={b} id={b} />; break
     default: page = <Home />
   }
   const on = (x: string | undefined) => (a === x ? 'on' : '')
+  const navIdx = [undefined, 'squad', 'record', 'reminders', 'karakter'].indexOf(a)
 
   return (
     <div className="app">
@@ -77,6 +80,7 @@ export default function App() {
         <a href="#/squad" className={on('squad')}><Users size={18} /> Gowes Bareng</a>
         <a href="#/karakter" className={on('karakter')}><Smile size={18} /> Karakter</a>
         <a href="#/rencana" className={on('rencana')}><Sliders size={18} /> Rencana</a>
+        <a href="#/rute" className={on('rute')}><Coffee size={18} /> Rute & Kopi</a>
         <a href="#/meet" className={on('meet')}><MapPin size={18} /> Titik Temu</a>
         <a href="#/reminders" className={on('reminders')}><Bell size={18} /> Pengingat</a>
         <a href="#/weather" className={on('weather')}><CloudSun size={18} /> Cuaca Gowes</a>
@@ -88,6 +92,7 @@ export default function App() {
       </aside>
       <main className="main">{page}</main>
       <nav className="bottomnav" aria-label="Navigasi utama">
+        <i className="nav-ind" style={{ transform: `translateX(${[0, 60, 120, 186, 246][Math.max(0, navIdx)]}px)`, opacity: navIdx < 0 || navIdx === 2 ? 0 : 1 }} />
         <a href="#/" className={on(undefined)} aria-label="Beranda"><HomeIcon size={21} /></a>
         <a href="#/squad" className={on('squad')} aria-label="Gowes bareng"><Users size={21} /></a>
         <a href="#/record" className="rec" aria-label="Rekam"><Zap size={22} /></a>

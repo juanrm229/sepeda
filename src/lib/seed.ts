@@ -153,6 +153,14 @@ export function seedGroupRides(): GroupRide[] {
       notes: 'Sarapan bubur ayam setelahnya. Bawa lampu belakang.',
       participants: [{ friendId: 'f2', rsvp: 'ikut' }, { friendId: 'f4', rsvp: 'ikut' }, { friendId: 'f5', rsvp: 'mungkin' }, { friendId: 'f6', rsvp: 'menunggu' }],
       myRsvp: 'ikut', host: 'me',
+      plan: {
+        id: 'p-g1', name: 'CFD Squad Pagi', start: { name: 'Bundaran HI (sisi Grand Indonesia)', pos: [-6.1950, 106.8230] }, finish: null, speed: 20, startTime: nextDow(0, 5, 30),
+        checkpoints: [
+          { id: 'g1c1', name: 'Foto di Monas', pos: [-6.1754, 106.8272], kind: 'foto', stopMin: 10 },
+          { id: 'g1c2', name: 'Coffee break Kota Tua', pos: [-6.1352, 106.8133], kind: 'kopi', stopMin: 25 },
+          { id: 'g1c3', name: 'Isi air Harmoni', pos: [-6.1655, 106.8190], kind: 'air', stopMin: 5 },
+        ],
+      },
     },
     {
       id: 'g2', title: 'Nanjak Sentul – Gunung Pancar', datetime: nextDow(6, 5, 0),
@@ -161,6 +169,13 @@ export function seedGroupRides(): GroupRide[] {
       notes: 'Elevasi ±1.100 m. Minimal bawa 2 bidon.',
       participants: [{ friendId: 'f1', rsvp: 'ikut' }, { friendId: 'f3', rsvp: 'ikut' }],
       myRsvp: 'menunggu', host: 'f3',
+      plan: {
+        id: 'p-g2', name: 'Nanjak Sentul – Gunung Pancar', start: { name: 'Sentul Circuit gerbang utama', pos: [-6.5410, 106.8590] }, finish: null, speed: 18, startTime: nextDow(6, 5, 0),
+        checkpoints: [
+          { id: 'g2c1', name: 'Rehat Bukit Pelangi', pos: [-6.5880, 106.8820], kind: 'rehat', stopMin: 10 },
+          { id: 'g2c2', name: 'Kopi di puncak Gunung Pancar', pos: [-6.5905, 106.9050], kind: 'kopi', stopMin: 30 },
+        ],
+      },
     },
   ]
 }

@@ -5,8 +5,9 @@ import type { CharConfig } from '../lib/types'
 import { characterLevel, moodOf, OPTIONS, PART_TABS, QUEST, reqText, riderClass, riderStats, unlocked, JERSEY_COLORS, HAIR_COLORS, SKINS } from '../lib/character'
 import { levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
-import { HeadArt, Portrait, RiderArt, RiderSolo } from '../components/Character'
-import { Tabs, toast, Top } from '../components/UI'
+import { HeadArt, HeadSticker, HoloOrb, Portrait } from '../components/Character'
+import { toast, Top } from '../components/UI'
+import type { Mood } from '../lib/character'
 
 const Spark = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
   <svg width={28 * s} height={28 * s} viewBox="-14 -14 28 28" style={{ position: 'absolute', left: x, top: y }} aria-hidden>
@@ -17,7 +18,8 @@ const Spark = ({ x, y, s = 1 }: { x: number; y: number; s?: number }) => (
 export default function Character() {
   const { char, setChar, rides, settings, upsertReminder } = useStore()
   const [tab, setTab] = useState<keyof CharConfig>('hair')
-  const [view, setView] = useState<'potret' | 'gowes'>('potret')
+  const [tilt, setTilt] = useState({ x: 0, y: 0, on: false })
+  const [preview, setPreview] = useState<Mood | null>(null)
   const lv = characterLevel(rides)
   const stats = useMemo(() => riderStats(rides), [rides])
   const cls = riderClass(stats)
@@ -62,13 +64,16 @@ export default function Character() {
       <Top title="Karakter" sub={`lvl up ↑ · ${levelTitle(lv.lvl)}`} right={<a href="#/profile" className="iconbtn" aria-label="Profil & pengaturan"><Settings size={18} /></a>} />
       <div className="row-d">
         <div className="stack">
-          <div className="card outline" style={{ padding: '18px 18px 22px', overflow: 'hidden' }}>
-            <div className="row between" style={{ marginBottom: 4 }}>
-              <Tabs value={view} onChange={setView} options={[{ v: 'potret', l: 'Potret' }, { v: 'gowes', l: 'Bersepeda' }]} />
+          <div className="card outline tiltcard" style={{ padding: '18px 18px 22px', overflow: 'hidden', transform: `perspective(900px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`, ['--sheen' as string]: tilt.on ? 0.55 : 0, ['--sx' as string]: `${50 + tilt.x * 4}%` }}
+            onPointerMove={(e) => { if (e.pointerType !== 'mouse') return; const r = e.currentTarget.getBoundingClientRect(); setTilt({ x: ((e.clientX - r.left) / r.width - 0.5) * 10, y: -((e.clientY - r.top) / r.height - 0.5) * 10, on: true }) }}
+            onPointerLeave={() => setTilt({ x: 0, y: 0, on: false })}>
+            <div className="row between">
+              <span className="mono">No. {String(lv.lvl).padStart(3, '0')} · Kartu pesepeda</span>
+              <span className="tag ink">{cls.main.emblem} {cls.sub.name}</span>
             </div>
-            <div ref={svgRef} style={{ position: 'relative', display: 'grid', placeItems: 'center', minHeight: 300, marginTop: 6 }}>
-              <Spark x={18} y={40} s={1.3} /><Spark x={48} y={78} s={0.7} /><Spark x={290} y={210} s={1.2} /><Spark x={320} y={186} s={0.6} />
-              {view === 'potret' ? <Portrait c={char} mood={mood} size={240} /> : <RiderSolo c={char} mood={mood} width={320} />}
+            <div ref={svgRef} style={{ position: 'relative', display: 'grid', placeItems: 'center', minHeight: 300, marginTop: 10 }}>
+              <Spark x={10} y={30} s={1.3} /><Spark x={42} y={70} s={0.7} /><Spark x={286} y={220} s={1.2} /><Spark x={318} y={196} s={0.6} />
+              <HoloOrb size={270}><Portrait c={char} mood={preview ?? mood} size={230} style={{ marginBottom: -8 }} /></HoloOrb>
             </div>
             <div style={{ textAlign: 'center', marginTop: 8 }}>
               <div className="display" style={{ fontSize: 40 }}>{cls.main.name}</div>
@@ -85,8 +90,21 @@ export default function Character() {
           </div>
 
           <div className="row" style={{ gap: 12, alignItems: 'flex-start' }}>
-            <svg viewBox="40 30 120 120" width={58} height={58} style={{ flexShrink: 0, background: 'var(--surface-2)', borderRadius: '50%', border: '2px solid var(--ink)' }}><HeadArt c={char} mood={mood} sw={5} /></svg>
+            <HeadSticker c={char} mood={mood} size={58} tilt={-6} />
             <div className="bubble" style={{ marginLeft: 6 }}>{line}</div>
+          </div>
+
+          <div className="card">
+            <div className="mono" style={{ marginBottom: 12 }}>Ekspresi · ketuk untuk pratinjau</div>
+            <div className="row" style={{ justifyContent: 'space-between' }}>
+              {(['semangat', 'segar', 'oke', 'lelah', 'kangen'] as Mood[]).map((m, i) => (
+                <button key={m} onClick={() => setPreview(preview === m ? null : m)} style={{ background: 'none', border: 0, padding: 0, textAlign: 'center' }} aria-label={m}>
+                  <HeadSticker c={char} mood={m} size={54} tilt={[-8, 5, -3, 7, -5][i]} bg={m === mood ? 'var(--yellow)' : (preview === m ? 'var(--accent-2)' : 'var(--surface-2)')} />
+                  <div className="mono" style={{ marginTop: 8, fontSize: 9, color: m === mood ? 'var(--ink)' : undefined }}>{m}{m === mood ? ' ●' : ''}</div>
+                </button>
+              ))}
+            </div>
+            <p className="tiny muted" style={{ marginTop: 10 }}>Ekspresi asli mengikuti kondisi tubuhmu (titik kuning). Gowes rutin = karakter bahagia.</p>
           </div>
         </div>
 
@@ -149,7 +167,6 @@ function TilePreview({ k, c, i }: { k: keyof CharConfig; c: CharConfig; i: numbe
     const col = k === 'jerseyColor' ? JERSEY_COLORS[i] : k === 'skin' ? SKINS[i] : HAIR_COLORS[i]
     return <span style={{ width: 44, height: 44, borderRadius: '50%', background: col, border: '2.5px solid #111', marginBottom: 14 }} />
   }
-  if (k === 'bike') return <svg viewBox="20 0 200 180" width="92%" style={{ marginBottom: 10 }}><RiderArt c={c} t={0.15} /></svg>
-  if (k === 'jersey' || k === 'acc') return <Portrait c={c} size={70} style={{ marginBottom: 12 }} />
+  if (k === 'jersey' || k === 'acc') return <Portrait c={c} size={66} style={{ marginBottom: 12 }} />
   return <svg viewBox="40 22 120 130" width="78%" style={{ marginBottom: 12 }}><HeadArt c={c} sw={5} /></svg>
 }

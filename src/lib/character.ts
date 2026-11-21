@@ -23,7 +23,7 @@ export const OPTIONS: Record<keyof CharConfig, Opt[]> = {
 
 export const PART_TABS: { k: keyof CharConfig; l: string }[] = [
   { k: 'hair', l: 'Rambut' }, { k: 'headgear', l: 'Kepala' }, { k: 'glasses', l: 'Kacamata' }, { k: 'jersey', l: 'Jersey' },
-  { k: 'jerseyColor', l: 'Warna' }, { k: 'skin', l: 'Kulit' }, { k: 'hairColor', l: 'Warna rambut' }, { k: 'bike', l: 'Sepeda' }, { k: 'acc', l: 'Aksesori' },
+  { k: 'jerseyColor', l: 'Warna' }, { k: 'skin', l: 'Kulit' }, { k: 'hairColor', l: 'Warna rambut' }, { k: 'acc', l: 'Aksesori' },
 ]
 
 export const defaultChar: CharConfig = { skin: 0, hair: 0, hairColor: 0, headgear: 1, glasses: 2, jersey: 1, jerseyColor: 1, bike: 0, acc: 0 }

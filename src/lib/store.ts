@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, Rsvp, Settings } from './types'
+import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings } from './types'
 import { applyRidesToBikes, defaultSettings, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
 import { defaultChar } from './character'
 
@@ -16,6 +16,9 @@ interface State {
   char: CharConfig
   plan: Plan
   event: EventGoal | null
+  routes: RoutePlan[]
+  upsertRoute: (r: RoutePlan) => void
+  deleteRoute: (id: string) => void
   setChar: (c: CharConfig) => void
   setPlan: (p: Plan) => void
   setEvent: (e: EventGoal | null) => void
@@ -58,6 +61,9 @@ export const useStore = create<State>()(
       activeBikeId: 'bike-1',
       onboarded: false,
       char: defaultChar,
+      routes: [],
+      upsertRoute: (r) => set((s) => ({ routes: s.routes.some((x) => x.id === r.id) ? s.routes.map((x) => (x.id === r.id ? r : x)) : [r, ...s.routes] })),
+      deleteRoute: (id) => set((s) => ({ routes: s.routes.filter((r) => r.id !== id) })),
       setChar: (c) => set({ char: c }),
       setPlan: (p) => set({ plan: p }),
       setEvent: (e) => set({ event: e }),

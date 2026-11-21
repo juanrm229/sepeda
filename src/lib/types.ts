@@ -56,6 +56,34 @@ export interface GroupRide {
   participants: { friendId: string; rsvp: Rsvp }[]
   myRsvp: Rsvp
   host: string // 'me' or friend id or name
+  plan?: RoutePlan
+}
+
+export type CheckpointKind = 'rehat' | 'kopi' | 'makan' | 'air' | 'foto' | 'sholat' | 'bengkel'
+
+export interface PlaceRef { name: string; kind: string; pos: LatLng; hours?: string; extra?: string }
+
+export interface Checkpoint {
+  id: string
+  name: string
+  pos: LatLng
+  kind: CheckpointKind
+  stopMin: number
+  place?: PlaceRef
+}
+
+export interface RoutePlan {
+  id: string
+  name: string
+  start: MeetPoint
+  finish: MeetPoint | null // null = kembali ke start (loop)
+  checkpoints: Checkpoint[]
+  speed: number // km/j rencana
+  startTime: string // ISO
+  geometry?: LatLng[]
+  legsKm?: number[]
+  distanceKm?: number
+  routed?: boolean
 }
 
 export type ReminderKind = 'ride' | 'maintenance' | 'hydration' | 'custom'

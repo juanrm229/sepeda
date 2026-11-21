@@ -1,11 +1,11 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
-import { CalendarPlus, Clock, Share2, MessageCircle, Trash2, Radio, Bell, Navigation, CloudRain, Thermometer, Wind } from 'lucide-react'
+import { CalendarPlus, Clock, Share2, MessageCircle, Trash2, Radio, Bell, Navigation, CloudRain, Thermometer, Wind, Coffee } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { CharConfig, GroupRide, LatLng, Rsvp } from '../lib/types'
 import { etaMin, haversine, trackLength } from '../lib/geo'
 import { fmtDate, relDay } from '../lib/util'
 import { Avatar, toast, Top } from '../components/UI'
-import { BaseMap, MeetPin, PersonPin, Route } from '../components/Map'
+import { BaseMap, MeetPin, PersonPin, Route, SmallPin } from '../components/Map'
 import { download, groupRideICS } from '../lib/ics'
 import { inviteLink, inviteText, shareOrCopy, waLink } from '../lib/share'
 import { PACE } from './Squad'
@@ -13,6 +13,7 @@ import { makeLoop } from '../lib/seed'
 import { go } from '../lib/router'
 import { useForecast } from '../lib/useForecast'
 import { GroupActionCard } from '../components/GroupActions'
+import { CP_KIND, gmapsDirections, timeline } from './RoutePlanner'
 import { notify, speak } from '../lib/notify'
 
 const RSVP_L: Record<Rsvp, string> = { ikut: 'Ikut', mungkin: 'Mungkin', tidak: 'Tidak', menunggu: 'Belum jawab' }
@@ -54,6 +55,8 @@ export default function SquadDetail({ id }: { id: string }) {
                 <PersonPin pos={p.home} label={p.name.split(' ')[0].slice(0, 2).toUpperCase()} color={p.color} size={30} />
               </Fragment>
             ))}
+            {g.plan && <Route track={g.plan.geometry ?? [g.plan.start.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#ff4d1f" weight={3.5} />}
+            {g.plan?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color="#111" />)}
             <MeetPin pos={g.meet.pos} />
           </BaseMap>
 
@@ -89,6 +92,33 @@ export default function SquadDetail({ id }: { id: string }) {
           ) : (
             <div className="card flat small muted"><Clock size={14} style={{ verticalAlign: -2 }} /> Prakiraan cuaca muncul 48 jam sebelum jadwal.</div>
           )}
+
+          <div className="card">
+            <div className="card-h">
+              <div><div className="mono">Rute · checkpoint · coffee break</div><div style={{ fontWeight: 600, fontSize: 17, marginTop: 2 }}>{g.plan?.checkpoints.length ? `${g.plan.checkpoints.length} checkpoint` : 'Belum ada checkpoint'}</div></div>
+              <Coffee size={18} />
+            </div>
+            {g.plan && g.plan.checkpoints.length > 0 && (() => {
+              const tl = timeline(g.plan)
+              return (
+                <div className="tl" style={{ marginBottom: 8 }}>
+                  {tl.rows.map((r, i) => (
+                    <div key={r.c.id} className="tl-row" style={{ padding: '6px 0' }}>
+                      <div className={`tl-dot k-${r.c.kind}`}><span>{CP_KIND[r.c.kind].emoji}</span><b>{i + 1}</b></div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div className="row between"><span className="b" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.c.place?.name ?? r.c.name}</span>{g.plan!.legsKm && <span className="dot" style={{ fontSize: 16 }}>{String(r.arrive.getHours()).padStart(2, '0')}.{String(r.arrive.getMinutes()).padStart(2, '0')}</span>}</div>
+                        <div className="tiny muted">{CP_KIND[r.c.kind].l} · {r.c.stopMin} mnt{g.plan!.legsKm ? ` · km ${r.km.toFixed(1)}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            })()}
+            <div className="grid2">
+              <button className="btn accent" onClick={() => go('rute/g/' + g.id)}><Coffee size={16} /> {g.plan?.checkpoints.length ? 'Atur rute' : 'Tambah checkpoint'}</button>
+              {g.plan ? <a className="btn ghost" href={gmapsDirections(g.plan)} target="_blank" rel="noreferrer"><Navigation size={16} /> Google Maps</a> : <span />}
+            </div>
+          </div>
 
           {(g.route || g.notes) && (
             <div className="card">

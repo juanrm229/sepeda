@@ -12,6 +12,16 @@ npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat **data contoh 4 bulan** supaya analitiknya langsung terlihat. Data ini bisa dimuat ulang atau dikosongkan di Profil.
 
+## Yang baru di v3
+
+- **Rute, checkpoint & coffee break.** Tambah checkpoint sebanyak apa pun (ketuk peta, seret untuk geser). Rute dihitung **mengikuti jalan sepeda** (OSRM/OpenStreetMap), dengan **ETA tiap checkpoint**, durasi rehat, dan jam finish.
+  - **Coffee break**: tiap checkpoint bisa mencari **kafe, kedai kopi, tempat makan, minimarket, masjid, bengkel sepeda, atau air/toilet** terdekat. Pilih, dan checkpoint pindah ke tempat itu lalu rute dihitung ulang. Data dari Overpass, dengan cadangan Nominatim.
+  - **Alat pintar**: coffee break otomatis di tengah rute (langsung memilih kafe terbaik), checkpoint otomatis tiap X km, dan **pengingat waktu sholat** (jadwal Kemenag) yang menyarankan checkpoint masjid tepat saat waktunya tiba.
+  - **Patungan** tagihan coffee break, **itinerary ke grup WA**, **Google Maps dengan semua waypoint**, rute tersimpan & bisa dijadikan gowes bareng. Checkpoint ikut terbawa di link undangan.
+  - Saat **merekam ride**, bisa mengikuti rute: kartu "checkpoint berikutnya" + notifikasi suara saat tiba.
+- **Karakter hanya potret & kepala bulat.** Tidak ada lagi ilustrasi bersepeda. Ada kartu koleksi dengan efek miring + kilau holografik, orb holografik ala Air OS, stiker ekspresi, dan balapan squad pakai kepala bulat.
+- **UI:** transisi halaman (View Transitions), cerita harian yang bisa digeser, marquee LED dot-matrix, angka yang berhitung naik, indikator navigasi yang bergeser, tekstur grain, dan umpan balik sentuh.
+
 ## Yang baru di v2 (diterjemahkan dari board referensi)
 
 | Referensi | Jadi fitur |

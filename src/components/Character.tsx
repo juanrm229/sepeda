@@ -194,102 +194,6 @@ export function HeadBadge({ c, mood = 'oke', size = 38, bg = 'var(--surface-2)',
   )
 }
 
-/* ===================== Pengendara di atas sepeda ===================== */
-
-type P = [number, number]
-
-const GEO = {
-  road: { R: [52, 140] as P, F: [184, 140] as P, BB: [112, 142] as P, S: [100, 84] as P, Ht: [164, 80] as P, Hb: [168, 96] as P, wr: 31, hip: [101, 75] as P, sh: [150, 46] as P, hand: [173, 84] as P, head: [165, 27] as P },
-  mtb: { R: [52, 140] as P, F: [186, 140] as P, BB: [112, 142] as P, S: [100, 86] as P, Ht: [162, 78] as P, Hb: [167, 96] as P, wr: 31, hip: [101, 76] as P, sh: [142, 40] as P, hand: [166, 72] as P, head: [154, 20] as P },
-  lipat: { R: [66, 150] as P, F: [172, 150] as P, BB: [116, 148] as P, S: [104, 86] as P, Ht: [160, 70] as P, Hb: [160, 104] as P, wr: 21, hip: [104, 77] as P, sh: [140, 40] as P, hand: [158, 66] as P, head: [151, 19] as P },
-}
-
-function ik(h: P, f: P, l1: number, l2: number): P {
-  const dx = f[0] - h[0]
-  const dy = f[1] - h[1]
-  const d = Math.min(l1 + l2 - 0.5, Math.max(Math.abs(l1 - l2) + 0.5, Math.hypot(dx, dy)))
-  const a = Math.atan2(dy, dx)
-  const b = Math.acos((l1 * l1 + d * d - l2 * l2) / (2 * l1 * d))
-  return [h[0] + l1 * Math.cos(a - b), h[1] + l1 * Math.sin(a - b)]
-}
-
-const line = (a: P, b: P) => `M${a[0].toFixed(1)},${a[1].toFixed(1)} L${b[0].toFixed(1)},${b[1].toFixed(1)}`
-
-function Wheel({ c, r, rot, thick, deep }: { c: P; r: number; rot: number; thick: number; deep?: boolean }) {
-  return (
-    <g>
-      <circle cx={c[0]} cy={c[1]} r={r} fill="none" stroke={INK} strokeWidth={thick} />
-      {deep && <circle cx={c[0]} cy={c[1]} r={r - 6} fill="none" stroke={INK} strokeWidth={4} />}
-      <g transform={`rotate(${rot} ${c[0]} ${c[1]})`} stroke={INK} strokeWidth={1.4} opacity={0.8}>
-        {[0, 45, 90, 135].map((a) => { const t = (a * Math.PI) / 180; const rr = r - thick / 2; return <line key={a} x1={c[0] - rr * Math.cos(t)} y1={c[1] - rr * Math.sin(t)} x2={c[0] + rr * Math.cos(t)} y2={c[1] + rr * Math.sin(t)} /> })}
-      </g>
-      <circle cx={c[0]} cy={c[1]} r={3.5} fill={INK} />
-    </g>
-  )
-}
-
-/** Pengendara mengayuh. `t` = waktu (detik) untuk animasi kayuhan. viewBox 0 0 240 180. */
-export function RiderArt({ c, t = 0, mood = 'oke', cadence = 1.3 }: { c: CharConfig; t?: number; mood?: Mood; cadence?: number }) {
-  const kind = c.bike === 1 ? 'mtb' : c.bike === 2 ? 'lipat' : 'road'
-  const g = GEO[kind]
-  const fixie = c.bike === 3
-  const skin = SKINS[c.skin] ?? SKINS[0]
-  const jc = JERSEY_COLORS[c.jerseyColor] ?? INK
-  const a = t * Math.PI * 2 * cadence
-  const cr = 15
-  const pNear: P = [g.BB[0] + cr * Math.cos(a), g.BB[1] + cr * Math.sin(a)]
-  const pFar: P = [g.BB[0] - cr * Math.cos(a), g.BB[1] - cr * Math.sin(a)]
-  const kNear = ik(g.hip, pNear, 42, 44)
-  const kFar = ik(g.hip, pFar, 42, 44)
-  const rot = (a * 180) / Math.PI * 2.4
-  const elbow: P = [(g.sh[0] + g.hand[0]) / 2 - 2, (g.sh[1] + g.hand[1]) / 2 + 9]
-  const s = 0.36
-  const tire = kind === 'mtb' ? 8 : 5
-  const leg = (k: P, p: P, far: boolean) => (
-    <g opacity={far ? 0.45 : 1}>
-      <path d={`${line(g.hip, k)}`} stroke={INK} strokeWidth={17} strokeLinecap="round" />
-      <path d={line(k, p)} stroke={INK} strokeWidth={13} strokeLinecap="round" />
-      <path d={line(k, p)} stroke={skin} strokeWidth={8} strokeLinecap="round" />
-      <path d={`M${p[0] - 5},${p[1] + 1} L${p[0] + 9},${p[1] + 1}`} stroke={INK} strokeWidth={7} strokeLinecap="round" />
-    </g>
-  )
-  const frame = kind === 'lipat'
-    ? [line(g.R, g.BB), line(g.BB, [150, 104]), line([150, 104], g.Hb), line(g.R, [104, 118]), line(g.BB, [104, 112]), line([104, 112], g.S), line(g.Hb, g.F), line(g.Hb, g.Ht)].join(' ')
-    : [line(g.R, g.BB), line(g.BB, g.S), line(g.S, g.Ht), line(g.BB, g.Hb), line(g.S, g.R), line(g.Ht, g.F)].join(' ')
-  const bar = kind === 'road' && !fixie
-    ? `M${g.Ht[0]},${g.Ht[1]} L${g.Ht[0] + 7},${g.Ht[1] - 4} C${g.Ht[0] + 20},${g.Ht[1] - 6} ${g.Ht[0] + 22},${g.Ht[1] + 10} ${g.Ht[0] + 12},${g.Ht[1] + 14}`
-    : `M${g.Ht[0]},${g.Ht[1]} L${g.Ht[0] + 2},${g.Ht[1] - 8} L${g.Ht[0] + 12},${g.Ht[1] - 9}`
-  return (
-    <g>
-      {c.acc === 1 && <g><path d="M90,82 L76,30" stroke={INK} strokeWidth={2.5} /><path d="M76,30 L100,36 L78,44 Z" fill="#e3312b" stroke={INK} strokeWidth={2} /><path d="M77,37 L99,36.5 L78,44 Z" fill="#fff" /></g>}
-      {leg(kFar, pFar, true)}
-      <path d={line(g.BB, pFar)} stroke={INK} strokeWidth={4} strokeLinecap="round" opacity={0.5} />
-      <Wheel c={g.R} r={g.wr} rot={rot} thick={tire} deep={fixie} />
-      <Wheel c={g.F} r={g.wr} rot={rot} thick={tire} deep={fixie} />
-      <path d={frame} stroke={jc === '#ffffff' ? '#cfcfcf' : jc === '#111111' ? '#ff4d1f' : jc} strokeWidth={9} strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      <path d={frame} stroke={INK} strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" fill="none" opacity={0.9} />
-      <path d={bar} stroke={INK} strokeWidth={5} strokeLinecap="round" fill="none" />
-      <path d={`M${g.S[0] - 12},${g.S[1] - 3} L${g.S[0] + 10},${g.S[1] - 3}`} stroke={INK} strokeWidth={7} strokeLinecap="round" />
-      {c.acc === 4 && <circle cx={g.Ht[0] + 4} cy={g.Ht[1] - 4} r={4} fill="#f3d40b" stroke={INK} strokeWidth={2} />}
-      <circle cx={g.BB[0]} cy={g.BB[1]} r={9} fill="none" stroke={INK} strokeWidth={3} />
-      {/* badan */}
-      <path d={line(g.hip, g.sh)} stroke={INK} strokeWidth={25} strokeLinecap="round" />
-      <path d={line(g.hip, g.sh)} stroke={jc === '#ffffff' ? '#ffffff' : jc} strokeWidth={18} strokeLinecap="round" />
-      {c.jersey === 1 && <path d={line([g.hip[0] + (g.sh[0] - g.hip[0]) * 0.45, g.hip[1] + (g.sh[1] - g.hip[1]) * 0.45], [g.hip[0] + (g.sh[0] - g.hip[0]) * 0.6, g.hip[1] + (g.sh[1] - g.hip[1]) * 0.6])} stroke={jc === '#ffffff' || jc === '#f3d40b' ? INK : '#fff'} strokeWidth={18} />}
-      {leg(kNear, pNear, false)}
-      <path d={line(g.BB, pNear)} stroke={INK} strokeWidth={4} strokeLinecap="round" />
-      {/* lengan */}
-      <path d={`${line(g.sh, elbow)}`} stroke={INK} strokeWidth={14} strokeLinecap="round" />
-      <path d={line(elbow, g.hand)} stroke={INK} strokeWidth={12} strokeLinecap="round" />
-      <path d={line(g.sh, elbow)} stroke={jc} strokeWidth={8} strokeLinecap="round" />
-      <path d={line(elbow, g.hand)} stroke={skin} strokeWidth={7} strokeLinecap="round" />
-      <g transform={`translate(${g.head[0] - 100 * s} ${g.head[1] - 102 * s}) scale(${s})`}>
-        <HeadArt c={c} mood={mood} sw={10} />
-      </g>
-    </g>
-  )
-}
-
 export function useTicker(active = true): number {
   const [t, setT] = useState(0)
   const ref = useRef(0)
@@ -313,22 +217,7 @@ export function useTicker(active = true): number {
   return t
 }
 
-export function RiderSolo({ c, mood, width = 220, ground = true, speed = 1 }: { c: CharConfig; mood?: Mood; width?: number; ground?: boolean; speed?: number }) {
-  const t = useTicker()
-  return (
-    <svg viewBox="0 0 240 190" width={width} height={width * (190 / 240)} aria-label="Karakter bersepeda">
-      {ground && (
-        <g>
-          <path d="M0,174 L240,174" stroke="var(--ink)" strokeWidth={2} opacity={0.25} />
-          <path d="M0,182 L240,182" stroke="var(--ink)" strokeWidth={2} strokeDasharray="10 14" strokeDashoffset={-((t * 80 * speed) % 24)} opacity={0.35} />
-        </g>
-      )}
-      <g transform="translate(0,3)"><RiderArt c={c} t={t * speed} mood={mood} /></g>
-    </svg>
-  )
-}
-
-/* ========================= Adegan balapan squad ========================= */
+/* ========================= Adegan balapan squad (kepala bulat) ========================= */
 
 export interface Racer { id: string; name: string; c: CharConfig; km: number; me?: boolean }
 
@@ -346,46 +235,77 @@ function Rock({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
 
 export function RaceScene({ racers, height = 250 }: { racers: Racer[]; height?: number }) {
   const t = useTicker()
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const W = 420
   const H = 250
   const max = Math.max(1, ...racers.map((r) => r.km))
   const sorted = [...racers].sort((a, b) => b.km - a.km)
-  const scroll = (t * 26) % W
+  const scroll = (t * 22) % W
   const deco = (off: number) => (
     <g transform={`translate(${off} 0)`}>
-      <Tree x={40} y={168} s={0.9} /><Rock x={120} y={176} /><Tree x={210} y={164} s={1.15} /><Tree x={236} y={170} s={0.7} /><Rock x={318} y={178} s={0.8} /><Tree x={380} y={168} />
+      <Tree x={40} y={150} s={0.8} /><Rock x={120} y={158} s={0.8} /><Tree x={210} y={146} s={1} /><Tree x={236} y={152} s={0.6} /><Rock x={318} y={160} s={0.7} /><Tree x={380} y={150} s={0.9} />
     </g>
   )
+  const n = sorted.length
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={height} preserveAspectRatio="xMidYMid slice" style={{ display: 'block' }} aria-label="Balapan squad mingguan">
+      <defs><clipPath id={`hc${uid}`}><circle r={19} /></clipPath></defs>
       <rect width={W} height={H} fill="var(--race-sky)" />
-      <circle cx={350} cy={50} r={20} fill="var(--yellow)" stroke={INK} strokeWidth={2.5} />
-      <path d="M0,150 L50,104 L78,124 L120,72 L160,120 L196,96 L232,128 L280,82 L322,124 L360,100 L420,140 L420,170 L0,170 Z" fill="var(--race-mtn)" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
-      <path d="M120,72 L110,84 L118,82 L124,88 L130,82 Z M280,82 L272,92 L280,90 L286,95 L291,90 Z" fill="#fff" stroke={INK} strokeWidth={1.5} strokeLinejoin="round" />
+      <circle cx={352} cy={44} r={18} fill="var(--yellow)" stroke={INK} strokeWidth={2.5} />
+      <path d="M0,136 L50,96 L78,114 L120,66 L160,110 L196,88 L232,118 L280,74 L322,114 L360,92 L420,128 L420,160 L0,160 Z" fill="var(--race-mtn)" stroke={INK} strokeWidth={2.5} strokeLinejoin="round" />
+      <path d="M120,66 L110,78 L118,76 L124,82 L130,76 Z M280,74 L272,84 L280,82 L286,87 L291,82 Z" fill="#fff" stroke={INK} strokeWidth={1.5} strokeLinejoin="round" />
       <g>{deco(-scroll)}{deco(W - scroll)}</g>
-      <rect y={176} width={W} height={H - 176} fill="var(--race-ground)" />
-      <path d={`M0,176 L${W},176`} stroke={INK} strokeWidth={2.5} />
-      <path d={`M0,226 L${W},226`} stroke={INK} strokeWidth={2} strokeDasharray="16 14" strokeDashoffset={(t * 70) % 30} opacity={0.5} />
+      <rect y={160} width={W} height={H - 160} fill="var(--race-ground)" />
+      <path d={`M0,160 L${W},160`} stroke={INK} strokeWidth={2.5} />
+      <path d={`M0,238 L${W},238`} stroke={INK} strokeWidth={2} strokeDasharray="16 14" strokeDashoffset={(t * 60) % 30} opacity={0.45} />
+      <path d={`M${W - 34},164 L${W - 34},236`} stroke={INK} strokeWidth={2} />
+      <rect x={W - 34} y={164} width={22} height={16} fill="url(#flag)" stroke={INK} strokeWidth={1.5} />
+      <pattern id="flag" width={8} height={8} patternUnits="userSpaceOnUse"><rect width={8} height={8} fill="#fff" /><rect width={4} height={4} fill={INK} /><rect x={4} y={4} width={4} height={4} fill={INK} /></pattern>
       {sorted.map((r, i) => {
-        const n = sorted.length
-        const frac = 0.45 * (r.km / max) + 0.55 * (1 - i / Math.max(1, n - 1))
-        const x = 6 + frac * (W - 112)
-        const lane = i % 2 === 0 ? 0 : 16
-        const bob = Math.sin(t * 6 + i) * 0.8
-        const by = [-6, -30, -54][i % 3]
-        return { r, i, x, lane, bob, by }
-      }).reverse().map(({ r, i, x, lane, bob, by }) => (
-          <g key={r.id} transform={`translate(${x} ${134 + lane + bob})`}>
-            <g transform="scale(0.4)"><RiderArt c={r.c} t={t * (1 + (r.km / max) * 0.4) + i * 0.3} /></g>
-            <g transform={`translate(58 ${by})`}>
-              <path d={`M0,${-by - 6} L0,-2`} stroke={INK} strokeWidth={1.2} strokeDasharray="2 2" opacity={0.6} />
-              <rect x={-29} y={-30} width={58} height={28} rx={8} fill={r.me ? '#111' : 'var(--surface-2)'} stroke={INK} strokeWidth={2} />
-              <text x={0} y={-19} textAnchor="middle" fontSize={8.5} fontWeight={800} fill={i === 0 ? '#ff4d1f' : r.me ? '#fff' : INK} fontFamily="var(--f-ui)">#{i + 1} {r.me ? 'Kamu' : r.name.split(' ')[0]}</text>
-              <text x={0} y={-8.5} textAnchor="middle" fontSize={8} fontFamily="var(--f-mono)" fill={r.me ? '#fff' : INK}>{Math.round(r.km)} km</text>
-            </g>
+        const frac = 0.5 * (r.km / max) + 0.5 * (1 - i / Math.max(1, n - 1))
+        const x = 30 + frac * (W - 100)
+        const lane = [0, 22, 11, 33][i % 4]
+        const bob = Math.abs(Math.sin(t * 5 + i * 1.3)) * -5
+        const by = [-28, -54, -80][i % 3]
+        const y = 186 + lane
+        return { r, i, x, y, bob, by }
+      }).reverse().map(({ r, i, x, y, bob, by }) => (
+        <g key={r.id} transform={`translate(${x} ${y})`}>
+          {[0, 1, 2].map((k) => <path key={k} d={`M${-26 - k * 9},${-6 + k * 6} L${-46 - k * 12},${-6 + k * 6}`} stroke={INK} strokeWidth={2} strokeLinecap="round" opacity={0.35 - k * 0.08} strokeDasharray="6 5" strokeDashoffset={(t * 40) % 11} />)}
+          <ellipse cx={0} cy={22} rx={16} ry={4} fill={INK} opacity={0.18} />
+          <g transform={`translate(0 ${bob}) rotate(${Math.sin(t * 5 + i) * 6})`}>
+            <circle r={21} fill={r.me ? '#ff4d1f' : 'var(--surface-2)'} stroke={INK} strokeWidth={2.5} />
+            <g clipPath={`url(#hc${uid})`}><g transform="translate(-32 -28) scale(0.32)"><HeadArt c={r.c} sw={7} /></g></g>
+            <circle r={19} fill="none" stroke={INK} strokeWidth={2} />
           </g>
+          <g transform={`translate(0 ${by})`}>
+            <path d={`M0,-2 L0,${-by - 26}`} stroke={INK} strokeWidth={1.2} strokeDasharray="2 2" opacity={0.5} />
+            <rect x={-30} y={-28} width={60} height={26} rx={9} fill={r.me ? '#111' : 'var(--surface-2)'} stroke={INK} strokeWidth={2} />
+            <text x={0} y={-17.5} textAnchor="middle" fontSize={8.5} fontWeight={800} fill={i === 0 ? '#ff4d1f' : r.me ? '#fff' : INK} fontFamily="var(--f-ui)">#{i + 1} {r.me ? 'Kamu' : r.name.split(' ')[0]}</text>
+            <text x={0} y={-7.5} textAnchor="middle" fontSize={8} fontFamily="var(--f-mono)" fill={r.me ? '#fff' : INK}>{Math.round(r.km)} km</text>
+          </g>
+        </g>
       ))}
     </svg>
+  )
+}
+
+/** Orb holografik ala Air OS — latar karakter. */
+export function HoloOrb({ size = 220, children, spin = true }: { size?: number; children?: ReactNode; spin?: boolean }) {
+  return (
+    <div className="holo" style={{ width: size, height: size }}>
+      <div className={`holo-glow ${spin ? 'spin' : ''}`} />
+      <div className="holo-inner">{children}</div>
+    </div>
+  )
+}
+
+/** Stiker kepala bulat dengan outline tebal. */
+export function HeadSticker({ c, mood = 'oke', size = 64, bg = 'var(--surface-2)', tilt = 0 }: { c: CharConfig; mood?: Mood; size?: number; bg?: string; tilt?: number }) {
+  return (
+    <span className="sticker" style={{ width: size, height: size, background: bg, transform: `rotate(${tilt}deg)` }}>
+      <svg viewBox="40 30 120 120" width={size * 1.04} height={size * 1.04} style={{ marginTop: size * 0.14 }}><HeadArt c={c} mood={mood} sw={5} /></svg>
+    </span>
   )
 }
 
