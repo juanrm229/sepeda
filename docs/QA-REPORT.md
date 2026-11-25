@@ -1,9 +1,11 @@
 # Laporan QA / QC — Kayuh
 
-**Tanggal:** 25 Nov 2026 · **Build:** v7 PACK (titip kopi, foto menu, patungan, animasi) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
+**Tanggal:** 25 Nov 2026 · **Build:** v8 PACK (akun & login, onboarding baru) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
 
-**Hasil akhir: 104/104 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
+**Hasil akhir: 110/110 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
 
+> v8: + onboarding baru (tanpa akun), daftar 6 langkah, password salah ditolak, keluar/masuk memulihkan data, teman lewat link profil, undangan in-app antar dua akun.
+>
 > v7: + titip pesanan (host & tamu lewat link), unggah foto menu + lightbox, tagih patungan berisi rekening, saldo/lunas/catat manual, link jadwal free, halaman /patungan di QC 360px & axe.
 >
 > v6: suite diperbarui untuk fitur ketemuan — alur Ajak 6 langkah, voting & tetapkan, check-in checkpoint, undangan di HP baru tanpa onboarding, link balasan dua arah (idempoten), 4 mode titik temu, *Kapan semua bisa?*. Pemeriksaan v5 di bawah tetap berlaku untuk halaman lama.

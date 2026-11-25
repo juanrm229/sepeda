@@ -20,10 +20,24 @@ Desain "Soft Mono" diterjemahkan dari board Pinterest *sepeda 2*. Logo: huruf **
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
-npm run qa       # suite QA end-to-end (butuh dev server, lihat scripts/qa.cjs)
+npm run dev:api  # API lokal (akun & sinkron) di :8787, di-proxy Vite
+npm run qa       # suite QA end-to-end (butuh dev + dev:api)
 ```
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat data contoh.
+
+## Yang baru di v8 — akun & login
+
+Detail lengkap ada di [`docs/PACK-v8.md`](docs/PACK-v8.md).
+
+- **Akun**: daftar/masuk dengan email + password. Data tersinkron otomatis antar-HP; keluar lalu masuk lagi memulihkan semuanya.
+- **Teman lewat @username / link profil**. Ajakan **langsung masuk ke app teman**, dan jawabannya **langsung terkirim ke host** tanpa WhatsApp. Tamu tanpa akun tetap bisa menjawab lewat link.
+- **Onboarding baru ala DailyLoop**: kartu melayang, kartu sambutan putih, lalu karakter → @username & lokasi → waktu free → rekening.
+- **Tampilan lebih dekat referensi**:
+  - Beranda: sapaan dengan serif miring, kartu hari, kartu hitam ber-avatar dengan dua pil aksi, kartu pelacakan, checklist mulai.
+  - Agenda: cari + filter, segmented, grup per hari.
+  - Nav dengan pil putih.
+- **Backend**: `api/pack.ts` (Vercel Function) di atas Vercel Blob terenkripsi AES-256-GCM. Pengembangan lokal: `npm run dev:api`.
 
 ## Yang baru di v7 — PACK
 

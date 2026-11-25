@@ -35,8 +35,11 @@ function Fit({ pts }: { pts: LatLng[] }) {
   const map = useMap()
   const key = pts.map((p) => p.join(',')).join('|')
   useEffect(() => {
-    if (pts.length === 1) map.setView(pts[0], Math.max(map.getZoom(), 14))
-    else map.fitBounds(L.latLngBounds(pts), { padding: [36, 36] })
+    try {
+      if (!(map as unknown as { _loaded?: boolean })._loaded && !map.getContainer()?.isConnected) return
+      if (pts.length === 1) map.setView(pts[0], Math.max(map.getZoom(), 14), { animate: false })
+      else map.fitBounds(L.latLngBounds(pts), { padding: [36, 36], animate: false })
+    } catch { /* peta sudah dilepas */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   return null
@@ -44,7 +47,7 @@ function Fit({ pts }: { pts: LatLng[] }) {
 
 export function Follow({ pos }: { pos: LatLng | null }) {
   const map = useMap()
-  useEffect(() => { if (pos) map.panTo(pos, { animate: true }) }, [pos, map])
+  useEffect(() => { try { if (pos && map.getContainer()?.isConnected) map.panTo(pos, { animate: true }) } catch { /* */ } }, [pos, map])
   return null
 }
 
