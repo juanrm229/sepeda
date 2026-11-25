@@ -56,7 +56,7 @@ export default function Squad() {
           </form>
           <div className="seg" role="tablist" style={{ marginTop: 12 }}>
             {([['butuh', 'Butuh jawaban', need.length], ['datang', 'Akan datang', soon.length], ['selesai', 'Selesai', past.length]] as const).map(([k, l, n]) => (
-              <button key={k} role="tab" aria-selected={seg === k} className={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}{n ? <span className="seg-n">{n}</span> : null}</button>
+              <button key={k} role="tab" aria-selected={seg === k} className={seg === k ? 'on' : ''} onClick={() => setSeg(k)}>{l}{n ? <span className={`seg-n ${k === 'butuh' ? '' : 'muted'}`}>{n}</span> : null}</button>
             ))}
           </div>
           {mineOnly && <div className="tag" style={{ marginTop: 10 }}>Hanya ajakan yang kamu buat</div>}

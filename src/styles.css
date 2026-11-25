@@ -951,3 +951,5 @@ svg .grow, rect.grow { transform-box: fill-box; transform-origin: bottom; animat
 .char-alts button { border: 0; background: none; padding: 0; display: grid; place-items: center; animation: pop-in .5s var(--spring) both; }
 .char-alts button:nth-child(2) { animation-delay: .04s; } .char-alts button:nth-child(3) { animation-delay: .08s; } .char-alts button:nth-child(4) { animation-delay: .12s; } .char-alts button:nth-child(5) { animation-delay: .16s; } .char-alts button:nth-child(6) { animation-delay: .2s; }
 .onb-in { max-width: 460px; }
+.seg-n.muted { background: var(--surface-2); color: var(--muted); }
+.seg button.on .seg-n.muted { background: rgba(255,255,255,.18); color: inherit; }
