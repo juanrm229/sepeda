@@ -57,30 +57,53 @@ const localStore: Store = {
 
 let blobMod: typeof import('@vercel/blob') | null = null
 const blob = async () => (blobMod ??= await import('@vercel/blob'))
-const blobStore: Store = {
-  async get(p) {
-    const { head } = await blob()
+/*
+ * Blob di-cache CDN (min. 60 dtk), jadi dokumen TIDAK pernah ditimpa:
+ * setiap tulis membuat versi baru "<dok>/<waktu>-<acak>.bin" (URL unik, aman di-cache),
+ * baca = ambil versi terbaru lewat list() (konsisten), versi lama dihapus.
+ */
+const vdir = (p: string) => p.replace(/\.bin$/, '') + '/'
+const vname = () => String(Date.now()).padStart(14, '0') + '-' + randomBytes(4).toString('hex') + '.bin'
+async function listAll(prefix: string) {
+  const { list } = await blob()
+  const out: { pathname: string; url: string }[] = []
+  let cursor: string | undefined
+  do { const r = await list({ prefix, cursor, token: BLOB, limit: 1000 }); out.push(...r.blobs.map((x) => ({ pathname: x.pathname, url: x.url }))); cursor = r.hasMore ? r.cursor : undefined } while (cursor)
+  return out
+}
+async function fetchDoc<T>(url: string): Promise<T | null> {
+  const r = await fetch(url)
+  return r.ok ? decrypt<T>(Buffer.from(await r.arrayBuffer())) : null
+}
+const blobStore: Store & { getAll<T>(prefix: string): Promise<T[]> } = {
+  async get<T>(p: string) {
     try {
-      const m = await head(p, { token: BLOB })
-      const r = await fetch(`${m.url}?v=${new Date(m.uploadedAt).getTime()}`, { cache: 'no-store' })
-      if (!r.ok) return null
-      return decrypt(Buffer.from(await r.arrayBuffer()))
+      const vs = (await listAll(vdir(p))).sort((x, y) => x.pathname.localeCompare(y.pathname))
+      const last = vs[vs.length - 1]
+      return last ? await fetchDoc<T>(last.url) : null
     } catch { return null }
   },
   async put(p, v) {
-    const { put } = await blob()
-    await put(p, encrypt(v), { access: 'public', token: BLOB, addRandomSuffix: false, contentType: 'application/octet-stream', cacheControlMaxAge: 60, allowOverwrite: true } as Parameters<typeof put>[2])
+    const { put, del } = await blob()
+    const dir = vdir(p)
+    const name = dir + vname()
+    await put(name, encrypt(v), { access: 'public', token: BLOB, addRandomSuffix: false, contentType: 'application/octet-stream' } as Parameters<typeof put>[2])
+    try { const old = (await listAll(dir)).filter((x) => x.pathname < name); if (old.length) await del(old.map((x) => x.url), { token: BLOB }) } catch { /* bersih-bersih bisa lain kali */ }
   },
   async list(prefix) {
-    const { list } = await blob()
-    const out: string[] = []
-    let cursor: string | undefined
-    do { const r = await list({ prefix, cursor, token: BLOB, limit: 1000 }); out.push(...r.blobs.map((b) => b.pathname)); cursor = r.hasMore ? r.cursor : undefined } while (cursor)
-    return out
+    const docs = new Set((await listAll(prefix)).map((x) => x.pathname.replace(/\/[^/]+\.bin$/, '.bin')))
+    return [...docs]
   },
-  async del(p) { const { del, head } = await blob(); try { const m = await head(p, { token: BLOB }); await del(m.url, { token: BLOB }) } catch { /* */ } },
+  async getAll<T>(prefix: string) {
+    const latest = new Map<string, { pathname: string; url: string }>()
+    for (const x of await listAll(prefix)) { const doc = x.pathname.replace(/\/[^/]+\.bin$/, ''); const cur = latest.get(doc); if (!cur || x.pathname > cur.pathname) latest.set(doc, x) }
+    return (await Promise.all([...latest.values()].map((x) => fetchDoc<T>(x.url).catch(() => null)))).filter(Boolean) as T[]
+  },
+  async del(p) { const { del } = await blob(); try { const vs = await listAll(vdir(p)); if (vs.length) await del(vs.map((x) => x.url), { token: BLOB }) } catch { /* */ } },
 }
+const localGetAll = async <T,>(prefix: string) => (await Promise.all((await localStore.list(prefix)).map((f) => localStore.get<T>(f)))).filter(Boolean) as T[]
 const db: Store = BLOB ? blobStore : localStore
+const getAll = <T,>(prefix: string): Promise<T[]> => (BLOB ? blobStore.getAll<T>(prefix) : localGetAll<T>(prefix))
 
 const P = {
   email: (e: string) => `acct/${h('email:' + e.toLowerCase())}.bin`,
@@ -214,8 +237,7 @@ const ops: Record<string, (c: Ctx) => Promise<Response>> = {
   async 'ride.get'({ body }) {
     const doc = await db.get<RideDoc>(P.ride(String(body.id ?? '')))
     if (!doc) return fail('Ajakan tidak ditemukan', 404)
-    const files = await db.list(P.replyDir(doc.ride.id))
-    const replies = (await Promise.all(files.map((f) => db.get(f)))).filter(Boolean)
+    const replies = await getAll(P.replyDir(doc.ride.id))
     const host = await db.get<Profile>(P.profile(doc.hostUid))
     return json({ ride: doc.ride, host: pub(host, true), replies, updatedAt: doc.updatedAt })
   },
@@ -234,8 +256,7 @@ const ops: Record<string, (c: Ctx) => Promise<Response>> = {
 
   async inbox({ uid }) {
     if (!uid) return fail('Belum masuk', 401)
-    const files = await db.list(P.inboxDir(uid))
-    const entries = (await Promise.all(files.map((f) => db.get<{ rideId: string; from: string; at: string }>(f)))).filter(Boolean) as { rideId: string; from: string; at: string }[]
+    const entries = await getAll<{ rideId: string; from: string; at: string }>(P.inboxDir(uid))
     const rides = await Promise.all(entries.map(async (e) => {
       const doc = await db.get<RideDoc>(P.ride(e.rideId))
       if (!doc) return null
