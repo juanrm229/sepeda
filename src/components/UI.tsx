@@ -105,7 +105,7 @@ export function celebrate(power = 1) {
   document.body.appendChild(c)
   const g = c.getContext('2d')!
   g.scale(devicePixelRatio, devicePixelRatio)
-  const colors = ['#d93d14', '#111111', '#f3d40b', '#d6f06a', '#2f6fed', '#ffffff']
+  const colors = ['#d2441c', '#111111', '#f3d40b', '#d6f06a', '#2f6fed', '#ffffff']
   const N = Math.round(120 * power)
   const ps = Array.from({ length: N }, () => ({
     x: innerWidth / 2 + (Math.random() - 0.5) * 80, y: innerHeight * 0.35, vx: (Math.random() - 0.5) * 16, vy: -Math.random() * 15 - 5,

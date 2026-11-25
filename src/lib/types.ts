@@ -33,6 +33,8 @@ export interface Friend {
   homeLabel: string
   phone?: string
   char: CharConfig
+  /** Ketersediaan mingguan: bit (hari JS 0=Min..6=Sab) × 3 + slot (0 pagi, 1 sore, 2 malam). */
+  avail?: number
 }
 
 export type Pace = 'santai' | 'sedang' | 'kencang'
@@ -42,6 +44,21 @@ export interface MeetPoint {
   name: string
   pos: LatLng
 }
+
+/** Jawaban/vote satu peserta. Bisa teman tersimpan atau tamu dari link balasan. */
+export interface Participant {
+  friendId: string
+  rsvp: Rsvp
+  name?: string
+  char?: CharConfig
+  /** Perkiraan titik berangkat (dibulatkan ±1 km, opsional) — untuk titik temu adil. */
+  from?: LatLng
+  vote?: Vote
+  note?: string
+  at?: string
+}
+
+export interface Vote { t?: number; c?: number }
 
 export interface GroupRide {
   id: string
@@ -53,10 +70,20 @@ export interface GroupRide {
   route?: string
   notes?: string
   noDrop: boolean
-  participants: { friendId: string; rsvp: Rsvp }[]
+  participants: Participant[]
   myRsvp: Rsvp
   host: string // 'me' or friend id or name
   plan?: RoutePlan
+  /** Pilihan jam yang divoting (ISO). datetime = pilihan yang sedang dipakai. */
+  timeOptions?: string[]
+  /** Pilihan tempat ngopi yang divoting. */
+  coffeeOptions?: PlaceRef[]
+  myVote?: Vote
+  /** Pesan ajakan pendek (tampil tulisan tangan di catatan tempel). */
+  note?: string
+  hostChar?: CharConfig
+  /** Check-in rombongan: kunci 'start' | id checkpoint | 'finish' → waktu ISO. */
+  checkins?: Record<string, string>
 }
 
 export type CheckpointKind = 'rehat' | 'kopi' | 'makan' | 'air' | 'foto' | 'sholat' | 'bengkel'

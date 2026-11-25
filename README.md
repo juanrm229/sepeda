@@ -1,6 +1,8 @@
-# Kayuh — Analitik Sepeda & Gowes Bareng
+# Kayuh — Ajak gowes, ketemu, ngopi
 
-Web app (PWA) untuk pesepeda. Gayanya terinspirasi board Pinterest "sepeda": estetika ala Nothing OS / Teenage Engineering, dengan latar abu hangat, angka dot-matrix, label monospace, aksen merah-oranye, dan dial bulat.
+Web app (PWA) untuk pesepeda yang fokus ke **ketemuan**: ajak squad dalam 10 detik, cocokkan jadwal, cari titik temu yang adil, atur checkpoint & coffee break, lalu kabari semua lewat WhatsApp, **tanpa akun dan tanpa server**. Analisis ride tetap ada, tapi diturunkan prioritasnya (nanti masuk lewat share dari Strava).
+
+Desain v6 "Soft Mono" diterjemahkan dari board Pinterest *sepeda 2*: latar abu lembut, kartu putih radius besar, tombol pil hitam, nav pil mengambang + FAB, stepper ala pelacakan paket, kalimat ber-avatar, dan undangan berbentuk catatan tempel. Karakter (DiceBear Lorelei) dipertahankan.
 
 ## Menjalankan
 
@@ -8,9 +10,22 @@ Web app (PWA) untuk pesepeda. Gayanya terinspirasi board Pinterest "sepeda": est
 npm install
 npm run dev      # http://localhost:5173
 npm run build    # hasil di dist/, siap deploy ke Vercel/Netlify (static)
+npm run qa       # suite QA end-to-end (butuh dev server, lihat scripts/qa.cjs)
 ```
 
-Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat **data contoh 4 bulan** supaya analitiknya langsung terlihat. Data ini bisa dimuat ulang atau dikosongkan di Profil.
+Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat data contoh.
+
+## Yang baru di v6 — rombak total
+
+Detail lengkap (audit desain, analisis fitur, dan inovasi berikutnya) ada di [`docs/ROMBAK-v6.md`](docs/ROMBAK-v6.md).
+
+- **Navigasi baru:** Hari ini · Agenda · Ketemu · Ngopi + FAB **Ajak gowes**. Analisis pindah ke "Analisis · nanti".
+- **Ajak gowes 6 langkah** (satu pertanyaan per layar): saran slot emas, voting ≤ 3 jam, tag *Free* per teman, titik kumpul adil/dekat/tempat nyata, voting ≤ 3 kafe, pratinjau catatan tempel, kirim ke WhatsApp.
+- **RSVP dua arah tanpa server:** teman membalas lewat *link balasan*. Saat host mengetuknya, RSVP, vote, catatan, karakter, dan titik berangkat (±1 km, opsional) otomatis masuk.
+- **Detail ajakan ala pelacakan paket:** stepper Kumpul → Ngopi → Finish, timeline checkpoint dengan **check-in** + "Kabari grup", voting + *Tetapkan*, colek yang belum jawab, jadwal untuk keluarga.
+- **Titik temu 4 mode:** Adil, Waktu, **Searah tujuan** (median geometris ke kedai kopi), **Jemput berantai** (yang terjauh menjemput yang searah, jam berangkat dihitung mundur).
+- **Kapan semua bisa?** Waktu luang mingguan × cuaca 7 hari → slot emas → satu ketuk ke Ajak.
+- **Undangan bisa dibuka di HP baru** tanpa onboarding (cukup isi nama).
 
 ## Yang baru di v5 — Avatar Modular Kit & QA
 

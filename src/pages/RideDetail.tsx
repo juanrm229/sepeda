@@ -33,7 +33,7 @@ export default function RideDetail({ id }: { id: string }) {
         <div className="stack">
           <BaseMap center={r.track[0]} zoom={13} className="map tall" fit={r.track}>
             <Route track={r.track} color="#111" weight={6} />
-            <Route track={r.track} color="#d93d14" weight={3} />
+            <Route track={r.track} color="#d2441c" weight={3} />
             <SmallPin pos={r.track[0]} color="#1f9d6a" />
             <SmallPin pos={r.track[r.track.length - 1]} color="#111" />
           </BaseMap>
@@ -142,7 +142,7 @@ async function shareCard(r: Ride, name: string) {
   const px = (p: [number, number]) => [box.x + (box.w - (maxO - minO) * k) / 2 + (p[1] - minO) * k, box.y + (box.h - (maxA - minA) * k) / 2 + (maxA - p[0]) * k]
   g.lineJoin = 'round'; g.lineCap = 'round'
   g.strokeStyle = '#111'; g.lineWidth = 26; g.beginPath(); r.track.forEach((p, i) => { const [x, y] = px(p); i ? g.lineTo(x, y) : g.moveTo(x, y) }); g.stroke()
-  g.strokeStyle = '#d93d14'; g.lineWidth = 12; g.stroke()
+  g.strokeStyle = '#d2441c'; g.lineWidth = 12; g.stroke()
   g.fillStyle = '#111'
   g.font = '700 30px "Space Mono"'; g.fillText('KAYUH · ' + fmtDate(r.date).toUpperCase(), 90, 150)
   g.font = '600 72px "Inter Tight"'; g.fillText(r.name, 90, 250)
@@ -156,7 +156,7 @@ async function shareCard(r: Ride, name: string) {
   stat('RATA²', r.avgSpeed.toFixed(1), 'km/jam', 580, 1260)
   stat('WAKTU', fmtDur(r.movingSec).replace(' ', ''), 'bergerak', 90, 1560)
   stat('NANJAK', String(r.elevationM), 'meter', 580, 1560)
-  g.fillStyle = '#d93d14'; g.beginPath(); g.arc(W - 110, 140, 22, 0, 7); g.fill()
+  g.fillStyle = '#d2441c'; g.beginPath(); g.arc(W - 110, 140, 22, 0, 7); g.fill()
   c.toBlob(async (blob) => {
     if (!blob) return
     const file = new File([blob], 'kayuh-ride.png', { type: 'image/png' })

@@ -127,13 +127,26 @@ export function seedRides(days = 120): Ride[] {
   return rides
 }
 
+/** Bitmask ketersediaan dari pasangan [hari JS, slot]. */
+export const availMask = (pairs: [number, number][]) => pairs.reduce((m, [d, sl]) => m | (1 << (d * 3 + sl)), 0)
+export const MY_AVAIL = availMask([[6, 0], [0, 0], [2, 2], [4, 2], [3, 0]])
+const AV: Record<string, number> = {
+  f1: availMask([[6, 0], [0, 0], [0, 1], [3, 2]]),
+  f2: availMask([[0, 0], [6, 1], [2, 2], [4, 2]]),
+  f3: availMask([[6, 0], [0, 0], [5, 2]]),
+  f4: availMask([[0, 0], [6, 0], [3, 0]]),
+  f5: availMask([[6, 0], [4, 2], [0, 1]]),
+  f6: availMask([[0, 0], [6, 1], [2, 2]]),
+}
+export const seedAvail = (id: string) => AV[id] ?? 0
+
 export const seedFriends: Friend[] = [
-  { id: 'f1', name: 'Raka Pratama', color: '#d93d14', avgSpeed: 27.5, weeklyKm: 168, home: [-6.4025, 106.7942], homeLabel: 'Depok', char: { v: 2, head: 'variant03', hair: 'variant25', eyes: 'variant14', eyebrows: 'variant13', mouth: 'happy06', nose: 'variant02', glasses: 'variant04', earrings: null, beard: null, freckles: false, flowers: false, skin: 'e2a87d', hairColor: '111111', accColor: '111111' } },
-  { id: 'f2', name: 'Salsa Nadia', color: '#111111', avgSpeed: 24.2, weeklyKm: 112, home: [-6.3020, 106.6520], homeLabel: 'BSD, Tangsel', char: { v: 2, head: 'variant01', hair: 'variant47', eyes: 'variant23', eyebrows: 'variant04', mouth: 'happy03', nose: 'variant04', glasses: null, earrings: 'variant01', beard: null, freckles: true, flowers: false, skin: 'f6d3b8', hairColor: '5a3a22', accColor: 'c9a227' } },
-  { id: 'f3', name: 'Dimas Ari', color: '#f5c518', avgSpeed: 29.1, weeklyKm: 204, home: [-6.2383, 106.9756], homeLabel: 'Bekasi', char: { v: 2, head: 'variant04', hair: 'variant33', eyes: 'variant11', eyebrows: 'variant13', mouth: 'happy09', nose: 'variant05', glasses: null, earrings: null, beard: 'variant02', freckles: false, flowers: false, skin: 'a96f4a', hairColor: '111111', accColor: '111111' } },
-  { id: 'f4', name: 'Kirana Putri', color: '#8a8a85', avgSpeed: 22.8, weeklyKm: 86, home: [-6.2607, 106.8136], homeLabel: 'Kemang', char: { v: 2, head: 'variant02', hair: 'variant41', eyes: 'variant21', eyebrows: 'variant08', mouth: 'happy05', nose: 'variant03', glasses: 'variant02', earrings: null, beard: null, freckles: false, flowers: false, skin: 'fbe3d1', hairColor: '8b5a2b', accColor: '111111' } },
-  { id: 'f5', name: 'Bayu Saputra', color: '#2f6fed', avgSpeed: 25.6, weeklyKm: 131, home: [-6.1588, 106.9050], homeLabel: 'Kelapa Gading', char: { v: 2, head: 'variant03', hair: 'variant19', eyes: 'variant16', eyebrows: 'variant10', mouth: 'happy12', nose: 'variant06', glasses: null, earrings: null, beard: null, freckles: false, flowers: false, skin: '8d5a3b', hairColor: '2b1d16', accColor: '111111' } },
-  { id: 'f6', name: 'Nadia Lestari', color: '#1f9d6a', avgSpeed: 23.4, weeklyKm: 97, home: [-6.3725, 106.8960], homeLabel: 'Cibubur', char: { v: 2, head: 'variant01', hair: 'variant44', eyes: 'variant12', eyebrows: 'variant03', mouth: 'happy01', nose: 'variant01', glasses: null, earrings: 'variant02', beard: null, freckles: false, flowers: true, skin: 'eec09b', hairColor: 'c79a5b', accColor: 'c9a227' } },
+  { id: 'f1', avail: AV.f1, name: 'Raka Pratama', color: '#d2441c', avgSpeed: 27.5, weeklyKm: 168, home: [-6.4025, 106.7942], homeLabel: 'Depok', char: { v: 2, head: 'variant03', hair: 'variant25', eyes: 'variant14', eyebrows: 'variant13', mouth: 'happy06', nose: 'variant02', glasses: 'variant04', earrings: null, beard: null, freckles: false, flowers: false, skin: 'e2a87d', hairColor: '111111', accColor: '111111' } },
+  { id: 'f2', avail: AV.f2, name: 'Salsa Nadia', color: '#111111', avgSpeed: 24.2, weeklyKm: 112, home: [-6.3020, 106.6520], homeLabel: 'BSD, Tangsel', char: { v: 2, head: 'variant01', hair: 'variant47', eyes: 'variant23', eyebrows: 'variant04', mouth: 'happy03', nose: 'variant04', glasses: null, earrings: 'variant01', beard: null, freckles: true, flowers: false, skin: 'f6d3b8', hairColor: '5a3a22', accColor: 'c9a227' } },
+  { id: 'f3', avail: AV.f3, name: 'Dimas Ari', color: '#f5c518', avgSpeed: 29.1, weeklyKm: 204, home: [-6.2383, 106.9756], homeLabel: 'Bekasi', char: { v: 2, head: 'variant04', hair: 'variant33', eyes: 'variant11', eyebrows: 'variant13', mouth: 'happy09', nose: 'variant05', glasses: null, earrings: null, beard: 'variant02', freckles: false, flowers: false, skin: 'a96f4a', hairColor: '111111', accColor: '111111' } },
+  { id: 'f4', avail: AV.f4, name: 'Kirana Putri', color: '#8a8a85', avgSpeed: 22.8, weeklyKm: 86, home: [-6.2607, 106.8136], homeLabel: 'Kemang', char: { v: 2, head: 'variant02', hair: 'variant41', eyes: 'variant21', eyebrows: 'variant08', mouth: 'happy05', nose: 'variant03', glasses: 'variant02', earrings: null, beard: null, freckles: false, flowers: false, skin: 'fbe3d1', hairColor: '8b5a2b', accColor: '111111' } },
+  { id: 'f5', avail: AV.f5, name: 'Bayu Saputra', color: '#2f6fed', avgSpeed: 25.6, weeklyKm: 131, home: [-6.1588, 106.9050], homeLabel: 'Kelapa Gading', char: { v: 2, head: 'variant03', hair: 'variant19', eyes: 'variant16', eyebrows: 'variant10', mouth: 'happy12', nose: 'variant06', glasses: null, earrings: null, beard: null, freckles: false, flowers: false, skin: '8d5a3b', hairColor: '2b1d16', accColor: '111111' } },
+  { id: 'f6', avail: AV.f6, name: 'Nadia Lestari', color: '#1f9d6a', avgSpeed: 23.4, weeklyKm: 97, home: [-6.3725, 106.8960], homeLabel: 'Cibubur', char: { v: 2, head: 'variant01', hair: 'variant44', eyes: 'variant12', eyebrows: 'variant03', mouth: 'happy01', nose: 'variant01', glasses: null, earrings: 'variant02', beard: null, freckles: false, flowers: true, skin: 'eec09b', hairColor: 'c79a5b', accColor: 'c9a227' } },
 ]
 
 function nextDow(dow: number, h: number, m = 0): string {
@@ -145,14 +158,27 @@ function nextDow(dow: number, h: number, m = 0): string {
 }
 
 export function seedGroupRides(): GroupRide[] {
+  // ID unik per instalasi supaya undangan contoh tidak bentrok antar-HP
+  const sfx = Math.random().toString(36).slice(2, 7)
   return [
     {
-      id: 'g1', title: 'CFD Squad Pagi', datetime: nextDow(0, 5, 30),
+      id: 'g1-' + sfx, title: 'CFD Squad Pagi', datetime: nextDow(0, 5, 30),
       meet: { name: 'Bundaran HI (sisi Grand Indonesia)', pos: [-6.1950, 106.8230] },
       pace: 'santai', distanceKm: 32, route: 'Sudirman – Thamrin – Monas – balik GBK', noDrop: true,
       notes: 'Sarapan bubur ayam setelahnya. Bawa lampu belakang.',
-      participants: [{ friendId: 'f2', rsvp: 'ikut' }, { friendId: 'f4', rsvp: 'ikut' }, { friendId: 'f5', rsvp: 'mungkin' }, { friendId: 'f6', rsvp: 'menunggu' }],
-      myRsvp: 'ikut', host: 'me',
+      participants: [
+        { friendId: 'f2', rsvp: 'ikut', vote: { t: 0, c: 1 }, note: 'Aku bawa pompa mini 💪' },
+        { friendId: 'f4', rsvp: 'ikut', vote: { t: 0, c: 0 } },
+        { friendId: 'f5', rsvp: 'mungkin', vote: { t: 1 } },
+        { friendId: 'f6', rsvp: 'menunggu' },
+      ],
+      myRsvp: 'ikut', host: 'me', myVote: { t: 0, c: 1 },
+      note: 'Pelan-pelan aja, yang penting sarapan bareng!',
+      timeOptions: [nextDow(0, 5, 30), nextDow(0, 6, 0)],
+      coffeeOptions: [
+        { name: 'Kopi Es Tak Kie', kind: 'Kedai kopi', pos: [-6.1453, 106.8120] },
+        { name: 'Cafe Batavia', kind: 'Kafe', pos: [-6.1347, 106.8133] },
+      ],
       plan: {
         id: 'p-g1', name: 'CFD Squad Pagi', start: { name: 'Bundaran HI (sisi Grand Indonesia)', pos: [-6.1950, 106.8230] }, finish: null, speed: 20, startTime: nextDow(0, 5, 30),
         checkpoints: [
@@ -163,12 +189,14 @@ export function seedGroupRides(): GroupRide[] {
       },
     },
     {
-      id: 'g2', title: 'Nanjak Sentul – Gunung Pancar', datetime: nextDow(6, 5, 0),
+      id: 'g2-' + sfx, title: 'Nanjak Sentul – Gunung Pancar', datetime: nextDow(6, 5, 0),
       meet: { name: 'Sentul Circuit gerbang utama', pos: [-6.5410, 106.8590] },
       pace: 'kencang', distanceKm: 62, route: 'Sentul – Bukit Pelangi – Gunung Pancar', noDrop: false,
       notes: 'Elevasi ±1.100 m. Minimal bawa 2 bidon.',
-      participants: [{ friendId: 'f1', rsvp: 'ikut' }, { friendId: 'f3', rsvp: 'ikut' }],
+      participants: [{ friendId: 'f1', rsvp: 'ikut', vote: { t: 0 } }, { friendId: 'f3', rsvp: 'ikut', vote: { t: 0 } }],
       myRsvp: 'menunggu', host: 'f3',
+      note: 'Sabtu nanjak yuk! Kopi di atas aku yang traktir ☕',
+      timeOptions: [nextDow(6, 5, 0), nextDow(6, 5, 30)],
       plan: {
         id: 'p-g2', name: 'Nanjak Sentul – Gunung Pancar', start: { name: 'Sentul Circuit gerbang utama', pos: [-6.5410, 106.8590] }, finish: null, speed: 18, startTime: nextDow(6, 5, 0),
         checkpoints: [

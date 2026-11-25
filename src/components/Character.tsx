@@ -116,14 +116,14 @@ export function RaceScene({ racers, height = 250 }: { racers: Racer[]; height?: 
           {[0, 1, 2].map((k) => <path key={k} d={`M${-26 - k * 9},${-6 + k * 6} L${-46 - k * 12},${-6 + k * 6}`} stroke={INK} strokeWidth={2} strokeLinecap="round" opacity={0.35 - k * 0.08} strokeDasharray="6 5" strokeDashoffset={(t * 40) % 11} />)}
           <ellipse cx={0} cy={22} rx={16} ry={4} fill={INK} opacity={0.18} />
           <g transform={`translate(0 ${bob}) rotate(${Math.sin(t * 5 + i) * 6})`}>
-            <circle r={21} fill={r.me ? '#d93d14' : 'var(--surface-2)'} stroke={INK} strokeWidth={2.5} />
+            <circle r={21} fill={r.me ? '#d2441c' : 'var(--surface-2)'} stroke={INK} strokeWidth={2.5} />
             <g clipPath={`url(#hc${uid})`}><AvatarImage c={r.c} x={-23} y={-21} size={46} /></g>
             <circle r={19} fill="none" stroke={INK} strokeWidth={2} />
           </g>
           <g transform={`translate(0 ${by})`}>
             <path d={`M0,-2 L0,${-by - 26}`} stroke={INK} strokeWidth={1.2} strokeDasharray="2 2" opacity={0.5} />
             <rect x={-30} y={-28} width={60} height={26} rx={9} fill={r.me ? '#111' : 'var(--surface-2)'} stroke={INK} strokeWidth={2} />
-            <text x={0} y={-17.5} textAnchor="middle" fontSize={8.5} fontWeight={800} fill={i === 0 ? '#d93d14' : r.me ? '#fff' : INK} fontFamily="var(--f-ui)">#{i + 1} {r.me ? 'Kamu' : r.name.split(' ')[0]}</text>
+            <text x={0} y={-17.5} textAnchor="middle" fontSize={8.5} fontWeight={800} fill={i === 0 ? '#d2441c' : r.me ? '#fff' : INK} fontFamily="var(--f-ui)">#{i + 1} {r.me ? 'Kamu' : r.name.split(' ')[0]}</text>
             <text x={0} y={-7.5} textAnchor="middle" fontSize={8} fontFamily="var(--f-mono)" fill={r.me ? '#fff' : INK}>{Math.round(r.km)} km</text>
           </g>
         </g>
@@ -185,7 +185,7 @@ export function FeelFace({ v, size = 260, ink = '#1f2a07' }: { v: number; size?:
 }
 
 /** Slider detent ala "throttle response". */
-export function DetentSlider({ value, onChange, labels, accent = '#d93d14', track = 'var(--sunken)', thumb, label = 'Pilih nilai' }: { value: number; onChange: (v: number) => void; labels: string[]; accent?: string; track?: string; thumb?: ReactNode; label?: string }) {
+export function DetentSlider({ value, onChange, labels, accent = '#d2441c', track = 'var(--sunken)', thumb, label = 'Pilih nilai' }: { value: number; onChange: (v: number) => void; labels: string[]; accent?: string; track?: string; thumb?: ReactNode; label?: string }) {
   const ref = useRef<HTMLDivElement>(null)
   const set = (clientX: number) => {
     const r = ref.current!.getBoundingClientRect()

@@ -1,10 +1,10 @@
 {
-  "name": "Kayuh — Analitik Sepeda",
+  "name": "Kayuh — Ajak gowes & ngopi bareng",
   "short_name": "Kayuh",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#e8e7e3",
-  "theme_color": "#e8e7e3",
+  "background_color": "#eeeeec",
+  "theme_color": "#eeeeec",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -28,19 +28,23 @@
       "type": "image/svg+xml"
     }
   ],
-  "description": "Analitik sepeda, gowes bareng, checkpoint & coffee break.",
+  "description": "Ajak teman gowes dalam 10 detik, titik temu adil, checkpoint & coffee break, RSVP balik lewat WhatsApp.",
   "shortcuts": [
     {
-      "name": "Rekam ride",
-      "url": "/#/record"
-    },
-    {
-      "name": "Rute & kopi",
-      "url": "/#/rute"
-    },
-    {
-      "name": "Gowes bareng",
+      "name": "Agenda gowes bareng",
       "url": "/#/squad"
+    },
+    {
+      "name": "Titik temu adil",
+      "url": "/#/meet"
+    },
+    {
+      "name": "Kapan semua bisa?",
+      "url": "/#/kapan"
+    },
+    {
+      "name": "Rute & ngopi",
+      "url": "/#/rute"
     }
   ]
 }

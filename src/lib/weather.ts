@@ -36,8 +36,8 @@ export async function getForecast(pos: LatLng): Promise<Forecast> {
     const ctl = new AbortController()
     setTimeout(() => ctl.abort(), 7000)
     const fetch = (u: string) => window.fetch(u, { signal: ctl.signal })
-    const w = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,precipitation_probability,wind_speed_10m,wind_direction_10m,uv_index,is_day&daily=sunrise,sunset&forecast_days=2&timezone=auto`).then((r) => { if (!r.ok) throw new Error(); return r.json() })
-    const a = fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi&forecast_days=2&timezone=auto`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
+    const w = fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,apparent_temperature,precipitation_probability,wind_speed_10m,wind_direction_10m,uv_index,is_day&daily=sunrise,sunset&forecast_days=7&timezone=auto`).then((r) => { if (!r.ok) throw new Error(); return r.json() })
+    const a = fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=us_aqi&forecast_days=7&timezone=auto`).then((r) => (r.ok ? r.json() : null)).catch(() => null)
     const [wj, aj] = await Promise.all([w, a])
     const H = wj.hourly
     const aqiMap = new Map<string, number>()
@@ -61,11 +61,11 @@ export function demoForecast(): Forecast {
   start.setMinutes(0, 0, 0)
   start.setHours(0)
   const hours: Hour[] = []
-  for (let i = 0; i < 48; i++) {
+  for (let i = 0; i < 168; i++) {
     const t = new Date(start.getTime() + i * 3600000)
     const h = t.getHours()
     const temp = 25 + 7 * Math.max(0, Math.sin(((h - 7) / 14) * Math.PI))
-    const rain = h >= 14 && h <= 18 ? 55 + (i > 24 ? 15 : 0) : h >= 19 && h <= 21 ? 30 : 8
+    const rain = h >= 14 && h <= 18 ? 55 + ((Math.floor(i / 24) % 3) === 1 ? 20 : 0) : h >= 19 && h <= 21 ? 30 : 8
     const base = { time: t, temp, feels: temp + (h > 10 && h < 16 ? 3 : 1), rain, wind: 6 + 10 * Math.max(0, Math.sin(((h - 9) / 12) * Math.PI)), windDir: h < 12 ? 70 : 300, uv: Math.max(0, 11 * Math.sin(((h - 6) / 12) * Math.PI)), aqi: h < 8 ? 132 : h < 12 ? 98 : 74, isDay: h >= 6 && h < 18 }
     hours.push({ ...base, ...scoreHour(base) })
   }

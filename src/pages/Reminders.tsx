@@ -200,7 +200,7 @@ function DayDial({ dayOff, setDayOff, reminders, groupRides, fc }: { dayOff: num
       <div style={{ display: 'grid', placeItems: 'center', margin: '8px 0' }}>
         <RadialClock size={290} now={dayOff === 0}
           arcs={[{ from: sr, to: ss, color: 'color-mix(in srgb, var(--yellow) 70%, transparent)' }, ...(win ? [{ from: win.start.getHours(), to: win.end.getHours(), color: 'var(--accent)' }] : [])]}
-          pins={[...rs.map((r) => ({ h: toH(r.time), label: `${r.time.replace(':', '.')} ${r.kind === 'ride' ? '🚲' : r.kind === 'maintenance' ? '🔧' : r.kind === 'hydration' ? '💧' : '⏰'}`, dark: true })), ...gs.map((g) => ({ h: new Date(g.datetime).getHours() + new Date(g.datetime).getMinutes() / 60, label: '👥 ' + g.title.split(' ')[0], color: '#d93d14' }))]}
+          pins={[...rs.map((r) => ({ h: toH(r.time), label: `${r.time.replace(':', '.')} ${r.kind === 'ride' ? '🚲' : r.kind === 'maintenance' ? '🔧' : r.kind === 'hydration' ? '💧' : '⏰'}`, dark: true })), ...gs.map((g) => ({ h: new Date(g.datetime).getHours() + new Date(g.datetime).getMinutes() / 60, label: '👥 ' + g.title.split(' ')[0], color: '#d2441c' }))]}
           center={nextR ? <div><div className="mono">berikutnya</div><div className="dot" style={{ fontSize: 40, marginTop: 4 }}>{nextR.time.replace(':', '.')}</div><div className="tiny muted" style={{ maxWidth: 130, margin: '4px auto 0' }}>{nextR.title}</div></div> : <div><div className="mono">kosong</div><div className="tiny muted">Tidak ada pengingat</div></div>} />
       </div>
       <div className="row" style={{ justifyContent: 'space-between', gap: 4 }}>

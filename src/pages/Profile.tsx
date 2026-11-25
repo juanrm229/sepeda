@@ -93,7 +93,7 @@ export default function Profile() {
 
           <div className="card">
             <div className="card-h"><span className="mono">Lokasi rumah (untuk cuaca & titik temu)</span><button className="btn sm ghost" onClick={locate}><Crosshair size={14} /> {locating ? 'Mencari…' : 'Pakai lokasiku'}</button></div>
-            <BaseMap center={settings.home} zoom={12} className="map" onClick={(p) => updateSettings({ home: p, homeLabel: 'Titik pilihan' })}><SmallPin pos={settings.home} color="#d93d14" /></BaseMap>
+            <BaseMap center={settings.home} zoom={12} className="map" onClick={(p) => updateSettings({ home: p, homeLabel: 'Titik pilihan' })}><SmallPin pos={settings.home} color="#d2441c" /></BaseMap>
             <div className="tiny muted" style={{ marginTop: 8 }}>Ketuk peta untuk mengubah. Lokasi hanya disimpan di perangkatmu.</div>
           </div>
 

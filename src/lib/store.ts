@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings } from './types'
-import { applyRidesToBikes, defaultSettings, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
+import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings, Vote } from './types'
+import { applyRidesToBikes, defaultSettings, MY_AVAIL, seedAvail, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
 import { defaultChar, isCharConfig, migrateLegacy, sanitizeChar } from './avatar'
 
 interface State {
@@ -17,6 +17,11 @@ interface State {
   plan: Plan
   event: EventGoal | null
   routes: RoutePlan[]
+  /** Ketersediaan mingguan saya (bitmask, lihat lib/meetup). */
+  avail: number
+  setAvail: (m: number) => void
+  setMyVote: (id: string, v: Vote) => void
+  checkin: (id: string, key: string, on?: boolean) => void
   upsertRoute: (r: RoutePlan) => void
   deleteRoute: (id: string) => void
   setChar: (c: CharConfig) => void
@@ -63,6 +68,10 @@ export const useStore = create<State>()(
       onboarded: false,
       char: defaultChar,
       routes: [],
+      avail: MY_AVAIL,
+      setAvail: (m) => set({ avail: m }),
+      setMyVote: (id, v) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id === id ? { ...g, myVote: { ...g.myVote, ...v } } : g)) })),
+      checkin: (id, key, on = true) => set((s) => ({ groupRides: s.groupRides.map((g) => { if (g.id !== id) return g; const ck = { ...(g.checkins ?? {}) }; if (on) ck[key] = new Date().toISOString(); else delete ck[key]; return { ...g, checkins: ck } }) })),
       upsertRoute: (r) => set((s) => ({ routes: s.routes.some((x) => x.id === r.id) ? s.routes.map((x) => (x.id === r.id ? r : x)) : [r, ...s.routes] })),
       deleteRoute: (id) => set((s) => ({ routes: s.routes.filter((r) => r.id !== id) })),
       setChar: (c) => set({ char: c }),
@@ -99,18 +108,19 @@ export const useStore = create<State>()(
     }),
     {
       name: 'kayuh-v2',
-      version: 6,
+      version: 7,
       migrate: (persisted: unknown) => {
         const p = (persisted ?? {}) as Partial<State>
         const d = demo()
         return {
           ...p,
           routes: p.routes ?? [],
+          avail: typeof p.avail === 'number' ? p.avail : MY_AVAIL,
           onboarded: p.onboarded ?? true,
           plan: p.plan?.cells?.length === 14 ? p.plan : d.plan,
           char: isCharConfig(p.char) ? sanitizeChar(p.char) : p.char ? migrateLegacy(p.char, p.settings?.name ?? 'kayuh') : defaultChar,
-          friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, char: isCharConfig(f.char) ? sanitizeChar(f.char) : d.friends.find((x) => x.id === f.id)?.char ?? migrateLegacy(f.char, f.name + i) })),
-          groupRides: (p.groupRides ?? d.groupRides).map((g) => ({ ...g, plan: g.plan ?? d.groupRides.find((x) => x.id === g.id)?.plan })),
+          friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, avail: f.avail ?? seedAvail(f.id), char: isCharConfig(f.char) ? sanitizeChar(f.char) : d.friends.find((x) => x.id === f.id)?.char ?? migrateLegacy(f.char, f.name + i) })),
+          groupRides: (p.groupRides ?? d.groupRides).map((g) => { const seed = d.groupRides.find((x) => x.id.split('-')[0] === g.id); return seed && !g.timeOptions ? { ...seed, myRsvp: g.myRsvp } : g }),
           settings: { ...defaultSettings, ...(p.settings ?? {}) },
         } as State
       },

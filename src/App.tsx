@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Home as HomeIcon, Users, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee, Stamp } from 'lucide-react'
+import { Home as HomeIcon, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee, Stamp, CalendarDays, Plus, Users } from 'lucide-react'
 import { useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { dueReminders, notify } from './lib/notify'
@@ -26,7 +26,9 @@ const RoutePlanner = lazy(() => import('./pages/RoutePlanner'))
 const RouteList = lazy(() => import('./pages/RoutePlanner').then((m) => ({ default: m.RouteList })))
 const Onboarding = lazy(() => import('./components/Onboarding'))
 const Passport = lazy(() => import('./pages/Passport'))
-import { HeadBadge } from './components/Character'
+const Kapan = lazy(() => import('./pages/Kapan'))
+const Balas = lazy(() => import('./pages/Balas'))
+import { AjakHost, openAjak } from './components/AjakFlow'
 
 function useAchievements() {
   useEffect(() => {
@@ -70,13 +72,12 @@ function useReminderLoop() {
 export default function App() {
   const route = useRoute()
   const theme = useStore((s) => s.settings.theme)
-  const char = useStore((s) => s.char)
   const onboarded = useStore((s) => s.onboarded)
   useReminderLoop()
   useAchievements()
   useEffect(() => {
     document.documentElement.dataset.theme = theme
-    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a0a0a' : '#e8e7e3')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0b0c' : '#eeeeec')
   }, [theme])
 
   const [a, b, c] = route
@@ -97,47 +98,56 @@ export default function App() {
     case 'karakter': page = <CharacterPage />; break
     case 'rencana': page = <Plan />; break
     case 'paspor': page = <Passport />; break
+    case 'kapan': page = <Kapan />; break
+    case 'balas': page = <Balas code={b} />; break
     case 'rute': page = !b ? <RouteList /> : b === 'g' ? <RoutePlanner key={'g' + c} groupId={c} /> : <RoutePlanner key={b} id={b} />; break
     default: page = <Home />
   }
   const on = (x: string | undefined) => (a === x ? 'on' : '')
-  const navIdx = [undefined, 'squad', 'record', 'reminders', 'karakter'].indexOf(a)
+  const nav: { href: string; k: string | undefined; l: string; i: React.ReactNode }[] = [
+    { href: '#/', k: undefined, l: 'Hari ini', i: <HomeIcon size={20} /> },
+    { href: '#/squad', k: 'squad', l: 'Agenda', i: <CalendarDays size={20} /> },
+    { href: '#/meet', k: 'meet', l: 'Ketemu', i: <MapPin size={20} /> },
+    { href: '#/rute', k: 'rute', l: 'Ngopi', i: <Coffee size={20} /> },
+  ]
 
   return (
     <div className="app">
       <aside className="side">
         <div className="brand"><span className="brand-mark"><i /></span>Kayuh</div>
-        <a href="#/" className={on(undefined)}><HomeIcon size={18} /> Beranda</a>
-        <a href="#/squad" className={on('squad')}><Users size={18} /> Gowes Bareng</a>
+        {nav.map((n) => <a key={n.l} href={n.href} className={on(n.k)}>{n.i} {n.l === 'Ketemu' ? 'Titik temu' : n.l === 'Ngopi' ? 'Rute & ngopi' : n.l}</a>)}
+        <a href="#/kapan" className={on('kapan')}><Users size={20} /> Kapan semua bisa?</a>
+        <div className="side-h">Kamu</div>
         <a href="#/karakter" className={on('karakter')}><Smile size={18} /> Karakter</a>
-        <a href="#/rencana" className={on('rencana')}><Sliders size={18} /> Rencana</a>
-        <a href="#/rute" className={on('rute')}><Coffee size={18} /> Rute & Kopi</a>
-        <a href="#/paspor" className={on('paspor')}><Stamp size={18} /> Paspor</a>
-        <a href="#/meet" className={on('meet')}><MapPin size={18} /> Titik Temu</a>
         <a href="#/reminders" className={on('reminders')}><Bell size={18} /> Pengingat</a>
-        <a href="#/weather" className={on('weather')}><CloudSun size={18} /> Cuaca Gowes</a>
+        <a href="#/paspor" className={on('paspor')}><Stamp size={18} /> Paspor</a>
+        <a href="#/profile" className={on('profile')}><User size={18} /> Profil</a>
+        <div className="side-h">Analisis · nanti</div>
         <a href="#/insights" className={on('insights')}><LineChart size={18} /> Analisis</a>
         <a href="#/rides" className={on('rides')}><List size={18} /> Riwayat</a>
+        <a href="#/record" className={on('record')}><Zap size={18} /> Rekam</a>
+        <a href="#/weather" className={on('weather')}><CloudSun size={18} /> Cuaca</a>
+        <a href="#/rencana" className={on('rencana')}><Sliders size={18} /> Rencana</a>
         <a href="#/garage" className={on('garage')}><Bike size={18} /> Garasi</a>
-        <a href="#/profile" className={on('profile')}><User size={18} /> Profil</a>
-        <a href="#/record" className="btn accent rec" style={{ color: '#fff', justifyContent: 'center' }}><Zap size={18} /> Mulai rekam</a>
+        <button className="btn ink block side-cta" style={{ marginTop: 18 }} onClick={() => openAjak()}><Plus size={18} /> Ajak gowes</button>
       </aside>
       <main className="main">
         <ErrorBoundary key={route.join('/')}>
           <Suspense fallback={<PageSkeleton />}>{page}</Suspense>
         </ErrorBoundary>
       </main>
-      <nav className="bottomnav" aria-label="Navigasi utama">
-        <i className="nav-ind" style={{ transform: `translateX(${[0, 60, 120, 186, 246][Math.max(0, navIdx)]}px)`, opacity: navIdx < 0 || navIdx === 2 ? 0 : 1 }} />
-        <a href="#/" className={on(undefined)} aria-label="Beranda"><HomeIcon size={21} /></a>
-        <a href="#/squad" className={on('squad')} aria-label="Gowes bareng"><Users size={21} /></a>
-        <a href="#/record" className="rec" aria-label="Rekam"><Zap size={22} /></a>
-        <a href="#/reminders" className={on('reminders')} aria-label="Pengingat"><Bell size={21} /></a>
-        <a href="#/karakter" className={on('karakter')} aria-label="Karakter" style={{ opacity: 1 }}><HeadBadge c={char} size={32} bg="#2a2a28" ring={false} /></a>
-      </nav>
+      {a !== 'record' && (
+        <div className="navwrap">
+          <nav className="navpill" aria-label="Navigasi utama">
+            {nav.map((n) => <a key={n.l} href={n.href} className={on(n.k)} aria-label={n.l} aria-current={a === n.k ? 'page' : undefined}>{n.i}<span>{n.l}</span></a>)}
+          </nav>
+          <button className="fab" aria-label="Ajak gowes" onClick={() => openAjak()}><Plus size={26} /></button>
+        </div>
+      )}
+      <AjakHost />
       <Toaster />
       <ConfirmHost />
-      {!onboarded && <Suspense fallback={null}><Onboarding /></Suspense>}
+      {!onboarded && a !== 'join' && <Suspense fallback={null}><Onboarding /></Suspense>}
     </div>
   )
 }
@@ -145,10 +155,9 @@ export default function App() {
 function PageSkeleton() {
   return (
     <div className="page-skel" aria-busy="true" aria-label="Memuat">
-      <Skeleton h={14} w={120} /><Skeleton h={34} w={220} r={12} />
-      <Skeleton h={260} r={26} />
-      <div className="grid2"><Skeleton h={140} r={26} /><Skeleton h={140} r={26} /></div>
-      <Skeleton h={180} r={26} />
+      <Skeleton h={46} w={180} r={23} /><Skeleton h={90} r={16} />
+      <Skeleton h={240} r={24} />
+      <div className="grid2"><Skeleton h={120} r={24} /><Skeleton h={120} r={24} /></div>
     </div>
   )
 }

@@ -71,11 +71,11 @@ export function LivePin({ pos }: { pos: LatLng }) {
   return <Marker title="Posisimu" position={pos} icon={icon('<div class="pulse"></div>', 18)} zIndexOffset={900} />
 }
 
-export function Route({ track, color = '#d93d14', weight = 4, dash }: { track: LatLng[]; color?: string; weight?: number; dash?: string }) {
+export function Route({ track, color = '#d2441c', weight = 4, dash }: { track: LatLng[]; color?: string; weight?: number; dash?: string }) {
   return <Polyline positions={track} pathOptions={{ color, weight, lineCap: 'round', lineJoin: 'round', dashArray: dash }} />
 }
 
-export function Ring({ center, km, color = '#d93d14' }: { center: LatLng; km: number; color?: string }) {
+export function Ring({ center, km, color = '#d2441c' }: { center: LatLng; km: number; color?: string }) {
   return <Circle center={center} radius={km * 1000} pathOptions={{ color, weight: 1, fillOpacity: 0.06, dashArray: '4 6' }} />
 }
 

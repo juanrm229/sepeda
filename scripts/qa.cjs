@@ -14,7 +14,7 @@ const rec = (area, name, ok, note = '') => { results.push({ area, name, ok, note
 
 async function newPage(b, opts = {}) {
   const ctx = await b.newContext({ ...(opts.device ?? devices['iPhone 13']), ...(opts.ctx ?? {}) })
-  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 6 })) })
+  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 7 })) })
   const p = await ctx.newPage()
   p._errs = []; p._404 = []
   p.on('pageerror', (e) => p._errs.push('PAGEERR ' + e.message))
@@ -58,8 +58,9 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
   /* ---------------- 2. Fitur utama (data contoh) ---------------- */
   const p = await newPage(b)
   await p.goto(BASE); await p.waitForTimeout(1500)
-  await step('Beranda', 'hero, cerita, bento, liga tampil', async () => { await p.getByText(/KM minggu ini/i).waitFor(); await p.locator('.stories').waitFor(); await p.locator('svg[aria-label="Balapan squad mingguan"]').first().waitFor() })
-  await step('Beranda', 'tema gelap tersimpan', async () => { await p.getByRole('button', { name: 'Ganti tema' }).click(); const t = await p.evaluate(() => document.documentElement.dataset.theme); await p.reload(); await p.waitForTimeout(800); const t2 = await p.evaluate(() => document.documentElement.dataset.theme); if (t !== 'dark' || t2 !== 'dark') throw new Error(t + '/' + t2); await p.getByRole('button', { name: 'Ganti tema' }).click() })
+  await step('Beranda', 'kalimat hari ini, strip hari, ajakan berikutnya, undangan', async () => { await p.locator('.sentence').waitFor(); if ((await p.locator('.weekstrip button').count()) !== 7) throw new Error('strip hari'); await p.locator('.card.hero .stepper').waitFor(); await p.locator('.sticky').first().waitFor() })
+  await step('Beranda', 'undangan masuk → Ikut', async () => { await p.goto(BASE); await p.waitForTimeout(800); await p.locator('.sticky').first().getByRole('button', { name: 'Ikut!' }).click(); await p.waitForURL(/squad\/.+/); const s = await store(p); if (!s.groupRides.some((g) => g.host !== 'me' && g.myRsvp === 'ikut')) throw new Error('rsvp undangan') })
+  await step('Beranda', 'tema gelap tersimpan', async () => { await p.goto(BASE + 'profile'); await p.waitForTimeout(500); await p.getByRole('button', { name: 'Ganti tema' }).click(); const t = await p.evaluate(() => document.documentElement.dataset.theme); await p.reload(); await p.waitForTimeout(800); const t2 = await p.evaluate(() => document.documentElement.dataset.theme); if (t !== 'dark' || t2 !== 'dark') throw new Error(t + '/' + t2); await p.getByRole('button', { name: 'Ganti tema' }).click() })
 
   // Karakter
   await p.goto(BASE + 'karakter'); await p.waitForTimeout(1200)
@@ -98,20 +99,62 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
   await step('Karakter', 'pratinjau ekspresi mood', async () => { await p.getByRole('button', { name: 'lelah' }).click(); await p.waitForTimeout(200); await p.getByRole('button', { name: 'lelah' }).click() })
   await step('Karakter', 'avatar dirender (SVG data URI)', async () => { const n = await p.locator('img[src^="data:image/svg+xml"]').count(); if (n < 3) throw new Error('avatar tidak tampil: ' + n) })
 
-  // Squad & undangan
-  let invite = ''
-  await step('Squad', 'buat gowes bareng + undang', async () => { await p.goto(BASE + 'squad'); await p.getByRole('button', { name: 'Buat' }).click(); await p.getByRole('button', { name: /Buat & undang/ }).click(); await p.waitForURL(/squad\/.+/) })
-  await step('Squad', 'link undangan WA berisi data', async () => { const href = await p.locator('a', { hasText: 'Kirim ke grup WhatsApp' }).getAttribute('href'); invite = decodeURIComponent(href.split('text=')[1]).match(/https?:\/\/\S+#\/join\/\S+/)[0]; return invite.length + ' karakter' })
-  await step('Squad', 'kartu aksi: telat & geser jadwal', async () => { const before = (await store(p)).groupRides.slice(-1)[0].datetime; await p.getByRole('button', { name: /Geser 30m/ }).first().click(); const after = (await store(p)).groupRides.slice(-1)[0].datetime; if (new Date(after) - new Date(before) !== 1800000) throw new Error('geser gagal') })
-  await step('Squad', 'RSVP berubah', async () => { await p.getByRole('button', { name: 'Mungkin', exact: true }).click(); if ((await store(p)).groupRides.slice(-1)[0].myRsvp !== 'mungkin') throw new Error('rsvp') })
-  await step('Squad', 'hapus dengan dialog konfirmasi', async () => { const n = (await store(p)).groupRides.length; await p.getByRole('button', { name: /Hapus jadwal/ }).click(); await p.getByRole('dialog').getByRole('button', { name: 'Hapus', exact: true }).click(); await p.waitForURL(/#\/squad$/); if ((await store(p)).groupRides.length !== n - 1) throw new Error('tidak terhapus') })
-  await step('Squad', 'tab teman & liga', async () => { await p.getByRole('tab', { name: 'Teman' }).click(); await p.getByText(/Pace match/).waitFor(); await p.getByRole('tab', { name: 'Liga mingguan' }).click(); await p.getByText(/Km kamu minggu ini/).waitFor() })
+  // Ajak gowes, agenda, voting, balasan dua arah
+  let invite = '', rid = ''
+  await step('Ajak', 'alur 6 langkah dari FAB → simpan', async () => {
+    await p.goto(BASE); await p.waitForTimeout(600); const n = (await store(p)).groupRides.length
+    await p.locator('.fab').click()
+    for (let i = 0; i < 2; i++) await p.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click()
+    await p.getByRole('button', { name: 'Pilih semua yang free' }).click()
+    await p.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click()
+    await p.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click()
+    await p.getByRole('button', { name: /Lewati, tanpa ngopi/ }).click()
+    await p.getByRole('button', { name: /Simpan saja/ }).click()
+    await p.getByRole('button', { name: 'Lihat ajakan' }).click(); await p.waitForURL(/squad\/.+/)
+    rid = (await p.evaluate(() => location.hash)).split('/')[2]
+    const s = await store(p); if (s.groupRides.length !== n + 1) throw new Error('tidak tersimpan')
+    return s.groupRides.find((g) => g.id === rid).participants.length + ' diajak'
+  })
+  await step('Ajak', 'link undangan WA berisi data', async () => { const href = await p.locator('a', { hasText: 'Kirim undangan ke grup WhatsApp' }).getAttribute('href'); invite = decodeURIComponent(href.split('text=')[1]).match(/https?:\/\/\S+#\/join\/\S+/)[0]; return invite.length + ' karakter' })
+  await step('Ajak', 'aksi telat: geser jadwal 30 menit', async () => { const before = (await store(p)).groupRides.find((g) => g.id === rid).datetime; await p.getByRole('button', { name: /Telat\?/ }).click(); await p.getByRole('dialog').getByRole('button', { name: /Geser 30m/ }).click(); await p.keyboard.press('Escape'); const after = (await store(p)).groupRides.find((g) => g.id === rid).datetime; if (new Date(after) - new Date(before) !== 1800000) throw new Error('geser gagal') })
+  await step('Ajak', 'RSVP berubah', async () => { await p.getByRole('button', { name: 'Mungkin', exact: true }).click(); if ((await store(p)).groupRides.find((g) => g.id === rid).myRsvp !== 'mungkin') throw new Error('rsvp'); await p.getByRole('button', { name: 'Ikut', exact: true }).click() })
+  await step('Voting', 'vote jam & tetapkan pemenang', async () => {
+    const g1 = (await store(p)).groupRides.find((g) => g.id.startsWith('g1'))
+    await p.goto(BASE + 'squad/' + g1.id); await p.waitForTimeout(600)
+    await p.locator('.opt', { hasText: '06.00' }).click()
+    if ((await store(p)).groupRides.find((g) => g.id === g1.id).myVote.t !== 1) throw new Error('vote')
+    await p.getByRole('button', { name: /Tetapkan/ }).click()
+    const g = (await store(p)).groupRides.find((x) => x.id === g1.id); if (g.timeOptions || !g.plan.checkpoints.some((c) => c.kind === 'kopi')) throw new Error('tidak ditetapkan')
+  })
+  await step('Check-in', 'check-in checkpoint tersimpan', async () => {
+    const g1 = (await store(p)).groupRides.find((g) => g.id.startsWith('g1'))
+    await p.locator('.vtl-row').first().getByRole('button').click().catch(() => {})
+    const ck = (await store(p)).groupRides.find((g) => g.id === g1.id).checkins
+    return ck && ck.start ? 'start ✓' : 'di luar jendela ride (tombol tersembunyi) — dilewati'
+  })
+  await step('Agenda', 'tab teman & liga', async () => { await p.goto(BASE + 'squad'); await p.getByRole('tab', { name: 'Teman' }).click(); await p.getByText(/Siapa free kapan/).waitFor(); await p.getByRole('tab', { name: 'Liga' }).click(); await p.getByText(/Km kamu minggu ini/).waitFor() })
   {
-    const p2 = await newPage(b)
-    await step('Undangan', 'teman membuka link → RSVP ikut', async () => { await p2.goto(invite); await p2.getByRole('button', { name: 'Ikut!' }).click(); await p2.waitForURL(/squad\//); const s = await store(p2); if (!s.groupRides.some((g) => g.myRsvp === 'ikut' && g.id.startsWith('inv-'))) throw new Error('tidak tersimpan') })
-    await step('Undangan', 'link rusak ditangani', async () => { await p2.goto(BASE + 'join/rusak!!'); await p2.getByText(/tidak valid/).waitFor() })
+    const p2 = await newPage(b, { onboarded: false })
+    await p2.context().addInitScript(() => { window.open = (u) => { window.__opened = u; return null } })
+    let reply = ''
+    await step('Undangan', 'HP baru membuka link: tanpa onboarding, isi nama, vote, Ikut', async () => {
+      await p2.goto(invite.replace(/^https?:\/\/[^/]+\//, BASE.replace('#/', ''))); await p2.waitForTimeout(1000)
+      if (await p2.locator('.onb').count()) throw new Error('onboarding menghalangi')
+      await p2.getByPlaceholder('mis. Salsa').fill('Tamu QA'); await p2.getByRole('button', { name: 'Ikut!' }).click()
+      const s = await store(p2); if (!s.groupRides.some((g) => g.id === rid && g.myRsvp === 'ikut')) throw new Error('tidak tersimpan')
+    })
+    await step('Undangan', 'kirim balasan berisi link balasan', async () => { await p2.getByRole('button', { name: /Kirim jawaban ke/ }).click(); const u = await p2.evaluate(() => window.__opened); reply = decodeURIComponent(u.split('text=')[1]).match(/#\/balas\/\S+/)[0]; return reply.length + ' karakter' })
+    await step('Balasan', 'host membuka balasan → peserta bertambah (idempoten)', async () => {
+      const n = (await store(p)).groupRides.find((g) => g.id === rid).participants.length
+      await p.goto(BASE + reply.slice(2)); await p.getByText('Balasan masuk').waitFor()
+      await p.goto(BASE); await p.goto(BASE + reply.slice(2)); await p.waitForTimeout(500)
+      const ps = (await store(p)).groupRides.find((g) => g.id === rid).participants; if (ps.length !== n + 1 || ps.slice(-1)[0].name !== 'Tamu QA') throw new Error(n + ' -> ' + ps.length)
+    })
+    await step('Undangan', 'link rusak ditangani', async () => { await p2.goto(BASE + 'join/rusak!!'); await p2.getByText(/tidak valid/).waitFor(); await p2.goto(BASE + 'balas/rusak!!'); await p2.getByText(/tidak valid/).waitFor() })
     await p2.context().close()
   }
+  await step('Ajak', 'hapus dengan dialog konfirmasi', async () => { await p.goto(BASE + 'squad/' + rid); const n = (await store(p)).groupRides.length; await p.getByRole('button', { name: /Hapus ajakan/ }).click(); await p.getByRole('dialog').getByRole('button', { name: 'Hapus', exact: true }).click(); await p.waitForURL(/#\/squad$/); if ((await store(p)).groupRides.length !== n - 1) throw new Error('tidak terhapus') })
+  await step('Kapan', 'tandai waktu luang & slot emas', async () => { await p.goto(BASE + 'kapan'); const a = (await store(p)).avail; await p.getByRole('button', { name: 'Senin Sore' }).click(); if ((await store(p)).avail === a) throw new Error('avail'); await p.getByText('Slot emas').waitFor() })
 
   // Rute & checkpoint
   await step('Rute', 'template populer → planner', async () => { await p.goto(BASE + 'rute'); await p.locator('.tpl', { hasText: 'Kota Tua' }).getByRole('button', { name: 'Pakai rute ini' }).click(); await p.waitForURL(/rute\/.+/); await p.waitForTimeout(1500); const n = await p.locator('.tl-item .tl-dot').count(); if (n !== 3) throw new Error('cp ' + n) })
@@ -135,20 +178,23 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
   await step('Pengingat', 'buat, nonaktifkan, hapus', async () => { await p.goto(BASE + 'reminders'); await p.getByRole('button', { name: 'Baru' }).click(); await p.getByPlaceholder(/Gowes pagi/).fill('QA pengingat'); await p.getByRole('button', { name: 'Simpan' }).click(); await p.getByText('QA pengingat').first().click(); await p.getByRole('dialog').getByRole('button', { name: 'Hapus' }).click(); await p.waitForTimeout(400); if (await p.getByText('QA pengingat').count()) throw new Error('masih ada') })
   await step('Pengingat', 'ekspor .ics', async () => { const [d] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: /Ekspor ke kalender/ }).click()]); return d.suggestedFilename() })
   await step('Rencana', 'racik, putar, proyeksi', async () => { await p.goto(BASE + 'rencana'); await p.getByRole('button', { name: /Racik rencana/ }).click(); await p.getByRole('button', { name: 'Putar' }).click(); await p.waitForTimeout(1200); await p.getByText(/Masa depan kebugaranmu/).waitFor() })
-  await step('Titik temu', 'hitung titik adil + mode', async () => { await p.goto(BASE + 'meet'); await p.getByText('Skor keadilan').waitFor(); await p.getByRole('tab', { name: 'Adil waktu' }).click(); await p.getByRole('tab', { name: 'Rata-rata' }).click() })
+  await step('Titik temu', 'adil, waktu, searah, jemput berantai', async () => { await p.goto(BASE + 'meet'); await p.getByText('Skor keadilan').waitFor(); await p.getByRole('tab', { name: 'Waktu' }).click(); await p.getByRole('tab', { name: 'Searah' }).click(); await p.getByText('Tambahan jarak').waitFor(); await p.getByRole('tab', { name: 'Jemput' }).click(); await p.getByText('Tiba bareng di kumpul').waitFor() })
   await step('Paspor', 'stempel & detail', async () => { await p.goto(BASE + 'paspor'); await p.locator('.stamp-tile').first().click(); await p.getByRole('dialog').waitFor(); await p.keyboard.press('Escape') })
   await step('Garasi', 'reset komponen', async () => { await p.goto(BASE + 'garage'); await p.getByRole('button', { name: /Reset Rantai/ }).first().click(); const s = await store(p); if (s.bikes[0].components[0].usedKm !== 0) throw new Error('tidak reset') })
   await step('Profil', 'ubah nama tercermin di paspor', async () => { await p.goto(BASE + 'profile'); await p.locator('label:has-text("Nama") input').first().fill('QA Rider'); await p.goto(BASE + 'paspor'); await p.getByText('Paspor QA Rider').waitFor() })
-  await step('Navigasi', 'rute tak dikenal & ride tak ada', async () => { await p.goto(BASE + 'apa-ini'); await p.getByText(/KM minggu ini/i).waitFor(); await p.goto(BASE + 'ride/xyz'); await p.getByText(/tidak ditemukan/i).waitFor() })
+  await step('Navigasi', 'rute tak dikenal & ride tak ada', async () => { await p.goto(BASE + 'apa-ini'); await p.locator('.sentence').waitFor(); await p.goto(BASE + 'ride/xyz'); await p.getByText(/tidak ditemukan/i).waitFor() })
   await step('Global', 'tidak ada error JS', async () => { if (p._errs.length) throw new Error(p._errs.slice(0, 3).join(' | ')) })
   await step('Global', 'tidak ada request 4xx/5xx', async () => { if (p._404.length) throw new Error(p._404.slice(0, 3).join(' | ')) })
   await p.context().close()
 
   /* ---------------- 3. QC: overflow 360px, aksesibilitas, performa ---------------- */
-  const ROUTES = ['', 'squad', 'squad/g1', 'record', 'reminders', 'karakter', 'rencana', 'rute', 'rute/g/g1', 'meet', 'weather', 'insights', 'rides', 'garage', 'profile', 'paspor']
+  const ROUTES = ['', 'squad', 'squad/G1', 'kapan', 'record', 'reminders', 'karakter', 'rencana', 'rute', 'rute/g/G1', 'meet', 'weather', 'insights', 'rides', 'garage', 'profile', 'paspor']
   const q = await newPage(b, { device: { viewport: { width: 360, height: 740 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, ctx: { reducedMotion: 'reduce' } })
   const a11y = {}
-  for (const r of ROUTES) {
+  await q.goto(BASE); await q.waitForTimeout(800); await q.locator('.card.hero').getByRole('button', { name: 'Detail' }).click(); await q.waitForTimeout(300)
+  const G1 = (await q.evaluate(() => location.hash)).split('/')[2]
+  for (const r0 of ROUTES) {
+    const r = r0.replace('G1', G1)
     const t0 = Date.now(); await q.goto(BASE + r); await q.waitForLoadState('networkidle').catch(() => {}); const ms = Date.now() - t0
     await q.waitForTimeout(1200)
     const ov = await q.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)

@@ -1,6 +1,7 @@
 import type { CheckpointKind, LatLng, RoutePlan } from './types'
 import type { PlaceCat } from './places'
 import { fmtDate, uid } from './util'
+import { haversine } from './geo'
 
 export const hhmm = (d: Date) => `${String(d.getHours()).padStart(2, '0')}.${String(d.getMinutes()).padStart(2, '0')}`
 
@@ -18,9 +19,15 @@ export function defaultPlan(start: { name: string; pos: LatLng }, startTime?: st
   return { id: uid(), name: 'Rute baru', start, finish: null, checkpoints: [], speed: 24, startTime: startTime ?? t.toISOString() }
 }
 
+/** Perkiraan jarak tiap leg (garis lurus × 1,3) bila rute jalan belum dihitung. */
+export function approxLegs(plan: RoutePlan): number[] {
+  const pts = [plan.start.pos, ...plan.checkpoints.map((c) => c.place?.pos ?? c.pos), (plan.finish ?? plan.start).pos]
+  return pts.slice(1).map((p, i) => haversine(pts[i], p) * 1.3)
+}
+
 /** Hitung ETA tiap checkpoint dari legs jarak. */
 export function timeline(plan: RoutePlan) {
-  const legs = plan.legsKm ?? []
+  const legs = plan.legsKm ?? approxLegs(plan)
   let t = new Date(plan.startTime).getTime()
   let km = 0
   const rows = plan.checkpoints.map((c, i) => {

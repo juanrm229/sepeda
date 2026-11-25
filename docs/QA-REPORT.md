@@ -1,8 +1,10 @@
 # Laporan QA / QC — Kayuh
 
-**Tanggal:** 21 Nov 2026 · **Build:** v6 (avatar DiceBear Lorelei) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
+**Tanggal:** 25 Nov 2026 · **Build:** v6 rombak "Ajak, ketemu, ngopi" (desain Soft Mono) · **Lingkungan uji:** Chromium (Playwright), iPhone 13 (390×844), layar 360×740, desktop 1440×900, tema terang & gelap.
 
-**Hasil akhir: 88/88 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
+**Hasil akhir: 96/96 pemeriksaan lolos** — `node scripts/qa.cjs` (butuh `npm run dev -- --port 5199`).
+
+> v6: suite diperbarui untuk fitur ketemuan — alur Ajak 6 langkah, voting & tetapkan, check-in checkpoint, undangan di HP baru tanpa onboarding, link balasan dua arah (idempoten), 4 mode titik temu, *Kapan semua bisa?*. Pemeriksaan v5 di bawah tetap berlaku untuk halaman lama.
 
 ## Cakupan
 

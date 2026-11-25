@@ -25,7 +25,7 @@ export function FeelCheck({ open, initial = 0.7, initialRpe = 6, onClose, onSave
         </div>
         <div style={{ marginTop: 26 }}>
           <div className="row between"><span className="mono" style={{ color: 'inherit', opacity: 0.7 }}>Seberapa berat (RPE)</span><span className="dot" style={{ fontSize: 26 }}>{rpeN}<span style={{ opacity: 0.4 }}>/10</span></span></div>
-          <div style={{ marginTop: 8 }}><DetentSlider value={rpe} onChange={setRpe} labels={['Santai', 'Sedang', 'Maks']} accent="#d93d14" track="rgba(0,0,0,.08)" /></div>
+          <div style={{ marginTop: 8 }}><DetentSlider value={rpe} onChange={setRpe} labels={['Santai', 'Sedang', 'Maks']} accent="#d2441c" track="rgba(0,0,0,.08)" /></div>
         </div>
         <div style={{ flex: 1 }} />
         <div className="row" style={{ background: 'rgba(0,0,0,.07)', borderRadius: 999, padding: 6, marginTop: 20 }}>
