@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { refreshRide, useSyncStatus } from '../lib/sync'
 import { Bell, CalendarPlus, Check, Clock, Coffee, Copy, MessageCircle, Navigation, Radio, Share2, Trash2, CloudRain, Thermometer, Wind, Route as RouteIcon, Users, Crown } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { CharConfig, GroupRide, LatLng, Rsvp } from '../lib/types'
@@ -31,6 +32,17 @@ export default function SquadDetail({ id }: { id: string }) {
   const [shareFrom, setShareFrom] = useState(true)
   const [replyNote, setReplyNote] = useState('')
   const [lastMsg, setLastMsg] = useState<string | null>(null)
+  const auth = useStore((s) => s.auth)
+  const sync = useSyncStatus()
+  const [live, setLive] = useState(false)
+  useEffect(() => {
+    if (!auth || !g) return
+    let on = true
+    const run = () => refreshRide(id).then((ok) => on && setLive(!!ok))
+    run(); const iv = setInterval(run, 40000)
+    return () => { on = false; clearInterval(iv) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, !!auth])
   if (!g) return <div><Top title="Tidak ditemukan" back="squad" /><div className="empty">Ajakan ini sudah dihapus.</div></div>
 
   const isHost = g.host === 'me'
@@ -114,7 +126,7 @@ export default function SquadDetail({ id }: { id: string }) {
                 <div className="mono">Ajakan dari {hostName}</div>
                 <div className="row" style={{ gap: 8, marginTop: 6 }}><span className="big" style={{ fontSize: 22 }}>#{g.id.slice(0, 6).toUpperCase()}</span><button className="iconbtn" style={{ width: 30, height: 30, background: 'rgba(255,255,255,.1)', color: '#fff', boxShadow: 'none' }} aria-label="Salin link" onClick={() => { navigator.clipboard?.writeText(link); toast('🔗 Link disalin') }}><Copy size={13} /></button></div>
               </div>
-              <span className="tag">{j.doneIdx >= 0 && !past && <i className="live" />}{status}</span>
+              <span className="tag">{(j.doneIdx >= 0 && !past) || live ? <i className="live" /> : null}{status}</span>
             </div>
             <div className="stepper" style={{ marginTop: 22 }}>
               {(j.nodes.length > 5 ? [j.nodes[0], ...j.nodes.slice(1, -1).filter((n, i, a) => n.kind === 'kopi' || i === 0 || i === a.length - 1).slice(0, 3), j.nodes[j.nodes.length - 1]] : j.nodes).map((n, i) => {
@@ -164,7 +176,10 @@ export default function SquadDetail({ id }: { id: string }) {
               <i className="tabs-ind" style={{ width: 'calc((100% - 8px) / 3)', transform: `translateX(${Math.max(0, ['ikut', 'mungkin', 'tidak'].indexOf(g.myRsvp)) * 100}%)`, opacity: g.myRsvp === 'menunggu' ? 0 : 1 }} />
               {(['ikut', 'mungkin', 'tidak'] as Rsvp[]).map((r) => <button key={r} className={g.myRsvp === r ? 'on' : ''} onClick={() => { setMyRsvp(g.id, r); toast(r === 'ikut' ? 'Sip, sampai ketemu! 🚲' : 'RSVP diperbarui') }}>{RSVP_L[r]}</button>)}
             </div>
-            {!isHost && (
+            {!isHost && g.remote && auth && (
+              <div className="row" style={{ marginTop: 12, gap: 8 }}><span className="tag good"><Check size={12} /> {g.myRsvp === 'menunggu' ? 'Pilih jawaban — langsung terkirim' : sync === 'saving' ? 'Mengirim…' : `Terkirim ke ${hostName}`}</span><span className="tiny muted">tanpa WhatsApp</span></div>
+            )}
+            {!isHost && !(g.remote && auth) && (
               <div className="stack" style={{ marginTop: 14, gap: 10 }}>
                 <div className="divider" style={{ margin: 0 }} />
                 <div className="b">Kabari {hostName}</div>

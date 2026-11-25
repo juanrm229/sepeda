@@ -43,10 +43,11 @@ const slug = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]
 /** Gabungkan balasan teman ke ajakan milik host. Mencocokkan nama ke daftar teman. */
 export function mergeReply(g: GroupRide, friends: Friend[], r: Reply): { g: GroupRide; who: string; isNew: boolean } {
   const lower = r.name.trim().toLowerCase()
-  const f = friends.find((x) => x.name.toLowerCase() === lower) ?? friends.find((x) => firstName(x.name).toLowerCase() === firstName(lower))
-  const pid = f?.id ?? 'g-' + slug(r.name)
+  const ru = (r as Reply & { uid?: string }).uid
+  const f = (ru ? friends.find((x) => x.uid === ru) : undefined) ?? friends.find((x) => x.name.toLowerCase() === lower) ?? friends.find((x) => firstName(x.name).toLowerCase() === firstName(lower))
+  const pid = f?.id ?? (ru ? 'u:' + ru : 'g-' + slug(r.name))
   const prev = g.participants.find((p) => p.friendId === pid)
-  const next: Participant = { ...(prev ?? {}), friendId: pid, rsvp: r.status ? prev?.rsvp ?? 'ikut' : r.rsvp, name: f ? undefined : r.name, char: r.char ?? prev?.char, from: r.from ?? prev?.from, vote: r.vote ?? prev?.vote, note: r.note ?? prev?.note, at: r.at,
+  const next: Participant = { ...(prev ?? {}), friendId: pid, uid: ru ?? prev?.uid, rsvp: r.status ? prev?.rsvp ?? 'ikut' : r.rsvp, name: f ? undefined : r.name, char: r.char ?? prev?.char, from: r.from ?? prev?.from, vote: r.vote ?? prev?.vote, note: r.note ?? prev?.note, at: r.at,
     order: r.order ?? prev?.order, status: r.status ?? prev?.status, statusAt: r.status ? r.at : prev?.statusAt, eta: r.status ? r.eta : prev?.eta }
   let orders = g.orders ?? []
   if (r.order) {

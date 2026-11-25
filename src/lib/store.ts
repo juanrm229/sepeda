@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Bike, CharConfig, Debt, EventGoal, Friend, GroupRide, Order, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings, TripStatus, Vote } from './types'
+import type { Auth, Bike, CharConfig, Debt, EventGoal, Friend, GroupRide, Order, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings, TripStatus, Vote } from './types'
 import { applyRidesToBikes, defaultSettings, MY_AVAIL, seedAvail, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides, seedLedger } from './seed'
 import { defaultChar, isCharConfig, migrateLegacy, sanitizeChar } from './avatar'
 
@@ -53,7 +53,26 @@ interface State {
   updateSettings: (s: Partial<Settings>) => void
   resetDemo: () => void
   clearAll: () => void
+  /** Akun PACK (null = mode tanpa akun). */
+  auth: Auth | null
+  setAuth: (a: Auth | null) => void
+  /** Ganti seluruh data pribadi dengan salinan dari server. */
+  applySynced: (st: Partial<Synced>) => void
+  /** Keluar: hapus sesi & data lokal. */
+  signOut: () => void
+  /** Kosongkan data untuk akun baru (tanpa contoh). */
+  freshStart: () => void
 }
+
+/** Kunci data pribadi yang disinkronkan ke akun. */
+export const SYNC_KEYS = ['rides', 'friends', 'groupRides', 'reminders', 'bikes', 'settings', 'char', 'plan', 'event', 'routes', 'avail', 'ledger', 'activeBikeId'] as const
+export type Synced = Pick<State, (typeof SYNC_KEYS)[number]>
+export function snapshot(s: State): Synced {
+  const o: Record<string, unknown> = {}
+  for (const k of SYNC_KEYS) o[k] = s[k]
+  return o as Synced
+}
+const empty = () => ({ rides: [], friends: [], groupRides: [], routes: [], ledger: [], plan: { cells: Array(14).fill(null) }, event: null, bikes: seedBikes.map((b) => ({ ...b, odometerKm: 0, components: b.components.map((c) => ({ ...c, usedKm: 0 })) })) })
 
 function demo() {
   const rides = seedRides()
@@ -121,12 +140,23 @@ export const useStore = create<State>()(
         set((s) => ({ bikes: s.bikes.map((b) => (b.id === bikeId ? { ...b, components: b.components.map((c) => (c.id === compId ? { ...c, usedKm: 0 } : c)) } : b)) })),
       setActiveBike: (id) => set({ activeBikeId: id }),
       updateSettings: (p) => set((s) => ({ settings: { ...s.settings, ...p } })),
+      auth: null,
+      setAuth: (a) => set({ auth: a }),
+      applySynced: (st) => set((s) => {
+        const o: Partial<State> = {}
+        for (const k of SYNC_KEYS) if (st[k] !== undefined && st[k] !== null) (o as Record<string, unknown>)[k] = st[k]
+        if (o.settings) o.settings = { ...defaultSettings, pay: [], ...o.settings }
+        if (o.char && isCharConfig(o.char)) o.char = sanitizeChar(o.char)
+        return { ...s, ...o, onboarded: true }
+      }),
+      signOut: () => set({ auth: null, onboarded: false, ...empty(), settings: { ...defaultSettings, name: '', pay: [] }, avail: 0, char: defaultChar }),
+      freshStart: () => set((s) => ({ ...empty(), avail: 0, settings: { ...s.settings, pay: [] } })),
       resetDemo: () => set({ ...demo() }),
       clearAll: () => set({ rides: [], groupRides: [], bikes: seedBikes }),
     }),
     {
       name: 'kayuh-v2',
-      version: 8,
+      version: 9,
       migrate: (persisted: unknown) => {
         const p = (persisted ?? {}) as Partial<State>
         const d = demo()
@@ -135,6 +165,7 @@ export const useStore = create<State>()(
           routes: p.routes ?? [],
           avail: typeof p.avail === 'number' ? p.avail : MY_AVAIL,
           ledger: p.ledger ?? d.ledger,
+          auth: p.auth ?? null,
           onboarded: p.onboarded ?? true,
           plan: p.plan?.cells?.length === 14 ? p.plan : d.plan,
           char: isCharConfig(p.char) ? sanitizeChar(p.char) : p.char ? migrateLegacy(p.char, p.settings?.name ?? 'kayuh') : defaultChar,

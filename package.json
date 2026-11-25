@@ -8,11 +8,13 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "qa": "node scripts/qa.cjs"
+    "qa": "node scripts/qa.cjs",
+    "dev:api": "node --experimental-strip-types --no-warnings scripts/dev-api.mjs"
   },
   "dependencies": {
     "@dicebear/core": "^9.4.3",
     "@dicebear/lorelei": "^9.4.2",
+    "@vercel/blob": "^0.27.3",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.77.0",
     "qrcode-generator": "^1.4.4",

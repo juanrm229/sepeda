@@ -14,7 +14,7 @@ const rec = (area, name, ok, note = '') => { results.push({ area, name, ok, note
 
 async function newPage(b, opts = {}) {
   const ctx = await b.newContext({ ...(opts.device ?? devices['iPhone 13']), ...(opts.ctx ?? {}) })
-  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 8 })) })
+  if (opts.onboarded !== false) await ctx.addInitScript(() => { if (!localStorage.getItem('kayuh-v2')) localStorage.setItem('kayuh-v2', JSON.stringify({ state: { onboarded: true }, version: 9 })) })
   const p = await ctx.newPage()
   p._errs = []; p._404 = []
   p.on('pageerror', (e) => p._errs.push('PAGEERR ' + e.message))
@@ -32,35 +32,88 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
   /* ---------------- 1. Pengguna baru (onboarding) ---------------- */
   {
     const p = await newPage(b, { onboarded: false })
-    await p.goto(BASE); await p.waitForTimeout(1200)
-    await step('Onboarding', 'muncul untuk pengguna baru', () => p.getByText('Stop riding alone.').waitFor({ timeout: 5000 }))
-    await step('Onboarding', 'isi nama, ganti rambut, kulit & warna rambut', async () => {
-      await p.getByRole('button', { name: /Ayo mulai/ }).click()
-      await p.getByPlaceholder('Nama panggilan').fill('Rizky')
-      await p.getByRole('button', { name: 'Rambut 4', exact: true }).click()
-      await p.getByRole('button', { name: 'Warna kulit 7', exact: true }).click()
-      await p.getByRole('button', { name: 'Warna rambut 6', exact: true }).click()
-      const s = await store(p); if (s.char.hair !== 'variant47' || s.char.skin !== '8d5a3b' || s.char.hairColor !== 'e6c27a') throw new Error(JSON.stringify(s.char))
-      await p.getByRole('button', { name: /Lanjut/ }).click()
+    await p.goto(BASE); await p.waitForTimeout(1500)
+    await step('Onboarding', 'sambutan ala DailyLoop muncul', () => p.getByText('Selamat datang di PACK!').waitFor({ timeout: 5000 }))
+    await step('Onboarding', 'mode tanpa akun, mulai bersih', async () => {
+      await p.getByRole('button', { name: 'Coba dulu tanpa akun' }).click()
+      await p.getByPlaceholder('mis. Juan').fill('Rizky')
+      await p.getByRole('button', { name: 'Data contoh' }).click()
+      await p.getByRole('button', { name: 'Masuk ke PACK' }).click(); await p.waitForTimeout(600)
+      const s = await store(p); if (s.rides.length !== 0 || s.settings.name !== 'Rizky' || !s.onboarded) throw new Error(JSON.stringify({ r: s.rides.length, n: s.settings.name }))
     })
-    await step('Onboarding', 'target mingguan & lanjut', async () => { await p.getByText('Dari mana kamu biasa gowes?').waitFor(); await p.locator('input[type=range]').fill('150'); await p.getByRole('button', { name: /Lanjut/ }).click() })
-    await step('Onboarding', 'mulai bersih mengosongkan data', async () => {
-      await p.getByText('Mulai bersih').click(); await p.waitForTimeout(600)
-      const s = await store(p); if (s.rides.length !== 0 || s.settings.name !== 'Rizky' || s.settings.weeklyGoalKm !== 150) throw new Error(JSON.stringify({ r: s.rides.length, n: s.settings.name, g: s.settings.weeklyGoalKm }))
-    })
-    await step('Kosong', 'beranda tanpa data tidak crash', async () => { await p.goto(BASE); await p.waitForTimeout(1200); if (await p.getByText(/Rantainya lepas/).count()) throw new Error('error boundary muncul') })
-    for (const r of ['insights', 'rides', 'karakter', 'rencana', 'squad', 'paspor', 'garage', 'record', 'reminders', 'rute', 'weather']) {
+    await step('Kosong', 'beranda tanpa data tidak crash + checklist mulai', async () => { await p.goto(BASE); await p.waitForTimeout(1200); if (await p.getByText(/Rantainya lepas/).count()) throw new Error('error boundary muncul'); await p.getByText(/dari 6 selesai/).waitFor() })
+    for (const r of ['insights', 'rides', 'karakter', 'rencana', 'squad', 'paspor', 'garage', 'record', 'reminders', 'rute', 'weather', 'patungan', 'kapan']) {
       await step('Kosong', `halaman ${r} tanpa data`, async () => { await p.goto(BASE + r); await p.waitForTimeout(900); if (await p.getByText(/Rantainya lepas/).count()) throw new Error('error boundary') })
     }
     await step('Kosong', 'tidak ada error JS', async () => { if (p._errs.length) throw new Error(p._errs.slice(0, 3).join(' | ')) })
     await p.context().close()
   }
 
+  /* ---------------- 1b. Akun ---------------- */
+  {
+    const email = 'qa' + Date.now() + '@pack.id'
+    const A = await newPage(b, { onboarded: false })
+    let handleA = ''
+    await step('Akun', 'daftar → karakter → username → waktu free → rekening → selesai', async () => {
+      await A.goto(BASE); await A.waitForTimeout(1200)
+      await A.getByRole('button', { name: 'Mulai sekarang' }).click()
+      await A.getByPlaceholder('mis. Juan').fill('Andi QA'); await A.getByPlaceholder('kamu@email.com').fill(email); await A.getByPlaceholder('minimal 6 karakter').fill('rahasia123')
+      await A.getByRole('button', { name: 'Daftar' }).click(); await A.getByText('Ini kamu').waitFor({ timeout: 8000 })
+      await A.getByRole('button', { name: 'Acak' }).click(); await A.getByRole('button', { name: 'Lanjut' }).click()
+      await A.getByText('Username').first().waitFor(); await A.getByRole('button', { name: 'Lanjut' }).click()
+      await A.getByText('Kapan biasanya').waitFor({ timeout: 8000 }); await A.getByRole('button', { name: 'Sabtu pagi' }).click(); await A.getByRole('button', { name: 'Lanjut' }).click()
+      await A.getByPlaceholder('opsional').fill('1234567890'); await A.getByRole('button', { name: /Simpan & lanjut/ }).click()
+      await A.getByRole('button', { name: 'Masuk ke PACK' }).click(); await A.waitForTimeout(3500)
+      const s = await store(A); handleA = s.auth?.handle
+      if (!s.auth?.token || !s.onboarded || s.avail !== (1 << 18) || s.settings.pay.length !== 1 || s.rides.length) throw new Error(JSON.stringify({ a: !!s.auth, av: s.avail, pay: s.settings.pay?.length }))
+      return '@' + handleA
+    })
+    await step('Akun', 'password salah ditolak', async () => {
+      const r = await A.evaluate(async (e) => (await fetch('/api/pack', { method: 'POST', body: JSON.stringify({ op: 'login', email: e, password: 'salah' }) })).status, email)
+      if (r !== 401) throw new Error('status ' + r)
+      A._errs = A._errs.filter((e) => !/401/.test(e))
+    })
+    await step('Akun', 'keluar lalu masuk lagi → data pulih dari server', async () => {
+      await A.goto(BASE + 'patungan'); await A.waitForTimeout(500); await A.getByRole('tab', { name: 'Rekeningku' }).click()
+      await A.goto(BASE + 'profile'); await A.waitForTimeout(800)
+      await A.getByRole('button', { name: /Keluar/ }).click(); await A.getByRole('dialog').getByRole('button', { name: 'Keluar', exact: true }).click(); await A.waitForTimeout(800)
+      const s0 = await store(A); if (s0.auth || s0.onboarded) throw new Error('belum keluar')
+      await A.goto(BASE); await A.waitForTimeout(800); await A.getByRole('button', { name: 'Masuk' }).click()
+      await A.getByPlaceholder('kamu@email.com').fill(email.toUpperCase()); await A.locator('input[type=password]').fill('rahasia123'); await A.getByRole('button', { name: 'Masuk', exact: true }).click(); await A.waitForTimeout(2500)
+      const s = await store(A); if (!s.auth || s.settings.name !== 'Andi QA' || s.avail !== (1 << 18) || s.settings.pay?.length !== 1) throw new Error(JSON.stringify({ n: s.settings.name, av: s.avail }))
+    })
+    const B = await newPage(b, { onboarded: false })
+    let rid = ''
+    await step('Akun', 'akun kedua menambah teman lewat @username', async () => {
+      await B.goto(BASE); await B.waitForTimeout(1000); await B.getByRole('button', { name: 'Mulai sekarang' }).click()
+      await B.getByPlaceholder('mis. Juan').fill('Bunga QA'); await B.getByPlaceholder('kamu@email.com').fill('b' + email); await B.getByPlaceholder('minimal 6 karakter').fill('rahasia123')
+      await B.getByRole('button', { name: 'Daftar' }).click(); await B.getByText('Ini kamu').waitFor({ timeout: 8000 })
+      await B.getByRole('button', { name: 'Lanjut' }).click(); await B.getByRole('button', { name: 'Lanjut' }).click(); await B.getByText('Kapan biasanya').waitFor({ timeout: 8000 }); await B.getByRole('button', { name: 'Lanjut' }).click(); await B.getByRole('button', { name: 'Lewati' }).click(); await B.getByRole('button', { name: 'Masuk ke PACK' }).click(); await B.waitForTimeout(2500)
+      await A.goto(BASE + 'u/' + (await store(B)).auth.handle); await A.getByRole('button', { name: /Tambah Bunga/ }).click(); await A.waitForTimeout(500)
+      if (!(await store(A)).friends.some((f) => f.name === 'Bunga QA' && f.uid)) throw new Error('teman')
+    })
+    await step('Akun', 'ajakan masuk ke app teman → jawab di app → host melihat', async () => {
+      await A.goto(BASE); await A.waitForTimeout(600); await A.locator('.fab').click()
+      await A.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click(); await A.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click()
+      await A.locator('.sheet .opt', { hasText: 'Bunga QA' }).click()
+      await A.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click(); await A.locator('.sheet').getByRole('button', { name: /Lanjut/ }).click()
+      await A.getByRole('button', { name: /Lewati, tanpa ngopi/ }).click(); await A.getByRole('button', { name: /Kirim ke 1 teman di PACK/ }).click(); await A.waitForTimeout(4000)
+      rid = (await store(A)).groupRides[0].id
+      await B.reload(); await B.waitForTimeout(3500)
+      await B.locator('.sticky').first().getByRole('button', { name: 'Ikut!' }).click(); await B.waitForTimeout(4000)
+      await A.goto(BASE + 'squad/' + rid); await A.waitForTimeout(3500)
+      const ps = (await store(A)).groupRides.find((g) => g.id === rid).participants
+      if (!ps.some((p) => p.rsvp === 'ikut')) throw new Error(JSON.stringify(ps))
+    })
+    await step('Akun', 'tidak ada error JS', async () => { const e = [...A._errs, ...B._errs]; if (e.length) throw new Error(e.slice(0, 3).join(' | ')) })
+    await A.context().close(); await B.context().close()
+  }
+
   /* ---------------- 2. Fitur utama (data contoh) ---------------- */
   const p = await newPage(b)
   SHOT = p
   await p.goto(BASE); await p.waitForTimeout(1500)
-  await step('Beranda', 'kalimat hari ini, strip hari, ajakan berikutnya, undangan', async () => { await p.locator('.sentence').waitFor(); if ((await p.locator('.weekstrip button').count()) !== 7) throw new Error('strip hari'); await p.locator('.card.hero .stepper').waitFor(); await p.locator('.sticky').first().waitFor() })
+  await step('Beranda', 'sapaan, kartu hari, kartu hitam, pelacakan, undangan', async () => { await p.locator('.sentence').waitFor(); if ((await p.locator('.daycard button').count()) !== 7) throw new Error('strip hari'); await p.locator('.trackcard .stepper').waitFor(); await p.locator('.sticky').first().waitFor() })
   await step('Beranda', 'undangan masuk → Ikut', async () => { await p.goto(BASE); await p.waitForTimeout(800); await p.locator('.sticky').first().getByRole('button', { name: 'Ikut!' }).click(); await p.waitForURL(/squad\/.+/); const s = await store(p); if (!s.groupRides.some((g) => g.host !== 'me' && g.myRsvp === 'ikut')) throw new Error('rsvp undangan') })
   await step('Beranda', 'tema gelap tersimpan', async () => { await p.goto(BASE + 'profile'); await p.waitForTimeout(500); await p.getByRole('button', { name: 'Ganti tema' }).click(); const t = await p.evaluate(() => document.documentElement.dataset.theme); await p.reload(); await p.waitForTimeout(800); const t2 = await p.evaluate(() => document.documentElement.dataset.theme); if (t !== 'dark' || t2 !== 'dark') throw new Error(t + '/' + t2); await p.getByRole('button', { name: 'Ganti tema' }).click() })
 
@@ -255,7 +308,7 @@ const store = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kayuh-v2'
   const ROUTES = ['', 'squad', 'squad/G1', 'kapan', 'patungan', 'record', 'reminders', 'karakter', 'rencana', 'rute', 'rute/g/G1', 'meet', 'weather', 'insights', 'rides', 'garage', 'profile', 'paspor']
   const q = await newPage(b, { device: { viewport: { width: 360, height: 740 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true }, ctx: { reducedMotion: 'reduce' } })
   const a11y = {}
-  await q.goto(BASE); await q.waitForTimeout(800); await q.locator('.card.hero').getByRole('button', { name: 'Detail' }).click(); await q.waitForTimeout(300)
+  await q.goto(BASE); await q.waitForTimeout(800); await q.locator('.trackcard').first().click(); await q.waitForTimeout(300)
   const G1 = (await q.evaluate(() => location.hash)).split('/')[2]
   for (const r0 of ROUTES) {
     const r = r0.replace('G1', G1)

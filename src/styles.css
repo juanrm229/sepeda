@@ -832,3 +832,122 @@ svg .grow, rect.grow { transform-box: fill-box; transform-origin: bottom; animat
 @keyframes pin-drop { from { transform: rotate(-45deg) translate(-22px, -22px) scale(.4); opacity: 0; } }
 .tabs-ind { transition: transform .5s var(--spring); }
 .toggle::after { transition: transform .4s var(--spring); }
+
+/* =====================================================================
+   PACK v8 — akun, onboarding ala DailyLoop, tampilan lebih dekat referensi
+   ===================================================================== */
+:root { --f-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif; }
+.serif { font-family: var(--f-serif); font-weight: 400; letter-spacing: -0.01em; }
+.serif-i { font-family: var(--f-serif); font-style: italic; font-size: 17px; color: var(--ink-2); line-height: 1.2; letter-spacing: 0; }
+
+/* ---------- Header ---------- */
+.hdr-name { font-size: 18px; font-weight: 700; letter-spacing: -0.03em; }
+.hdr-av { width: 48px; height: 48px; }
+
+/* ---------- Kartu pemilih hari (DailyLoop) ---------- */
+.daycard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: var(--surface); border-radius: 22px; padding: 8px; box-shadow: var(--shadow); }
+.daycard button { border: 0; background: transparent; border-radius: 16px; padding: 8px 0 10px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--muted); position: relative; animation: pop-in .55s var(--spring) both; }
+.daycard button:nth-child(2) { animation-delay: .04s; } .daycard button:nth-child(3) { animation-delay: .08s; } .daycard button:nth-child(4) { animation-delay: .12s; } .daycard button:nth-child(5) { animation-delay: .16s; } .daycard button:nth-child(6) { animation-delay: .2s; } .daycard button:nth-child(7) { animation-delay: .24s; }
+.daycard .wd { font-size: 11.5px; font-weight: 500; }
+.daycard .dn { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.daycard .today { background: var(--surface-2); }
+.daycard .today .wd { color: var(--ink); }
+.daycard i { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+.daycard .has i { background: var(--ink); }
+.daycard .inv i { background: var(--accent); }
+.daycard .has.today { background: var(--ink); }
+.daycard .has.today .wd, .daycard .has.today .dn { color: var(--bg); }
+.daycard .has.today i { background: var(--bg); }
+
+/* ---------- Kartu hitam: aksi pil putih (logistik) ---------- */
+.hero-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+.hero-actions .btn { padding: 12px 10px; }
+.hero-go { width: 34px; height: 34px; border-radius: 50%; background: #fff; color: #0d0d0d; display: grid; place-items: center; }
+.card.hero .sentence { font-size: 23px; }
+
+/* ---------- Kartu pelacakan ---------- */
+.trackcard { display: block; width: 100%; text-align: left; border: 0; color: inherit; background: var(--surface); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); margin-top: 12px; animation: rise .7s .08s var(--spring-soft) both; }
+.status-pill { font-size: 11.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; background: #e3ecff; color: #2546a8; white-space: nowrap; }
+.status-pill.ok { background: var(--good-2); color: var(--good); }
+:root[data-theme="dark"] .status-pill.wait { background: #1c2742; color: #9db6ff; }
+.track-ft { display: flex; justify-content: space-between; gap: 14px; margin: 14px 0 16px; }
+.track-ft .b { font-size: 14px; margin-top: 2px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- Checklist mulai (Mosaik "3 of 5 done") ---------- */
+.startlist .progress { height: 4px; border-radius: 4px; background: var(--surface-2); margin-top: 12px; overflow: hidden; }
+.startlist .progress i { display: block; height: 100%; background: var(--ink); border-radius: 4px; transition: width .6s var(--spring-soft); }
+.check-row { display: flex; align-items: center; gap: 12px; border: 0; background: none; width: 100%; text-align: left; padding: 10px 2px; border-radius: 12px; font-weight: 500; color: var(--ink); }
+.check-row:disabled { cursor: default; }
+.check-row.done .grow { color: var(--muted); text-decoration: line-through; }
+.check-c { width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--sunken); display: grid; place-items: center; flex-shrink: 0; transition: background .3s, border-color .3s; }
+.check-row.done .check-c { background: var(--ink); border-color: var(--ink); color: var(--bg); animation: check-pop .5s var(--spring); }
+
+/* ---------- Segmented DailyLoop + filter + grup hari ---------- */
+.seg { display: flex; gap: 4px; background: var(--surface); border-radius: 999px; padding: 4px; box-shadow: var(--shadow); }
+.seg button { flex: 1; border: 0; background: transparent; border-radius: 999px; padding: 9px 8px; font-weight: 600; font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background .35s var(--spring), color .2s; white-space: nowrap; }
+.seg button.on { background: var(--ink); color: var(--bg); }
+.seg-n { min-width: 18px; height: 18px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 10.5px; display: inline-grid; place-items: center; padding: 0 5px; }
+.filter-btn { width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); display: grid; place-items: center; flex-shrink: 0; transition: transform .35s var(--spring); }
+.filter-btn.on { background: var(--accent); color: #fff; transform: rotate(90deg); }
+.daygroup { margin-top: 18px; }
+.daygroup-h { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: none; padding: 4px 2px 10px; font-weight: 700; font-size: 15px; color: var(--ink); text-align: left; letter-spacing: -0.02em; }
+
+/* ---------- Nav ala DailyLoop: trek abu, pil putih aktif, semua berlabel ---------- */
+.navpill { background: color-mix(in srgb, var(--sunken) 82%, transparent); border: 1px solid color-mix(in srgb, var(--line) 60%, transparent); padding: 5px; }
+.navpill a { flex-direction: column; gap: 1px; height: 50px; min-width: 64px; padding: 0 8px; color: var(--muted); font-size: 10.5px; }
+.navpill a span { display: inline-block !important; max-width: none !important; opacity: 1 !important; font-weight: 600; }
+.navpill a.on { color: var(--ink); padding: 0 8px; }
+.nav-ind { top: 5px; height: 50px; background: var(--surface); box-shadow: 0 2px 8px -2px rgba(0,0,0,.14); }
+:root[data-theme="dark"] .navpill { background: rgba(40,40,44,.9); }
+:root[data-theme="dark"] .nav-ind { background: #3a3a3f; }
+
+/* ---------- Onboarding: sambutan ala DailyLoop ---------- */
+.onb-welcome { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+.float-stage { position: relative; flex: 1; min-height: 340px; overflow: hidden; }
+.float-stage .ring { position: absolute; left: 50%; top: 50%; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--ink) 7%, transparent); transform: translate(-50%, -50%); animation: ring-breathe 6s ease-in-out infinite; }
+.float-stage .r1 { width: 300px; height: 300px; } .float-stage .r2 { width: 460px; height: 460px; animation-delay: -2s; } .float-stage .r3 { width: 620px; height: 620px; animation-delay: -4s; }
+@keyframes ring-breathe { 50% { transform: translate(-50%, -50%) scale(1.04); opacity: .6; } }
+.overview { position: absolute; left: 50%; top: 52%; width: 210px; transform: translate(-50%, -50%); animation: ov-in 1s var(--spring-soft) both, float 6s 1s ease-in-out infinite; }
+@keyframes ov-in { from { opacity: 0; transform: translate(-50%, -30%) scale(.9) rotate(-4deg); } }
+@keyframes float { 50% { translate: 0 -8px; } }
+.ov-back { position: absolute; inset: -10px 10px auto; height: 40px; border-radius: 18px 18px 0 0; background: var(--surface); opacity: .6; box-shadow: var(--shadow); }
+.ov-back.b2 { inset: -18px 22px auto; opacity: .35; }
+.ov-card { position: relative; background: var(--surface); border-radius: 18px; padding: 12px; box-shadow: 0 20px 40px -18px rgba(0,0,0,.25), 0 0 0 1px var(--line); }
+.ov-body { background: var(--surface-2); border-radius: 12px; padding: 10px 12px; margin-top: 8px; }
+.ov-h { font-size: 11.5px; font-weight: 600; margin-top: 6px; }
+.ov-h:first-child { margin-top: 0; }
+.ov-row { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); margin-top: 3px; }
+.ov-row i { width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid var(--ink); display: inline-block; }
+.ov-row i.on { background: var(--ink); }
+.mini-card { position: absolute; background: var(--surface); border-radius: 12px; padding: 8px 10px; box-shadow: 0 10px 24px -14px rgba(0,0,0,.3), 0 0 0 1px var(--line); display: flex; flex-direction: column; gap: 2px; font-size: 9.5px; color: var(--muted); width: 112px; animation: mini-in .9s var(--spring-soft) both, float 7s ease-in-out infinite; }
+.mini-card b { font-family: var(--f-serif); font-weight: 400; font-size: 13px; color: var(--ink); }
+.mini-card.m1 { left: -30px; top: 16%; transform: rotate(-6deg); animation-delay: .2s, -1s; }
+.mini-card.m2 { right: -28px; top: 10%; transform: rotate(5deg); animation-delay: .3s, -3s; }
+.mini-card.m3 { left: -22px; bottom: 10%; transform: rotate(4deg); animation-delay: .4s, -2s; }
+.mini-card.m4 { right: -34px; bottom: 16%; transform: rotate(-5deg); animation-delay: .5s, -4s; }
+@keyframes mini-in { from { opacity: 0; translate: 0 20px; } }
+.welcome-card { background: var(--surface); border-radius: 32px 32px 0 0; padding: 26px 22px calc(26px + env(safe-area-inset-bottom)); text-align: center; display: flex; flex-direction: column; align-items: center; box-shadow: 0 -20px 50px -30px rgba(0,0,0,.25); animation: sheet-up .8s .15s var(--spring-soft) both; max-width: 560px; width: 100%; margin: 0 auto; }
+@media (min-width: 700px) { .welcome-card { border-radius: 32px; margin-bottom: 24px; } }
+.welcome-card h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.04em; margin-top: 14px; }
+.welcome-card p { color: var(--muted); font-size: 14.5px; margin: 8px 0 20px; max-width: 300px; }
+.logo3d { filter: drop-shadow(0 14px 14px rgba(0,0,0,.28)) drop-shadow(0 3px 3px rgba(0,0,0,.2)); transform: perspective(300px) rotateX(14deg) rotateY(-12deg); animation: logo-tilt 4s ease-in-out infinite; }
+@keyframes logo-tilt { 50% { transform: perspective(300px) rotateX(8deg) rotateY(10deg) translateY(-3px); } }
+
+/* ---------- Form akun ---------- */
+.pw { position: relative; display: block; }
+.pw .input { padding-right: 48px; }
+.pw-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.form-err { background: color-mix(in srgb, var(--bad) 10%, var(--surface)); color: var(--bad); border-radius: 14px; padding: 10px 14px; font-size: 13.5px; font-weight: 500; animation: shake .4s; }
+@keyframes shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.handle-input { display: flex; align-items: center; gap: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding-left: 14px; }
+.handle-input span { font-weight: 700; color: var(--muted); }
+.handle-input .input { border: 0; background: transparent; padding-left: 4px; }
+.onb .input { background: var(--surface); border-color: var(--line); }
+.char-stage { position: relative; border-radius: 26px; aspect-ratio: 1 / .78; display: grid; place-items: end center; overflow: hidden; }
+.char-stage::before { content: ''; position: absolute; inset: 0; background-image: radial-gradient(rgba(0,0,0,.06) 1.1px, transparent 1.3px); background-size: 14px 14px; }
+.char-stage .ccard-avatar { width: 66% !important; animation: pop-in .5s var(--spring); }
+.char-shuffle { position: absolute; top: 12px; right: 12px; }
+.char-alts { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.char-alts button { border: 0; background: none; padding: 0; display: grid; place-items: center; animation: pop-in .5s var(--spring) both; }
+.char-alts button:nth-child(2) { animation-delay: .04s; } .char-alts button:nth-child(3) { animation-delay: .08s; } .char-alts button:nth-child(4) { animation-delay: .12s; } .char-alts button:nth-child(5) { animation-delay: .16s; } .char-alts button:nth-child(6) { animation-delay: .2s; }
+.onb-in { max-width: 460px; }

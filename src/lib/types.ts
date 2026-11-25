@@ -35,7 +35,14 @@ export interface Friend {
   char: CharConfig
   /** Ketersediaan mingguan: bit (hari JS 0=Min..6=Sab) × 3 + slot (0 pagi, 1 sore, 2 malam). */
   avail?: number
+  /** Teman yang punya akun PACK. */
+  uid?: string
+  handle?: string
+  pay?: PayAccount[]
 }
+
+export interface Auth { token: string; uid: string; email: string; handle: string }
+export interface PublicProfile { uid: string; handle: string; name: string; char?: CharConfig; homeLabel?: string; home?: LatLng; avgSpeed?: number; avail?: number; pay?: PayAccount[]; updatedAt?: string }
 
 export type Pace = 'santai' | 'sedang' | 'kencang'
 export type Rsvp = 'ikut' | 'mungkin' | 'tidak' | 'menunggu'
@@ -48,6 +55,7 @@ export interface MeetPoint {
 /** Jawaban/vote satu peserta. Bisa teman tersimpan atau tamu dari link balasan. */
 export interface Participant {
   friendId: string
+  uid?: string
   rsvp: Rsvp
   name?: string
   char?: CharConfig
@@ -95,6 +103,9 @@ export interface GroupRide {
   /** Rekening host (dibawa di link undangan supaya tamu tahu transfer ke mana). */
   hostPay?: PayAccount[]
   myStatus?: TripStatus
+  /** Ajakan yang tersimpan di server (host punya akun). */
+  remote?: { hostUid: string; hostHandle?: string; repliedAt?: string }
+  publishedAt?: string
 }
 
 export type CheckpointKind = 'rehat' | 'kopi' | 'makan' | 'air' | 'foto' | 'sholat' | 'bengkel'

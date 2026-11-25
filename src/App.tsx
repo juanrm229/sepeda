@@ -30,8 +30,11 @@ const Kapan = lazy(() => import('./pages/Kapan'))
 const Balas = lazy(() => import('./pages/Balas'))
 const Patungan = lazy(() => import('./pages/Patungan'))
 const Jadwal = lazy(() => import('./pages/Jadwal'))
+const UserPage = lazy(() => import('./pages/UserPage'))
 import { AjakHost, openAjak, useAjakOpen } from './components/AjakFlow'
 import { Logo } from './components/Logo'
+import { useAccountSync } from './lib/sync'
+import { closeAuth, useAuthOpen } from './lib/authUi'
 
 function useAchievements() {
   useEffect(() => {
@@ -77,6 +80,8 @@ export default function App() {
   const theme = useStore((s) => s.settings.theme)
   const onboarded = useStore((s) => s.onboarded)
   useReminderLoop()
+  useAccountSync()
+  const authOpen = useAuthOpen()
   useAchievements()
   useEffect(() => {
     document.documentElement.dataset.theme = theme
@@ -105,6 +110,7 @@ export default function App() {
     case 'balas': page = <Balas code={b} />; break
     case 'patungan': page = <Patungan />; break
     case 'jadwal': page = <Jadwal code={b} />; break
+    case 'u': page = <UserPage handle={b} />; break
     case 'rute': page = !b ? <RouteList /> : b === 'g' ? <RoutePlanner key={'g' + c} groupId={c} /> : <RoutePlanner key={b} id={b} />; break
     default: page = <Home />
   }
@@ -148,7 +154,8 @@ export default function App() {
       <AjakHost />
       <Toaster />
       <ConfirmHost />
-      {!onboarded && a !== 'join' && a !== 'jadwal' && <Suspense fallback={null}><Onboarding /></Suspense>}
+      {!onboarded && a !== 'join' && a !== 'jadwal' && a !== 'u' && <Suspense fallback={null}><Onboarding /></Suspense>}
+      {onboarded && authOpen && <Suspense fallback={null}><Onboarding start={authOpen} onClose={closeAuth} /></Suspense>}
     </div>
   )
 }

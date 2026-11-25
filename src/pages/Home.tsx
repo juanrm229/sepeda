@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Bell, Wallet, CalendarDays, ChevronRight, Clock, Coffee, MapPin, Navigation, Scale, Share2, Sparkles, UserPlus, LineChart } from 'lucide-react'
+import { Bell, Check, Wallet, CalendarDays, ChevronRight, Clock, Coffee, Scale, Sparkles, UserPlus, LineChart } from 'lucide-react'
+import { openAuth } from '../lib/authUi'
+import { defaultChar } from '../lib/avatar'
 import { useStore } from '../lib/store'
 import type { GroupRide } from '../lib/types'
 import { Avatar, Sheet, Swipe, toast } from '../components/UI'
 import { HeadBadge } from '../components/Character'
 import { GroupActionCard } from '../components/GroupActions'
-import { openAjak, PACE } from '../components/AjakFlow'
+import { openAjak } from '../components/AjakFlow'
 import { useForecast } from '../lib/useForecast'
 import { firstName, hhmm, journey, missedFriends, peopleOf, rsvpCount, squadSlots, SLOTS, whenText } from '../lib/meetup'
 import { ArrivalBoard } from '../components/Arrival'
-import { greeting, HARI, BULAN, HARI_PANJANG } from '../lib/util'
+import { greeting, HARI, HARI_PANJANG } from '../lib/util'
 import { inviteLink, inviteText, shareOrCopy } from '../lib/share'
 import { etaMin, haversine } from '../lib/geo'
 import { timeline } from '../lib/plan'
@@ -36,62 +38,47 @@ export default function Home() {
   return (
     <div className="fadein">
       <MiniHeader next={next} />
-      {/* Header */}
+      {/* Header ala DailyLoop: sapaan + subjudul serif miring */}
       <div className="hdr">
         <a href="#/karakter" className="hdr-who" title="Karakter & profil">
-          <span className="hdr-av"><HeadBadge c={char} size={46} bg="var(--surface)" ring={false} /></span>
+          <span className="hdr-av"><HeadBadge c={char} size={48} bg="var(--surface)" ring={false} /></span>
           <span style={{ minWidth: 0 }}>
-            <span className="hdr-hi" style={{ display: 'block' }}>{greeting()},</span>
-            <span className="hdr-name" style={{ display: 'block' }}>{firstName(settings.name)}</span>
+            <span className="hdr-name" style={{ display: 'block' }}>Hey, {firstName(settings.name) || 'kamu'} 👋</span>
+            <span className="serif-i" style={{ display: 'block' }}>{next ? `${greeting()}, siap gowes?` : 'Ajak squad gowes, yuk!'}</span>
           </span>
         </a>
         <div className="hdr-actions">
           <a href="#/patungan" className="iconbtn" aria-label="Patungan"><Wallet size={19} /></a>
-          <a href="#/kapan" className="iconbtn" aria-label="Kapan semua bisa"><CalendarDays size={19} /></a>
           <a href="#/reminders" className="iconbtn bell" aria-label="Pengingat"><Bell size={19} />{invites.length > 0 && <i />}</a>
         </div>
       </div>
 
-      {/* Kalimat hari ini */}
-      <Sentence next={next} invites={invites} nowTemp={nowHour?.temp} nowLabel={nowHour ? scoreLabel(nowHour.score) : undefined} best={best} />
-
-      {/* Strip hari */}
-      <div className="weekstrip" style={{ marginTop: 22 }} role="list" aria-label="7 hari ke depan">
+      {/* Pemilih hari dalam kartu putih */}
+      <div className="daycard" role="list" aria-label="7 hari ke depan">
         {days.map((d, i) => {
-          const rides = upcoming.filter((g) => new Date(g.datetime).toDateString() === d.toDateString() && g.myRsvp !== 'tidak')
-          const going = rides.some((g) => g.myRsvp === 'ikut' || g.myRsvp === 'mungkin')
+          const rds = upcoming.filter((g) => new Date(g.datetime).toDateString() === d.toDateString() && g.myRsvp !== 'tidak')
+          const going = rds.some((g) => g.myRsvp === 'ikut' || g.myRsvp === 'mungkin')
           return (
-            <button key={i} role="listitem" className={`${i === 0 ? 'today' : ''} ${going ? 'has' : rides.length ? 'inv' : ''}`} aria-label={`${HARI_PANJANG[d.getDay()]} ${d.getDate()}${rides.length ? ': ' + rides.map((r) => r.title).join(', ') : ''}`}
-              onClick={() => (rides[0] ? go('squad/' + rides[0].id) : openAjak({ datetime: (() => { const x = new Date(d); x.setHours(5, 30); return x.toISOString() })() }))}>
+            <button key={i} role="listitem" className={`${i === 0 ? 'today' : ''} ${going ? 'has' : rds.length ? 'inv' : ''}`} aria-label={`${HARI_PANJANG[d.getDay()]} ${d.getDate()}${rds.length ? ': ' + rds.map((r) => r.title).join(', ') : ''}`}
+              onClick={() => (rds[0] ? go('squad/' + rds[0].id) : openAjak({ datetime: (() => { const x = new Date(d); x.setHours(5, 30); return x.toISOString() })() }))}>
               <span className="wd">{HARI[d.getDay()]}</span>
-              <span className="dn">{d.getDate()}{rides.length > 0 && i === 0 && <i />}</span>
+              <span className="dn">{d.getDate()}</span>
+              <i />
             </button>
           )
         })}
       </div>
 
-      {/* Ajakan berikutnya */}
-      {next ? <NextCard g={next} onLate={() => setLateFor(next)} /> : (
-        <div className="card hero section">
-          <div className="mono">Belum ada rencana</div>
-          <div className="display" style={{ fontSize: 28, marginTop: 8 }}>Ajak squad gowes,<br />cuma 10 detik.</div>
-          {best && <p className="small muted" style={{ marginTop: 8 }}>Saran: {HARI_PANJANG[best.date.getDay()]} {SLOTS[best.slot].l.toLowerCase()} {hhmm(best.date)} · {best.free.length} orang free</p>}
-          <button className="btn white block" style={{ marginTop: 16 }} onClick={() => openAjak(best ? { datetime: best.date.toISOString() } : undefined)}><UserPlus size={16} /> Ajak gowes</button>
-        </div>
-      )}
-
-      {next && Date.now() > new Date(next.datetime).getTime() - 4 * 3600000 && <div className="section" style={{ marginTop: 12 }}><ArrivalBoard g={next} /></div>}
-
       {/* Undangan masuk */}
       {invites.length > 0 && (
-        <div className="section">
+        <div className="section" style={{ marginTop: 20 }}>
           <div className="section-h"><h3>Undangan masuk</h3><span className="tag accent">{invites.length} baru</span></div>
           <div className="stack" style={{ gap: 18 }}>
             {invites.map((g) => {
               const host = friends.find((f) => f.id === g.host)
               const c = rsvpCount(g)
               return (
-                <Swipe key={g.id} onRight={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!', `Kabari ${host ? firstName(host.name) : 'host'} lewat link balasan`) }} onLeft={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan', 'Lain kali ya') }} right="Ikut! 🚲" left="Skip">
+                <Swipe key={g.id} onRight={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!', g.remote ? `Langsung terkirim ke ${host ? firstName(host.name) : 'host'}` : `Kabari ${host ? firstName(host.name) : 'host'} lewat link balasan`) }} onLeft={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan', 'Lain kali ya') }} right="Ikut! 🚲" left="Skip">
                 <div className="sticky-stack">
                   <i className="under" />
                   <div className="sticky">
@@ -104,7 +91,7 @@ export default function Home() {
                       <span className="tag">🚲 {g.title}</span><span className="tag">📍 {g.meet.name.split(' ').slice(0, 3).join(' ')}</span><span className="tag">{c.ikut} ikut</span>
                     </div>
                     <div className="grid3" style={{ marginTop: 14, gridTemplateColumns: '1.4fr 1fr 1fr' }}>
-                      <button className="btn ink sm" onClick={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!', `Kabari ${host ? firstName(host.name) : 'host'} lewat link balasan`); go('squad/' + g.id) }}>Ikut!</button>
+                      <button className="btn ink sm" onClick={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!', g.remote ? `Langsung terkirim ke ${host ? firstName(host.name) : 'host'}` : `Kabari ${host ? firstName(host.name) : 'host'} lewat link balasan`); go('squad/' + g.id) }}>Ikut!</button>
                       <button className="btn ghost sm" onClick={() => go('squad/' + g.id)}>Detail</button>
                       <button className="btn ghost sm" onClick={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan') }}>Skip</button>
                     </div>
@@ -118,12 +105,30 @@ export default function Home() {
         </div>
       )}
 
+      {/* Kartu hitam: kalimat ber-avatar (Tickr) + dua pil aksi (logistik) */}
+      {next ? <NextHero g={next} onLate={() => setLateFor(next)} nowTemp={nowHour?.temp} nowLabel={nowHour ? scoreLabel(nowHour.score) : undefined} /> : (
+        <div className="card hero section" style={{ padding: 22 }}>
+          <div className="mono">Belum ada rencana</div>
+          <p className="sentence" style={{ marginTop: 10 }}>{best && best.free.length > 1 ? <>Squad paling banyak free <b>{HARI_PANJANG[best.date.getDay()]} {SLOTS[best.slot].l.toLowerCase()}</b>, <b>{best.free.length} orang</b>.</> : <>Ajak squad gowes, <b>cuma 10 detik.</b></>}</p>
+          <div className="hero-actions">
+            <button className="btn white" onClick={() => openAjak(best && best.free.length > 1 ? { datetime: best.date.toISOString() } : undefined)}><UserPlus size={16} /> Ajak gowes</button>
+            <a className="btn glass" href="#/kapan"><CalendarDays size={16} /> Kapan bisa?</a>
+          </div>
+        </div>
+      )}
+
+      {next && <TrackCard g={next} />}
+
+      {next && Date.now() > new Date(next.datetime).getTime() - 4 * 3600000 && <div className="section" style={{ marginTop: 12 }}><ArrivalBoard g={next} /></div>}
+
+      <StartChecklist />
+
       {/* Alat ketemuan */}
       <div className="section">
         <div className="section-h"><h3>Ketemuan</h3></div>
         <div className="grid2">
           <Tool href="#/meet" icon={<Scale size={18} />} t="Titik temu adil" s="Nggak ada yang kejauhan" />
-          <Tool href="#/kapan" icon={<CalendarDays size={18} />} t="Kapan semua bisa?" s={best ? `${HARI[best.date.getDay()]} ${SLOTS[best.slot].l.toLowerCase()} · ${best.free.length} free` : 'Cocokkan jadwal'} />
+          <Tool href="#/kapan" icon={<CalendarDays size={18} />} t="Kapan semua bisa?" s={best && best.free.length > 1 ? `${HARI[best.date.getDay()]} ${SLOTS[best.slot].l.toLowerCase()} · ${best.free.length} free` : 'Cocokkan jadwal'} />
           <Tool href="#/rute" icon={<Coffee size={18} />} t="Rute & ngopi" s="Checkpoint + coffee break" />
           <Tool onClick={() => openAjak()} icon={<Sparkles size={18} />} t="Ajak kilat" s="Undangan + voting" dark />
         </div>
@@ -177,70 +182,100 @@ export default function Home() {
   )
 }
 
-function Sentence({ next, invites, nowTemp, nowLabel, best }: { next?: GroupRide; invites: GroupRide[]; nowTemp?: number; nowLabel?: string; best?: ReturnType<typeof squadSlots>[number] }) {
-  const { friends, char, settings } = useStore()
-  const d = new Date()
-  const going = next ? peopleOf(next, friends, { name: settings.name, char, home: settings.home }).filter((p) => p.rsvp === 'ikut' && !p.me) : []
-  const pending = next ? rsvpCount(next).menunggu : 0
+function NextHero({ g, onLate, nowTemp, nowLabel }: { g: GroupRide; onLate: () => void; nowTemp?: number; nowLabel?: string }) {
+  const { settings, char, friends } = useStore()
+  const start = new Date(g.datetime)
+  const going = peopleOf(g, friends, { name: settings.name, char, home: settings.home }).filter((p) => p.rsvp === 'ikut' && !p.me)
+  const pending = rsvpCount(g).menunggu
   return (
-    <p className="sentence">
-      {HARI_PANJANG[d.getDay()]} {d.getDate()} {BULAN[d.getMonth()]}.{' '}
-      {nowTemp != null && <>Di luar <b>{Math.round(nowTemp)}°, {nowLabel?.toLowerCase()}</b>. </>}
-      {next ? (
-        <>
-          <b>{whenText(next.datetime)}</b> kamu gowes <b>{next.title}</b>
-          {going.length > 0 && <> bareng <span className="inl">{going.slice(0, 4).map((p) => p.char && <HeadBadge key={p.id} c={p.char} size={30} ring={false} />)}</span> <b>{going.length} teman</b></>}
-          {pending > 0 && <>, {pending} belum jawab</>}.{' '}
-        </>
-      ) : best ? <>Squad paling banyak free <b>{HARI_PANJANG[best.date.getDay()]} {SLOTS[best.slot].l.toLowerCase()}</b>. </> : null}
-      {invites.length > 0 && <>Ada <b>{invites.length} ajakan</b> <span className="inl">{invites.slice(0, 2).map((g) => { const h = friends.find((f) => f.id === g.host); return h && <HeadBadge key={g.id} c={h.char} size={30} ring={false} /> })}</span> nunggu jawabanmu.</>}
-    </p>
+    <div className="card hero section" style={{ padding: 22 }}>
+      <div className="row between" style={{ cursor: 'pointer' }} onClick={() => go('squad/' + g.id)}>
+        <span className="mono">Gowes berikutnya · {whenText(g.datetime).replace(/ \d\d\.\d\d$/, '')}</span>
+        <span className="hero-go" aria-hidden><ChevronRight size={18} /></span>
+      </div>
+      <p className="sentence" style={{ marginTop: 12, cursor: 'pointer' }} onClick={() => go('squad/' + g.id)}>
+        <b>{g.title}</b> kumpul <b>{hhmm(start)}</b> di {g.meet.name.split(' (')[0]}
+        {going.length > 0 && <> bareng <span className="inl">{going.slice(0, 4).map((p) => p.char && <HeadBadge key={p.id} c={p.char} size={30} ring={false} />)}</span> <b>{going.length} teman</b></>}
+        {pending > 0 && <>, {pending} belum jawab</>}.
+        {nowTemp != null && <> Sekarang <b>{Math.round(nowTemp)}°</b>, {nowLabel?.toLowerCase()}.</>}
+      </p>
+      <div className="hero-actions">
+        <button className="btn white" onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name, char, settings.pay))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><UserPlus size={16} /> Ajak teman</button>
+        <button className="btn white" onClick={onLate}><Clock size={16} /> Aku telat</button>
+      </div>
+    </div>
   )
 }
 
-function NextCard({ g, onLate }: { g: GroupRide; onLate: () => void }) {
-  const { settings, char } = useStore()
+/** Kartu pelacakan ala aplikasi logistik: dari → ke + stepper. */
+function TrackCard({ g }: { g: GroupRide }) {
+  const { settings } = useStore()
   const start = new Date(g.datetime)
   const dist = haversine(settings.home, g.meet.pos)
   const leave = new Date(start.getTime() - (etaMin(dist, 20) + 10) * 60000)
   const j = journey(g)
   const tl = g.plan ? timeline(g.plan) : null
   const timeOf = (k: string, i: number) => (i === 0 ? hhmm(start) : !tl ? '' : k === 'finish' ? hhmm(tl.finish) : hhmm(tl.rows[i - 1]?.arrive ?? start))
-  const nodes = j.nodes.length > 4 ? [j.nodes[0], ...j.nodes.filter((n) => n.kind === 'kopi').slice(0, 1), j.nodes[j.nodes.length - 1]] : j.nodes
+  const kopi = j.nodes.find((n) => n.kind === 'kopi')
+  const to = kopi ?? j.nodes[j.nodes.length - 1]
+  const nodes = j.nodes.length > 4 ? [j.nodes[0], ...(kopi ? [kopi] : []), j.nodes[j.nodes.length - 1]] : j.nodes
+  const c = rsvpCount(g)
   return (
-    <div className="card hero section" style={{ padding: 20 }}>
-      <div className="row between" style={{ cursor: 'pointer' }} onClick={() => go('squad/' + g.id)}>
-        <div style={{ minWidth: 0 }}>
-          <div className="mono">Gowes berikutnya · {whenText(g.datetime).replace(/ \d\d\.\d\d$/, '')}</div>
-          <div className="display" style={{ fontSize: 30, marginTop: 8 }}>{g.title}</div>
-          <div className="small muted" style={{ marginTop: 6 }}><MapPin size={12} style={{ verticalAlign: -1 }} /> {g.meet.name}</div>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div className="big" style={{ fontSize: 34 }}>{hhmm(start)}</div>
-          <div className="mono">{g.distanceKm} km · {PACE[g.pace].l}</div>
-        </div>
+    <button className="trackcard section" onClick={() => go('squad/' + g.id)}>
+      <div className="row between">
+        <div><div className="mono">Kode ajakan</div><div className="b" style={{ marginTop: 2 }}>#{g.id.slice(0, 6).toUpperCase()}</div></div>
+        <span className={`status-pill ${c.menunggu ? 'wait' : 'ok'}`}>{j.doneIdx >= 0 ? 'Sedang jalan' : c.menunggu ? 'Menunggu jawaban' : 'Siap berangkat'}</span>
       </div>
-      <div className="stepper" style={{ marginTop: 22 }}>
+      <div className="track-ft">
+        <div><div className="mono">Kumpul</div><div className="b">{g.meet.name.split(' (')[0]}</div><div className="tiny muted">{hhmm(start)} · berangkat {hhmm(leave)}</div></div>
+        <div style={{ textAlign: 'right' }}><div className="mono">{kopi ? 'Ngopi' : 'Finish'}</div><div className="b">{to.name.split(' (')[0]}</div><div className="tiny muted">{timeOf(to.key, j.nodes.indexOf(to)) || '—'}</div></div>
+      </div>
+      <div className="stepper">
         {nodes.map((n, i) => {
           const idx = j.nodes.indexOf(n)
           return (
             <div key={n.key} className={`st ${idx <= j.doneIdx ? 'done' : idx === j.nowIdx ? 'now' : ''}`}>
               {i > 0 && <span className="bar" />}
               <span className="node">{idx <= j.doneIdx ? '✓' : ''}</span>
-              <span className="lbl">{n.label === 'Ngopi' ? '☕ ' + n.name.split(' ').slice(0, 2).join(' ') : n.label}</span>
+              <span className="lbl">{n.label}</span>
               <span className="tm">{timeOf(n.key, idx) || '—'}</span>
             </div>
           )
         })}
       </div>
-      <div className="row" style={{ marginTop: 18, gap: 8, background: 'rgba(255,255,255,.07)', borderRadius: 16, padding: '10px 12px' }}>
-        <Navigation size={15} />
-        <span className="small grow">Berangkat dari rumah <b>{hhmm(leave)}</b> · {dist.toFixed(1)} km</span>
+    </button>
+  )
+}
+
+/** Checklist mulai ala "3 of 5 done". */
+function StartChecklist() {
+  const { auth, friends, avail, groupRides, settings, char } = useStore()
+  const [hide, setHide] = useState(() => { try { return localStorage.getItem('pack-start-hide') === '1' } catch { return false } })
+  const items = [
+    { t: 'Buat akun PACK', d: !!auth, act: () => openAuth('signup') },
+    { t: 'Rapikan karaktermu', d: JSON.stringify(char) !== JSON.stringify(defaultChar), act: () => go('karakter') },
+    { t: 'Tambah 2 teman', d: friends.length >= 2, act: () => go('squad') },
+    { t: 'Tandai kapan kamu free', d: avail !== 0, act: () => go('kapan') },
+    { t: 'Ajak gowes pertama', d: groupRides.some((g) => g.host === 'me'), act: () => openAjak() },
+    { t: 'Simpan rekening patungan', d: !!settings.pay?.length, act: () => go('patungan') },
+  ]
+  const done = items.filter((x) => x.d).length
+  if (hide || done === items.length) return null
+  return (
+    <div className="card section startlist">
+      <div className="row between">
+        <div><div className="mono">Mulai di PACK</div><div className="h2" style={{ marginTop: 4 }}>{done} dari {items.length} selesai</div></div>
+        <button className="link" onClick={() => { setHide(true); try { localStorage.setItem('pack-start-hide', '1') } catch { /* */ } }}>Sembunyikan</button>
       </div>
-      <div className="grid3" style={{ marginTop: 14, gap: 8 }}>
-        <button className="btn white sm" onClick={() => go('squad/' + g.id)}>Detail</button>
-        <button className="btn glass sm" onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name, char, settings.pay))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><Share2 size={14} /> Ajak</button>
-        <button className="btn glass sm" onClick={onLate}><Clock size={14} /> Telat</button>
+      <div className="progress"><i style={{ width: `${(done / items.length) * 100}%` }} /></div>
+      <div className="stack" style={{ gap: 2, marginTop: 8 }}>
+        {items.map((x) => (
+          <button key={x.t} className={`check-row ${x.d ? 'done' : ''}`} onClick={x.act} disabled={x.d}>
+            <span className="check-c">{x.d && <Check size={13} />}</span>
+            <span className="grow">{x.t}</span>
+            {!x.d && <ChevronRight size={16} className="muted" />}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -267,8 +302,8 @@ export function AgendaRow({ g }: { g: GroupRide }) {
 function Tool({ href, onClick, icon, t, s, dark }: { href?: string; onClick?: () => void; icon: React.ReactNode; t: string; s: string; dark?: boolean }) {
   const inner = (
     <>
-      <span className={`ico ${dark ? '' : ''}`} style={dark ? { background: 'rgba(255,255,255,.12)', color: '#fff' } : undefined}>{icon}</span>
-      <span style={{ display: 'block', marginTop: 14 }}><span className="b" style={{ display: 'block', fontSize: 15, letterSpacing: '-0.02em' }}>{t}</span><span className="tiny" style={{ display: 'block', marginTop: 2, color: dark ? 'rgba(255,255,255,.62)' : 'var(--muted)' }}>{s}</span></span>
+      <span className="row between"><span className="ico" style={dark ? { background: 'rgba(255,255,255,.12)', color: '#fff' } : undefined}>{icon}</span><ChevronRight size={17} style={{ opacity: 0.5 }} /></span>
+      <span style={{ display: 'block', marginTop: 18 }}><span className="b" style={{ display: 'block', fontSize: 15, letterSpacing: '-0.02em' }}>{t}</span><span className="tiny" style={{ display: 'block', marginTop: 2, color: dark ? 'rgba(255,255,255,.62)' : 'var(--muted)' }}>{s}</span></span>
     </>
   )
   const cls = `card click ${dark ? 'hero' : ''}`

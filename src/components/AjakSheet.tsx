@@ -109,7 +109,7 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
             <Orbit converge size={240} chars={[char, ...friends.filter((f) => created.participants.some((p) => p.friendId === f.id)).map((f) => f.char)]} center={<span className="orbit-logo"><LogoMark size={58} animate /></span>} />
           </div>
           <div className="qtitle">Ajakan terkirim.<br /><span>Tinggal tunggu jawaban.</span></div>
-          <p className="small muted">Saat teman menjawab, mereka akan mengirim <b>link balasan</b> lewat WhatsApp. Ketuk link itu dan RSVP, vote jam, serta lokasi berangkat mereka otomatis masuk ke sini.</p>
+          <p className="small muted">{useStore.getState().auth ? <>Teman yang punya akun PACK langsung menerima ajakan di app-nya, dan jawabannya masuk ke sini otomatis. Teman lain bisa menjawab lewat link WhatsApp — tanpa install.</> : <>Saat teman menjawab lewat link WhatsApp, jawabannya masuk ke ajakan ini. Buat akun supaya ajakan langsung muncul di app teman.</>}</p>
           <button className="btn ink block lg" onClick={() => { onClose(); go('squad/' + created.id) }}>Lihat ajakan</button>
           <button className="btn ghost block" onClick={onClose}>Tutup</button>
         </div>
@@ -297,11 +297,26 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
                 {invited.length > 0 && <div className="row" style={{ marginTop: 12, gap: 8 }}><div className="avatars">{invited.slice(0, 6).map((f) => <Avatar key={f.id} name={f.name} color={f.color} c={f.char} size={28} />)}</div><span className="tiny">{invited.length} diajak</span></div>}
               </div>
             </div>
-            <button className="btn ink block lg" onClick={() => finish('wa')}><MessageCircle size={17} /> Kirim ke WhatsApp</button>
-            <div className="grid2">
-              <button className="btn ghost" onClick={() => finish('share')}><Share2 size={16} /> Bagikan</button>
-              <button className="btn ghost" onClick={() => finish('save')}><Check size={16} /> Simpan saja</button>
-            </div>
+            {(() => {
+              const onApp = useStore.getState().auth ? invited.filter((f) => f.uid).length : 0
+              return onApp > 0 ? (
+                <>
+                  <button className="btn ink block lg" onClick={() => finish('save')}><Check size={17} /> Kirim ke {onApp} teman di PACK</button>
+                  <div className="grid2">
+                    <button className="btn ghost" onClick={() => finish('wa')}><MessageCircle size={16} /> + WhatsApp</button>
+                    <button className="btn ghost" onClick={() => finish('share')}><Share2 size={16} /> Bagikan</button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <button className="btn ink block lg" onClick={() => finish('wa')}><MessageCircle size={17} /> Kirim ke WhatsApp</button>
+                  <div className="grid2">
+                    <button className="btn ghost" onClick={() => finish('share')}><Share2 size={16} /> Bagikan</button>
+                    <button className="btn ghost" onClick={() => finish('save')}><Check size={16} /> Simpan saja</button>
+                  </div>
+                </>
+              )
+            })()}
           </div>
         )
       })()}

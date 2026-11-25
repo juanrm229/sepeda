@@ -1,7 +1,11 @@
 import { useState } from 'react'
 import { Crosshair, Download, RefreshCw, Trash2, Moon, Sun } from 'lucide-react'
 import { useStore } from '../lib/store'
-import { MyPayAccounts } from '../components/PayAccounts'
+import { MyPayAccounts, copyText } from '../components/PayAccounts'
+import { openAuth } from '../lib/authUi'
+import { useSyncStatus } from '../lib/sync'
+import { confirmDialog as confirmAcc } from '../components/UI'
+import { CloudCheck, CloudOff, LogOut, Link2 } from 'lucide-react'
 import { badges, level, levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
 import { confirmDialog, toast, Top } from '../components/UI'
@@ -39,6 +43,7 @@ export default function Profile() {
       <Top title="Profil" sub="Pengaturan & pencapaian" back="karakter" right={<button className="iconbtn" onClick={() => updateSettings({ theme: settings.theme === 'dark' ? 'light' : 'dark' })} aria-label="Ganti tema">{settings.theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}</button>} />
       <div className="row-d">
         <div className="stack">
+          <AccountCard />
           <div className="card ink">
             <div className="row" style={{ gap: 14 }}>
               <HeadSticker c={st.char} mood="segar" size={68} tilt={-6} bg="var(--yellow)" />
@@ -112,6 +117,35 @@ export default function Profile() {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function AccountCard() {
+  const { auth, signOut } = useStore()
+  const sync = useSyncStatus()
+  if (!auth) return (
+    <div className="card hero" style={{ padding: 20 }}>
+      <div className="mono">Mode tanpa akun</div>
+      <div className="h2" style={{ marginTop: 6 }}>Simpan squadmu di akun</div>
+      <p className="small muted" style={{ marginTop: 6 }}>Login di HP mana pun, teman bisa menambahkanmu lewat @username, dan ajakan langsung masuk ke app mereka. Data di HP ini ikut terbawa.</p>
+      <div className="grid2" style={{ marginTop: 14 }}>
+        <button className="btn white" onClick={() => openAuth('signup')}>Buat akun</button>
+        <button className="btn glass" onClick={() => openAuth('login')}>Masuk</button>
+      </div>
+    </div>
+  )
+  const link = `${location.origin}/#/u/${auth.handle}`
+  return (
+    <div className="card">
+      <div className="card-h">
+        <div><div className="mono">Akun</div><div className="h2" style={{ marginTop: 4 }}>@{auth.handle}</div><div className="small muted">{auth.email}</div></div>
+        <span className={`tag ${sync === 'offline' ? 'warn' : 'good'}`}>{sync === 'offline' ? <><CloudOff size={12} /> Offline</> : sync === 'saving' ? 'Menyimpan…' : <><CloudCheck size={12} /> Tersinkron</>}</span>
+      </div>
+      <div className="grid2" style={{ gap: 8 }}>
+        <button className="btn sm" onClick={() => copyText(link, 'Link profil disalin')}><Link2 size={14} /> Link profilku</button>
+        <button className="btn sm ghost" onClick={async () => { if (await confirmAcc('Keluar dari akun?', { body: 'Data di HP ini dihapus. Semua tetap aman di akunmu — masuk lagi kapan saja.', ok: 'Keluar', danger: true })) signOut() }}><LogOut size={14} /> Keluar</button>
       </div>
     </div>
   )
