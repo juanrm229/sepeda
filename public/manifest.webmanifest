@@ -1,6 +1,6 @@
 {
-  "name": "Kayuh — Ajak gowes & ngopi bareng",
-  "short_name": "Kayuh",
+  "name": "PACK — Ride as one",
+  "short_name": "PACK",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#eeeeec",
@@ -17,7 +17,7 @@
       "type": "image/png"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

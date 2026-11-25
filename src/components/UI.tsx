@@ -1,4 +1,5 @@
 import { Component, useEffect, useRef, useState, type ErrorInfo, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { ArrowLeft } from 'lucide-react'
 import { initials } from '../lib/util'
 import type { CharConfig } from '../lib/types'
@@ -55,16 +56,86 @@ export function Sheet({ open, onClose, children, title, className = '' }: { open
     document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', on); document.body.style.overflow = ''; prev?.focus?.() }
   }, [open, onClose])
+  const drag = useRef<{ y0: number; t0: number; dy: number } | null>(null)
+  const [dy, setDy] = useState(0)
+  const onDown = (e: React.PointerEvent) => {
+    const el = box.current
+    if (!el || el.scrollTop > 0) return
+    const target = e.target as HTMLElement
+    if (target.closest('input, textarea, select, button, a, .leaflet-container, .menu-strip, .hscroll')) return
+    drag.current = { y0: e.clientY, t0: performance.now(), dy: 0 }
+    try { el.setPointerCapture(e.pointerId) } catch { /* */ }
+  }
+  const onMove = (e: React.PointerEvent) => {
+    if (!drag.current) return
+    const d = Math.max(0, e.clientY - drag.current.y0)
+    drag.current.dy = d
+    setDy(d < 0 ? 0 : d)
+  }
+  const onUp = () => {
+    if (!drag.current) return
+    const { dy: d, t0 } = drag.current
+    const v = d / Math.max(1, performance.now() - t0)
+    drag.current = null
+    if (d > 120 || (v > 0.65 && d > 40)) { haptic(8); onClose() }
+    setDy(0)
+  }
   if (!shown) return null
-  return (
-    <div className={`sheet-bg ${closing ? 'closing' : ''}`} onClick={onClose}>
-      <div ref={box} tabIndex={-1} className={`sheet ${className}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal>
+  return createPortal(
+    <div className={`sheet-bg ${closing ? 'closing' : ''}`} onClick={onClose} style={dy ? { background: `rgba(10,10,10,${Math.max(0.05, 0.32 - dy / 900)})` } : undefined}>
+      <div ref={box} tabIndex={-1} className={`sheet ${className} ${dy ? 'dragging' : ''}`} onClick={(e) => e.stopPropagation()} role="dialog" aria-modal
+        onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
+        style={dy ? { transform: `translateY(${dy}px)` } : undefined}>
         <div className="grab" />
         {title && <h3 style={{ fontSize: 22, marginBottom: 16 }}>{title}</h3>}
         {children}
       </div>
+    </div>,
+    document.body,
+  )
+}
+
+/** Kartu yang bisa digeser (ala Slothy): kanan = aksi positif, kiri = aksi negatif. */
+export function Swipe({ children, onRight, onLeft, right = 'Ikut ✓', left = 'Skip', className = '' }: { children: ReactNode; onRight?: () => void; onLeft?: () => void; right?: string; left?: string; className?: string }) {
+  const st = useRef<{ x0: number; y0: number; on: boolean; lock: 'x' | 'y' | null } | null>(null)
+  const [dx, setDx] = useState(0)
+  const [fly, setFly] = useState<0 | 1 | -1>(0)
+  const TH = 96
+  const down = (e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input')) return
+    st.current = { x0: e.clientX, y0: e.clientY, on: true, lock: null }
+  }
+  const move = (e: React.PointerEvent) => {
+    const s = st.current
+    if (!s?.on) return
+    const x = e.clientX - s.x0, y = e.clientY - s.y0
+    if (!s.lock) { if (Math.abs(x) > 8) s.lock = 'x'; else if (Math.abs(y) > 8) { s.lock = 'y'; s.on = false; return } else return; try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId) } catch { /* */ } }
+    const allowed = (x > 0 && onRight) || (x < 0 && onLeft)
+    setDx(allowed ? x : x * 0.2)
+    if (Math.abs(x) > TH && Math.abs(dx) <= TH) haptic(6)
+  }
+  const up = () => {
+    if (!st.current) return
+    st.current = null
+    if (dx > TH && onRight) { setFly(1); setTimeout(() => { onRight(); setFly(0); setDx(0) }, 260) }
+    else if (dx < -TH && onLeft) { setFly(-1); setTimeout(() => { onLeft(); setFly(0); setDx(0) }, 260) }
+    else setDx(0)
+  }
+  const p = Math.min(1, Math.abs(dx) / TH)
+  return (
+    <div className={`swipe ${className}`}>
+      <div className={`swipe-bg ${dx > 0 ? 'r' : 'l'}`} style={{ opacity: p }}><span style={{ transform: `scale(${0.8 + p * 0.25})` }}>{dx > 0 ? right : left}</span></div>
+      <div className={`swipe-fg ${st.current ? '' : 'rest'} ${fly ? 'fly' : ''}`} style={{ transform: fly ? `translateX(${fly * 120}%) rotate(${fly * 8}deg)` : dx ? `translateX(${dx}px) rotate(${dx / 40}deg)` : undefined }}
+        onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+        {children}
+      </div>
     </div>
   )
+}
+
+/** Pil hitam pemuat (ala dynamic island "Thinking"). */
+export function LoadingPill({ text }: { text: string }) {
+  return <div className="loadpill" role="status"><span className="pixels"><i /><i /><i /><i /></span>{text}</div>
 }
 
 /* ---------- Dialog konfirmasi (pengganti confirm() bawaan) ---------- */
@@ -131,7 +202,7 @@ export function celebrate(power = 1) {
 export class ErrorBoundary extends Component<{ children: ReactNode }, { err: Error | null }> {
   state = { err: null as Error | null }
   static getDerivedStateFromError(err: Error) { return { err } }
-  componentDidCatch(err: Error, info: ErrorInfo) { console.error('Kayuh error', err, info.componentStack) }
+  componentDidCatch(err: Error, info: ErrorInfo) { console.error('PACK error', err, info.componentStack) }
   render() {
     if (!this.state.err) return this.props.children
     return (

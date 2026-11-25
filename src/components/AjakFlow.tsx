@@ -6,10 +6,20 @@ const AjakSheetLazy = lazy(() => import('./AjakSheet'))
 /* ---------- Pemicu global (FAB, beranda, titik temu, perencana rute) ---------- */
 let pushOpen: (p?: Partial<GroupRide>) => void = () => {}
 export const openAjak = (preset?: Partial<GroupRide>) => pushOpen(preset)
+const subs = new Set<(o: boolean) => void>()
+let isOpen = false
+const setOpenFlag = (o: boolean) => { isOpen = o; subs.forEach((f) => f(o)) }
+/** Status sheet Ajak terbuka (untuk FAB berubah jadi ×). */
+export function useAjakOpen() {
+  const [o, setO] = useState(isOpen)
+  useEffect(() => { subs.add(setO); return () => { subs.delete(setO) } }, [])
+  return o
+}
 
 export function AjakHost() {
   const [state, setState] = useState<{ open: boolean; preset?: Partial<GroupRide>; k: number }>({ open: false, k: 0 })
   useEffect(() => { pushOpen = (preset) => setState((s) => ({ open: true, preset, k: s.k + 1 })) }, [])
+  useEffect(() => { setOpenFlag(state.open) }, [state.open])
   if (!state.k) return null
   return <Suspense fallback={null}><AjakSheetLazy key={state.k} open={state.open} preset={state.preset} onClose={() => setState((s) => ({ ...s, open: false }))} /></Suspense>
 }

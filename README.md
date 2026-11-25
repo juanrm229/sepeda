@@ -1,8 +1,16 @@
-# Kayuh — Ajak gowes, ketemu, ngopi
+# PACK — Ride as one.
 
-Web app (PWA) untuk pesepeda yang fokus ke **ketemuan**: ajak squad dalam 10 detik, cocokkan jadwal, cari titik temu yang adil, atur checkpoint & coffee break, lalu kabari semua lewat WhatsApp, **tanpa akun dan tanpa server**. Analisis ride tetap ada, tapi diturunkan prioritasnya (nanti masuk lewat share dari Strava).
+**Stop riding alone.** PACK adalah PWA untuk pesepeda yang fokus ke **ketemuan**:
+- ajak squad dalam 10 detik dan cocokkan jadwal;
+- cari titik temu yang adil, lalu atur checkpoint & ngopi;
+- titip kopi ke satu orang;
+- tagih patungan dengan rekening otomatis.
 
-Desain v6 "Soft Mono" diterjemahkan dari board Pinterest *sepeda 2*: latar abu lembut, kartu putih radius besar, tombol pil hitam, nav pil mengambang + FAB, stepper ala pelacakan paket, kalimat ber-avatar, dan undangan berbentuk catatan tempel. Karakter (DiceBear Lorelei) dipertahankan.
+Semuanya **tanpa akun dan tanpa server**.
+
+Positioning: Strava merekam kamu sendirian, PACK mengumpulkan rombongan. Analisis ride tetap ada, tapi nanti masuk lewat share dari Strava.
+
+Desain "Soft Mono" diterjemahkan dari board Pinterest *sepeda 2*. Logo: huruf **P** yang lengkungnya pin lokasi, dengan titik oranye sebagai titik kumpul. Karakter (DiceBear Lorelei) dipertahankan.
 
 ## Menjalankan
 
@@ -14,6 +22,26 @@ npm run qa       # suite QA end-to-end (butuh dev server, lihat scripts/qa.cjs)
 ```
 
 Semua data tersimpan di perangkat (localStorage). Saat pertama dibuka, app memuat data contoh.
+
+## Yang baru di v7 — PACK
+
+Detail lengkap ada di [`docs/PACK-v7.md`](docs/PACK-v7.md).
+
+- **Brand baru PACK**: logo P-pin, wordmark, ikon PWA (termasuk maskable), dan gambar OG.
+- **Titip pesanan**: semua nitip ke satu orang yang memesan & menalangi. Tamu bisa nitip langsung dari link undangan. Ada ringkasan untuk barista ("2× es kopi susu").
+- **Foto menu kafe**: difoto sekali, disimpan per tempat (IndexedDB, dikompres), dan dilihat lagi sebelum pesan setiap kali ngopi di sana. Ada lightbox zoom/geser.
+- **Rekening & e-wallet di app**: ikut otomatis di undangan & tagihan, jadi tidak perlu kirim nomor rekening ke grup berulang kali. Ada tombol salin.
+- **Patungan / catatan utang**: tagih otomatis dari titipan, saldo per teman, tagih via WA plus rekening, tandai lunas, catat manual, dan giliran traktir.
+- **Kopi Sinkron**: beda pace tapi tiba bareng di kedai kopi (jam start berbeda atau putaran bonus).
+- **Papan kedatangan hari-H & "Pulang aman"**: status OTW, tiba, dan sampai rumah lewat link balasan.
+- **Link jadwal free**: jadwal teman masuk ke *Kapan semua bisa?*. Juga: **QR undangan**, **titik kumpul ulang no-drop** tiap 10 km, **saran geser jam karena hujan**, dan **"kangen gowes bareng"**.
+- **Animasi**:
+  - kurva pegas, indikator nav yang meluncur, FAB berubah jadi ×;
+  - sheet bisa ditarik ke bawah untuk ditutup;
+  - catatan undangan bisa digeser untuk Ikut/Skip;
+  - avatar mengorbit lalu berkumpul, logo tergambar, stepper terisi bertahap;
+  - header ringkas saat digulir, transisi halaman berarah;
+  - semuanya menghormati `prefers-reduced-motion`.
 
 ## Yang baru di v6 — rombak total
 

@@ -1,4 +1,4 @@
-import type { Bike, Friend, GroupRide, LatLng, Plan, Reminder, Ride, RideType, Settings } from './types'
+import type { Bike, Debt, Friend, GroupRide, LatLng, Plan, Reminder, Ride, RideType, Settings } from './types'
 import { calories, rideIF, synthZones, trainingLoad } from './analytics'
 import { clamp, dayKey } from './util'
 import { trackLength } from './geo'
@@ -27,6 +27,21 @@ export const defaultSettings: Settings = {
   homeLabel: 'Senayan, Jakarta',
   theme: 'light',
   fuelPricePerKm: 300,
+  pay: [
+    { id: 'pay1', kind: 'bank', provider: 'BCA', number: '1234567890', holder: 'Juan' },
+    { id: 'pay2', kind: 'ewallet', provider: 'GoPay', number: '081234567890', holder: 'Juan' },
+  ],
+}
+
+/** Catatan patungan contoh dari ride-ride sebelumnya. */
+export function seedLedger(): Debt[] {
+  const ago = (d: number) => new Date(Date.now() - d * 86400000).toISOString()
+  return [
+    { id: 'd1', from: 'f2', to: 'me', amount: 28000, note: 'Es kopi susu + croissant · Coffee ride PIK', at: ago(6) },
+    { id: 'd2', from: 'f5', to: 'me', amount: 22000, note: 'Americano + air · Coffee ride PIK', at: ago(6) },
+    { id: 'd3', from: 'me', to: 'f3', amount: 35000, note: 'Kopi & pisang goreng · Gunung Pancar', at: ago(13) },
+    { id: 'd4', from: 'f4', to: 'me', amount: 18000, note: 'Teh tarik · CFD', at: ago(20), paid: ago(19) },
+  ]
 }
 
 export function makeLoop(center: LatLng, km: number, r: () => number, n = 70): LatLng[] {
@@ -172,7 +187,13 @@ export function seedGroupRides(): GroupRide[] {
         { friendId: 'f5', rsvp: 'mungkin', vote: { t: 1 } },
         { friendId: 'f6', rsvp: 'menunggu' },
       ],
-      myRsvp: 'ikut', host: 'me', myVote: { t: 0, c: 1 },
+      myRsvp: 'ikut', host: 'me', myVote: { t: 0, c: 1 }, runner: 'me',
+      orders: [
+        { id: 'o1', who: 'me', item: 'Es kopi susu', note: 'less sugar', price: 22000, qty: 1 },
+        { id: 'o2', who: 'f2', item: 'Kopi tubruk', price: 15000, qty: 1 },
+        { id: 'o3', who: 'f4', item: 'Es kopi susu', price: 22000, qty: 1 },
+        { id: 'o4', who: 'f4', item: 'Pisang goreng', note: 'bagi dua', price: 18000, qty: 1 },
+      ],
       note: 'Pelan-pelan aja, yang penting sarapan bareng!',
       timeOptions: [nextDow(0, 5, 30), nextDow(0, 6, 0)],
       coffeeOptions: [

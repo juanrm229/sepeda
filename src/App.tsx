@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react'
-import { Home as HomeIcon, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee, Stamp, CalendarDays, Plus, Users } from 'lucide-react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Home as HomeIcon, Zap, Bell, User, MapPin, Bike, CloudSun, LineChart, List, Sliders, Smile, Coffee, Stamp, CalendarDays, Plus, Users, Wallet } from 'lucide-react'
 import { useRoute } from './lib/router'
 import { useStore } from './lib/store'
 import { dueReminders, notify } from './lib/notify'
@@ -28,7 +28,10 @@ const Onboarding = lazy(() => import('./components/Onboarding'))
 const Passport = lazy(() => import('./pages/Passport'))
 const Kapan = lazy(() => import('./pages/Kapan'))
 const Balas = lazy(() => import('./pages/Balas'))
-import { AjakHost, openAjak } from './components/AjakFlow'
+const Patungan = lazy(() => import('./pages/Patungan'))
+const Jadwal = lazy(() => import('./pages/Jadwal'))
+import { AjakHost, openAjak, useAjakOpen } from './components/AjakFlow'
+import { Logo } from './components/Logo'
 
 function useAchievements() {
   useEffect(() => {
@@ -59,7 +62,7 @@ function useReminderLoop() {
       const { reminders, markReminderFired } = useStore.getState()
       for (const r of dueReminders(reminders)) {
         markReminderFired(r.id, dayKey(new Date()))
-        notify('Kayuh · Pengingat', r.title)
+        notify('PACK · Pengingat', r.title)
         toast('⏰ ' + r.title)
       }
     }
@@ -100,6 +103,8 @@ export default function App() {
     case 'paspor': page = <Passport />; break
     case 'kapan': page = <Kapan />; break
     case 'balas': page = <Balas code={b} />; break
+    case 'patungan': page = <Patungan />; break
+    case 'jadwal': page = <Jadwal code={b} />; break
     case 'rute': page = !b ? <RouteList /> : b === 'g' ? <RoutePlanner key={'g' + c} groupId={c} /> : <RoutePlanner key={b} id={b} />; break
     default: page = <Home />
   }
@@ -114,10 +119,11 @@ export default function App() {
   return (
     <div className="app">
       <aside className="side">
-        <div className="brand"><span className="brand-mark"><i /></span>Kayuh</div>
+        <div style={{ margin: '0 12px 22px' }}><Logo size={30} /></div>
         {nav.map((n) => <a key={n.l} href={n.href} className={on(n.k)}>{n.i} {n.l === 'Ketemu' ? 'Titik temu' : n.l === 'Ngopi' ? 'Rute & ngopi' : n.l}</a>)}
         <a href="#/kapan" className={on('kapan')}><Users size={20} /> Kapan semua bisa?</a>
         <div className="side-h">Kamu</div>
+        <a href="#/patungan" className={on('patungan')}><Wallet size={18} /> Patungan</a>
         <a href="#/karakter" className={on('karakter')}><Smile size={18} /> Karakter</a>
         <a href="#/reminders" className={on('reminders')}><Bell size={18} /> Pengingat</a>
         <a href="#/paspor" className={on('paspor')}><Stamp size={18} /> Paspor</a>
@@ -137,17 +143,12 @@ export default function App() {
         </ErrorBoundary>
       </main>
       {a !== 'record' && (
-        <div className="navwrap">
-          <nav className="navpill" aria-label="Navigasi utama">
-            {nav.map((n) => <a key={n.l} href={n.href} className={on(n.k)} aria-label={n.l} aria-current={a === n.k ? 'page' : undefined}>{n.i}<span>{n.l}</span></a>)}
-          </nav>
-          <button className="fab" aria-label="Ajak gowes" onClick={() => openAjak()}><Plus size={26} /></button>
-        </div>
+        <NavPill nav={nav} active={a} />
       )}
       <AjakHost />
       <Toaster />
       <ConfirmHost />
-      {!onboarded && a !== 'join' && <Suspense fallback={null}><Onboarding /></Suspense>}
+      {!onboarded && a !== 'join' && a !== 'jadwal' && <Suspense fallback={null}><Onboarding /></Suspense>}
     </div>
   )
 }
@@ -158,6 +159,32 @@ function PageSkeleton() {
       <Skeleton h={46} w={180} r={23} /><Skeleton h={90} r={16} />
       <Skeleton h={240} r={24} />
       <div className="grid2"><Skeleton h={120} r={24} /><Skeleton h={120} r={24} /></div>
+    </div>
+  )
+}
+
+function NavPill({ nav, active }: { nav: { href: string; k: string | undefined; l: string; i: React.ReactNode }[]; active: string | undefined }) {
+  const ref = useRef<HTMLElement>(null)
+  const [ind, setInd] = useState<{ x: number; w: number } | null>(null)
+  const open = useAjakOpen()
+  const idx = nav.findIndex((n) => n.k === active)
+  useLayoutEffect(() => {
+    const measure = () => {
+      const el = ref.current?.querySelectorAll('a')[idx] as HTMLElement | undefined
+      setInd(el ? { x: el.offsetLeft, w: el.offsetWidth } : null)
+    }
+    measure()
+    const t = setTimeout(measure, 260)
+    window.addEventListener('resize', measure)
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure) }
+  }, [idx])
+  return (
+    <div className="navwrap">
+      <nav ref={ref} className="navpill" aria-label="Navigasi utama">
+        <i className="nav-ind" style={{ transform: `translateX(${ind?.x ?? 0}px)`, width: ind?.w ?? 0, opacity: ind ? 1 : 0 }} />
+        {nav.map((n) => <a key={n.l} href={n.href} className={active === n.k ? 'on' : ''} aria-label={n.l} aria-current={active === n.k ? 'page' : undefined}>{n.i}<span>{n.l}</span></a>)}
+      </nav>
+      <button className={`fab ${open ? 'open' : ''}`} aria-label="Ajak gowes" onClick={() => openAjak()}><Plus size={26} /></button>
     </div>
   )
 }

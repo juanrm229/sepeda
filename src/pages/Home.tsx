@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react'
-import { Bell, CalendarDays, ChevronRight, Clock, Coffee, MapPin, Navigation, Scale, Share2, Sparkles, UserPlus, LineChart } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { Bell, Wallet, CalendarDays, ChevronRight, Clock, Coffee, MapPin, Navigation, Scale, Share2, Sparkles, UserPlus, LineChart } from 'lucide-react'
 import { useStore } from '../lib/store'
 import type { GroupRide } from '../lib/types'
-import { Avatar, Sheet, toast } from '../components/UI'
+import { Avatar, Sheet, Swipe, toast } from '../components/UI'
 import { HeadBadge } from '../components/Character'
 import { GroupActionCard } from '../components/GroupActions'
 import { openAjak, PACE } from '../components/AjakFlow'
 import { useForecast } from '../lib/useForecast'
-import { firstName, hhmm, journey, peopleOf, rsvpCount, squadSlots, SLOTS, whenText } from '../lib/meetup'
+import { firstName, hhmm, journey, missedFriends, peopleOf, rsvpCount, squadSlots, SLOTS, whenText } from '../lib/meetup'
+import { ArrivalBoard } from '../components/Arrival'
 import { greeting, HARI, BULAN, HARI_PANJANG } from '../lib/util'
 import { inviteLink, inviteText, shareOrCopy } from '../lib/share'
 import { etaMin, haversine } from '../lib/geo'
@@ -18,7 +20,7 @@ import { scoreLabel } from '../lib/weather'
 const isFuture = (g: GroupRide) => new Date(g.datetime).getTime() > Date.now() - 4 * 3600000
 
 export default function Home() {
-  const { settings, char, groupRides, friends, avail, setMyRsvp } = useStore()
+  const { settings, char, groupRides, friends, avail, setMyRsvp, rides } = useStore()
   const [lateFor, setLateFor] = useState<GroupRide | null>(null)
   const fc = useForecast(settings.home)
   const upcoming = useMemo(() => groupRides.filter(isFuture).sort((a, b) => a.datetime.localeCompare(b.datetime)), [groupRides])
@@ -33,6 +35,7 @@ export default function Home() {
 
   return (
     <div className="fadein">
+      <MiniHeader next={next} />
       {/* Header */}
       <div className="hdr">
         <a href="#/karakter" className="hdr-who" title="Karakter & profil">
@@ -43,6 +46,7 @@ export default function Home() {
           </span>
         </a>
         <div className="hdr-actions">
+          <a href="#/patungan" className="iconbtn" aria-label="Patungan"><Wallet size={19} /></a>
           <a href="#/kapan" className="iconbtn" aria-label="Kapan semua bisa"><CalendarDays size={19} /></a>
           <a href="#/reminders" className="iconbtn bell" aria-label="Pengingat"><Bell size={19} />{invites.length > 0 && <i />}</a>
         </div>
@@ -76,6 +80,8 @@ export default function Home() {
         </div>
       )}
 
+      {next && Date.now() > new Date(next.datetime).getTime() - 4 * 3600000 && <div className="section" style={{ marginTop: 12 }}><ArrivalBoard g={next} /></div>}
+
       {/* Undangan masuk */}
       {invites.length > 0 && (
         <div className="section">
@@ -85,7 +91,8 @@ export default function Home() {
               const host = friends.find((f) => f.id === g.host)
               const c = rsvpCount(g)
               return (
-                <div key={g.id} className="sticky-stack">
+                <Swipe key={g.id} onRight={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!', `Kabari ${host ? firstName(host.name) : 'host'} lewat link balasan`) }} onLeft={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan', 'Lain kali ya') }} right="Ikut! 🚲" left="Skip">
+                <div className="sticky-stack">
                   <i className="under" />
                   <div className="sticky">
                     <div className="row between">
@@ -101,8 +108,10 @@ export default function Home() {
                       <button className="btn ghost sm" onClick={() => go('squad/' + g.id)}>Detail</button>
                       <button className="btn ghost sm" onClick={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan') }}>Skip</button>
                     </div>
+                    <div className="swipe-hint">← geser untuk skip · geser untuk ikut →</div>
                   </div>
                 </div>
+                </Swipe>
               )
             })}
           </div>
@@ -143,6 +152,16 @@ export default function Home() {
           </div>
         </a>
       )}
+
+      {/* Kimia squad */}
+      {(() => { const m = missedFriends(friends, groupRides, rides, 14)[0]; return m ? (
+        <div className="card section" style={{ padding: 16 }}>
+          <div className="row" style={{ gap: 12 }}>
+            <HeadBadge c={m.f.char} size={46} bg="var(--surface-2)" />
+            <div className="grow"><div className="mono">Kangen gowes bareng</div><div className="b" style={{ marginTop: 2 }}>{m.days == null ? `Belum pernah gowes bareng ${firstName(m.f.name)}` : `${m.days} hari nggak bareng ${firstName(m.f.name)}`}</div></div>
+            <button className="btn ink sm" onClick={() => openAjak({ participants: [{ friendId: m.f.id, rsvp: 'menunggu' }] })}>Ajak</button>
+          </div>
+        </div>) : null })()}
 
       {/* Analisis: nanti */}
       <a href="#/insights" className="lrow section" style={{ marginBottom: 8 }}>
@@ -220,7 +239,7 @@ function NextCard({ g, onLate }: { g: GroupRide; onLate: () => void }) {
       </div>
       <div className="grid3" style={{ marginTop: 14, gap: 8 }}>
         <button className="btn white sm" onClick={() => go('squad/' + g.id)}>Detail</button>
-        <button className="btn glass sm" onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name, char))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><Share2 size={14} /> Ajak</button>
+        <button className="btn glass sm" onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name, char, settings.pay))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><Share2 size={14} /> Ajak</button>
         <button className="btn glass sm" onClick={onLate}><Clock size={14} /> Telat</button>
       </div>
     </div>
@@ -262,4 +281,22 @@ const ZC = ['', 'var(--sunken)', 'color-mix(in srgb, var(--ink) 35%, transparent
 export function ZoneStrip({ zones, w = 70 }: { zones?: number[]; w?: number }) {
   if (!zones?.length) return null
   return <span style={{ display: 'flex', width: w, height: 22, alignItems: 'flex-end', gap: 1, flexShrink: 0 }}>{zones.filter((_, i) => i % 2 === 0).map((z, i) => <i key={i} style={{ flex: 1, height: `${z * 20}%`, background: ZC[z], borderRadius: 1.5 }} />)}</span>
+}
+
+/** Header ringkas yang muncul saat digulir (ala Tickr). */
+function MiniHeader({ next }: { next?: GroupRide }) {
+  const { char } = useStore()
+  const [on, setOn] = useState(false)
+  useEffect(() => {
+    const f = () => setOn(window.scrollY > 170)
+    f(); window.addEventListener('scroll', f, { passive: true })
+    return () => window.removeEventListener('scroll', f)
+  }, [])
+  return createPortal(
+    <div className={`minihdr ${on ? 'on' : ''}`} aria-hidden={!on}>
+      <HeadBadge c={char} size={30} ring={false} />
+      {next ? <button className="minihdr-chip" tabIndex={on ? 0 : -1} onClick={() => go('squad/' + next.id)}><b>{whenText(next.datetime)}</b> · {next.title}</button> : <span className="b">PACK</span>}
+    </div>,
+    document.body,
+  )
 }

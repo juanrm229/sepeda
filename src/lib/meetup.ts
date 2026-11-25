@@ -1,4 +1,5 @@
-import type { CharConfig, Friend, GroupRide, LatLng, Participant } from './types'
+import type { CharConfig, Friend, GroupRide, LatLng, Participant, RoutePlan } from './types'
+import { pointAtKm } from './routing'
 import { centroid, haversine } from './geo'
 import type { Reply } from './share'
 import type { Hour } from './weather'
@@ -45,9 +46,16 @@ export function mergeReply(g: GroupRide, friends: Friend[], r: Reply): { g: Grou
   const f = friends.find((x) => x.name.toLowerCase() === lower) ?? friends.find((x) => firstName(x.name).toLowerCase() === firstName(lower))
   const pid = f?.id ?? 'g-' + slug(r.name)
   const prev = g.participants.find((p) => p.friendId === pid)
-  const next: Participant = { ...(prev ?? {}), friendId: pid, rsvp: r.rsvp, name: f ? undefined : r.name, char: r.char ?? prev?.char, from: r.from ?? prev?.from, vote: r.vote ?? prev?.vote, note: r.note ?? prev?.note, at: r.at }
+  const next: Participant = { ...(prev ?? {}), friendId: pid, rsvp: r.status ? prev?.rsvp ?? 'ikut' : r.rsvp, name: f ? undefined : r.name, char: r.char ?? prev?.char, from: r.from ?? prev?.from, vote: r.vote ?? prev?.vote, note: r.note ?? prev?.note, at: r.at,
+    order: r.order ?? prev?.order, status: r.status ?? prev?.status, statusAt: r.status ? r.at : prev?.statusAt, eta: r.status ? r.eta : prev?.eta }
+  let orders = g.orders ?? []
+  if (r.order) {
+    const oid = 'r-' + pid
+    const o = { id: oid, who: pid, name: f ? undefined : r.name, item: r.order.item, note: r.order.note, price: r.order.price, qty: 1, at: r.at }
+    orders = orders.some((x) => x.id === oid) ? orders.map((x) => (x.id === oid ? o : x)) : [...orders, o]
+  }
   return {
-    g: { ...g, participants: prev ? g.participants.map((p) => (p.friendId === pid ? next : p)) : [...g.participants, next] },
+    g: { ...g, orders, participants: prev ? g.participants.map((p) => (p.friendId === pid ? next : p)) : [...g.participants, next] },
     who: f?.name ?? r.name,
     isNew: !prev,
   }
@@ -174,4 +182,66 @@ export function journey(g: GroupRide) {
   const ck = g.checkins ?? {}
   const doneIdx = nodes.reduce((a, n, i) => (ck[n.key] ? i : a), -1)
   return { nodes, ck, doneIdx, nowIdx: Math.min(nodes.length - 1, doneIdx + 1) }
+}
+
+/* ---------- Kopi Sinkron ---------- */
+export interface SyncGroup { label: string; people: Person[]; speed: number; startAt: Date; extraKm: number }
+/**
+ * Rombongan campuran selalu saling tunggu. Kopi Sinkron membagi peserta per pace
+ * lalu menghitung jam start (atau putaran tambahan) supaya semua TIBA BERSAMAAN di kedai kopi.
+ */
+export function coffeeSync(people: Person[], kmToCoffee: number, startAt: Date): { groups: SyncGroup[]; arrive: Date } | null {
+  const ps = people.filter((p) => p.rsvp === 'ikut')
+  if (ps.length < 2 || kmToCoffee < 2) return null
+  const lo = Math.min(...ps.map((p) => p.spd)), hi = Math.max(...ps.map((p) => p.spd))
+  if (hi - lo < 3) return null
+  const mid = (lo + hi) / 2
+  const fast = ps.filter((p) => p.spd >= mid), slow = ps.filter((p) => p.spd < mid)
+  if (!fast.length || !slow.length) return null
+  const vs = Math.min(...slow.map((p) => p.spd)) * 0.9
+  const vf = Math.min(...fast.map((p) => p.spd)) * 0.9
+  const tSlow = kmToCoffee / vs, tFast = kmToCoffee / vf
+  const arrive = new Date(startAt.getTime() + tSlow * 3600000)
+  return {
+    arrive,
+    groups: [
+      { label: 'Santai', people: slow, speed: vs, startAt, extraKm: 0 },
+      { label: 'Kencang', people: fast, speed: vf, startAt: new Date(startAt.getTime() + (tSlow - tFast) * 3600000), extraKm: kmToCoffee * (vf / vs - 1) },
+    ],
+  }
+}
+
+/* ---------- Titik kumpul ulang (no-drop) ---------- */
+export function regroupPoints(plan: RoutePlan, every = 10): { km: number; pos: LatLng }[] {
+  const path = plan.geometry?.length ? plan.geometry : [plan.start.pos, ...plan.checkpoints.map((c) => c.place?.pos ?? c.pos), (plan.finish ?? plan.start).pos]
+  let total = 0
+  for (let i = 1; i < path.length; i++) total += haversine(path[i - 1], path[i])
+  const scale = plan.geometry?.length ? 1 : 1.3
+  const out: { km: number; pos: LatLng }[] = []
+  for (let k = every; k < total * scale - every / 2; k += every) out.push({ km: k, pos: pointAtKm(path, k / scale) })
+  return out.slice(0, 8)
+}
+
+/* ---------- Geser karena cuaca ---------- */
+export function weatherShift(hours: Hour[] | undefined, at: Date): { from: Hour; to: Hour } | null {
+  if (!hours) return null
+  const cur = hours.find((h) => Math.abs(h.time.getTime() - at.getTime()) < 1800000)
+  if (!cur || cur.rain < 50) return null
+  const cands = hours.filter((h) => Math.abs(h.time.getTime() - at.getTime()) <= 3 * 3600000 && h.time.getTime() > Date.now() + 3600000 && h.isDay && h.rain <= cur.rain - 25)
+  if (!cands.length) return null
+  const best = cands.sort((a, b) => b.score - a.score || Math.abs(a.time.getTime() - at.getTime()) - Math.abs(b.time.getTime() - at.getTime()))[0]
+  return { from: cur, to: best }
+}
+
+/* ---------- Kimia squad ---------- */
+export function missedFriends(friends: Friend[], rides: GroupRide[], soloRides: { date: string; friendIds?: string[] }[], minDays = 14) {
+  const now = Date.now()
+  return friends.map((f) => {
+    const dates = [
+      ...rides.filter((g) => new Date(g.datetime).getTime() < now && g.myRsvp === 'ikut' && g.participants.some((p) => p.friendId === f.id && p.rsvp === 'ikut')).map((g) => new Date(g.datetime).getTime()),
+      ...soloRides.filter((r) => r.friendIds?.includes(f.id)).map((r) => new Date(r.date).getTime()),
+    ]
+    const last = dates.length ? Math.max(...dates) : null
+    return { f, last, days: last ? Math.floor((now - last) / 86400000) : null }
+  }).filter((x) => x.days == null || x.days >= minDays).sort((a, b) => (b.days ?? 999) - (a.days ?? 999))
 }

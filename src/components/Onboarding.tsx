@@ -4,6 +4,9 @@ import { useStore } from '../lib/store'
 import { AvatarImg, HeadSticker } from './Character'
 import { applyPick, HAIR_COLORS, randomChar, SKINS, TABS } from '../lib/avatar'
 import { celebrate, haptic } from './UI'
+import { Orbit } from './Orbit'
+import { LogoMark, Wordmark } from './Logo'
+import { seedFriends } from '../lib/seed'
 import { askPermission } from '../lib/notify'
 
 const STEPS = 4
@@ -34,17 +37,18 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="onb" role="dialog" aria-modal aria-label="Selamat datang di Kayuh">
+    <div className="onb" role="dialog" aria-modal aria-label="Selamat datang di PACK">
       <div className="onb-in">
         <div className="story-bars" style={{ marginBottom: 18 }}>{Array.from({ length: STEPS }, (_, i) => <i key={i} className={i <= step ? 'done' : ''} />)}</div>
 
         {step === 0 && (
           <div className="onb-step" key="s0">
-            <div className="mono">Selamat datang</div>
-            <div className="dot" style={{ fontSize: 'clamp(72px, 22vw, 120px)', marginTop: 8 }}>KAYUH</div>
-            <div className="ccard-photo" style={{ background: `#${char.bg ?? 'e9e2d0'}`, width: 230, margin: '18px auto', aspectRatio: '1' }}><AvatarImg c={char} mood="semangat" size={210} className="ccard-avatar" /></div>
-            <h2 className="display" style={{ fontSize: 30 }}>Gowes lebih pintar,<br />bareng squad.</h2>
-            <p className="ink2" style={{ marginTop: 8 }}>Analitik latihan, karakter yang tumbuh bersamamu, rute dengan coffee break, dan pengingat yang paham cuaca.</p>
+            <div className="row between"><Wordmark size={26} /><span className="mono">Ride as one</span></div>
+            <div style={{ display: 'grid', placeItems: 'center', margin: '18px 0 8px' }}>
+              <Orbit size={290} chars={[char, ...seedFriends.map((f) => f.char)]} center={<span className="orbit-logo"><LogoMark size={74} animate /></span>} />
+            </div>
+            <h2 className="display" style={{ fontSize: 38 }}>Stop riding alone.</h2>
+            <p className="ink2" style={{ marginTop: 10 }}>Ajak squad dalam 10 detik, ketemu di titik yang adil, titip kopi ke satu orang, patungan langsung beres. Tanpa akun.</p>
           </div>
         )}
 

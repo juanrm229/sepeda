@@ -15,8 +15,11 @@ import { GroupActionCard } from '../components/GroupActions'
 import { CP_KIND, gmapsDirections, timeline } from '../lib/plan'
 import { notify, speak } from '../lib/notify'
 import { PACE } from '../components/AjakFlow'
-import { firstName, hhmm, journey, peopleOf, rsvpCount, tally, whenText } from '../lib/meetup'
+import { firstName, hhmm, journey, peopleOf, regroupPoints, rsvpCount, tally, weatherShift, whenText } from '../lib/meetup'
 import { HeadBadge } from '../components/Character'
+import { OrdersCard } from '../components/Orders'
+import { ArrivalBoard, CoffeeSyncCard } from '../components/Arrival'
+import { QRInvite } from '../components/QRInvite'
 
 const RSVP_L: Record<Rsvp, string> = { ikut: 'Ikut', mungkin: 'Mungkin', tidak: 'Tidak', menunggu: 'Belum jawab' }
 
@@ -38,7 +41,7 @@ export default function SquadDetail({ id }: { id: string }) {
   const myEta = etaMin(myDist, 20)
   const leave = new Date(start.getTime() - (myEta + 10) * 60000)
   const hour = fc?.hours.find((h) => Math.abs(h.time.getTime() - start.getTime()) < 1800000)
-  const link = inviteLink(g, settings.name, char)
+  const link = inviteLink(g, settings.name, char, settings.pay)
   const text = inviteText(g, link)
   const people = peopleOf(g, friends, { name: settings.name, char, home: settings.home })
   const count = rsvpCount(g)
@@ -49,6 +52,9 @@ export default function SquadDetail({ id }: { id: string }) {
   const rideWindow = Date.now() > start.getTime() - 45 * 60000 && Date.now() < finishAt.getTime() + 3 * 3600000
   const past = Date.now() > finishAt.getTime() + 3 * 3600000
   const status = past ? 'Selesai' : j.doneIdx >= 0 ? 'Sedang jalan' : rideWindow ? 'Hampir mulai' : count.menunggu ? 'Menunggu jawaban' : 'Siap berangkat'
+  const dayOf = Date.now() > start.getTime() - 4 * 3600000 && Date.now() < finishAt.getTime() + 8 * 3600000
+  const shift = isHost && !past ? weatherShift(fc?.hours, start) : null
+  const regroup = g.noDrop && g.plan ? regroupPoints(g.plan, 10) : []
   const rowTime = (i: number) => (i === 0 ? start : j.nodes[i].key === 'finish' ? finishAt : tl?.rows[i - 1]?.arrive ?? null)
 
   function leaveReminder() {
@@ -135,6 +141,22 @@ export default function SquadDetail({ id }: { id: string }) {
             {lastMsg && <a className="btn glass block" style={{ marginTop: 8 }} href={waLink(lastMsg)} target="_blank" rel="noreferrer" onClick={() => setLastMsg(null)}><MessageCircle size={16} /> Kabari grup: status terbaru</a>}
           </div>
 
+          {dayOf && g.myRsvp === 'ikut' && <ArrivalBoard g={g} finished={Date.now() > finishAt.getTime()} />}
+
+          {shift && (
+            <div className="card shift">
+              <div className="mono">Cuaca berubah · saran geser</div>
+              <div className="h2" style={{ marginTop: 6 }}>Geser ke {hhmm(shift.to.time)}?</div>
+              <p className="small muted" style={{ marginTop: 4 }}>Hujan {shift.from.rain}% di jam kumpul → {shift.to.rain}% jam {hhmm(shift.to.time)} (skor {shift.to.score}).</p>
+              <button className="btn ink block" style={{ marginTop: 12 }} onClick={() => {
+                const d = shift.to.time.toISOString()
+                upsertGroupRide({ ...g, datetime: d, plan: g.plan ? { ...g.plan, startTime: d } : g.plan })
+                window.open(waLink(`☔ Update *${g.title}*: hujan ${shift.from.rain}% di jam ${hhmm(start)}, kita geser ke *${hhmm(shift.to.time)}* (hujan ${shift.to.rain}%). Titik kumpul tetap ${g.meet.name}. ${link}`), '_blank')
+                toast('🌤 Jadwal digeser', `Kumpul ${hhmm(shift.to.time)} · kabar dikirim ke grup`)
+              }}>Geser & kabari grup</button>
+            </div>
+          )}
+
           {/* RSVP */}
           <div className="card">
             <div className="card-h"><span className="mono">Kamu ikut?</span><span className="small muted">{count.ikut} ikut · {count.menunggu} belum jawab</span></div>
@@ -195,6 +217,10 @@ export default function SquadDetail({ id }: { id: string }) {
             </div>
           ) : null}
 
+          {(g.plan?.checkpoints.some((c) => c.kind === 'kopi' || c.kind === 'makan') || g.coffeeOptions?.length || g.orders?.length) ? <OrdersCard g={g} /> : null}
+
+          {g.plan && <CoffeeSyncCard g={g} />}
+
           {/* Timeline perjalanan */}
           <div className="card">
             <div className="card-h">
@@ -224,6 +250,12 @@ export default function SquadDetail({ id }: { id: string }) {
                 )
               })}
             </div>
+            {regroup.length > 0 && (
+              <div style={{ margin: '4px 0 10px' }}>
+                <div className="mono" style={{ marginBottom: 8 }}>No-drop · titik kumpul ulang tiap 10 km</div>
+                <div className="chips">{regroup.map((r) => <a key={r.km} className="chip" href={`https://maps.google.com/?q=${r.pos[0].toFixed(5)},${r.pos[1].toFixed(5)}`} target="_blank" rel="noreferrer">⏸ km {r.km}</a>)}</div>
+              </div>
+            )}
             {g.plan && <a className="btn ghost block" style={{ marginTop: 6 }} href={gmapsDirections(g.plan)} target="_blank" rel="noreferrer"><Navigation size={16} /> Buka rute di Google Maps</a>}
           </div>
 
@@ -236,6 +268,7 @@ export default function SquadDetail({ id }: { id: string }) {
             ))}
             {g.plan && <Route track={g.plan.geometry ?? [g.plan.start.pos, ...g.plan.checkpoints.map((c) => c.pos), (g.plan.finish ?? g.plan.start).pos]} color="#0d0d0d" weight={3.5} />}
             {g.plan?.checkpoints.map((c) => <SmallPin key={c.id} pos={c.place?.pos ?? c.pos} color="#d2441c" title={c.name} />)}
+            {regroup.map((r) => <SmallPin key={'rg' + r.km} pos={r.pos} color="#9a9a93" title={`Titik kumpul ulang km ${r.km}`} />)}
             <MeetPin pos={g.meet.pos} />
           </BaseMap>
         </div>
@@ -292,7 +325,10 @@ export default function SquadDetail({ id }: { id: string }) {
                 <button className="btn ghost" onClick={() => { download(`${g.title}.ics`, groupRideICS(g)); toast('Ditambahkan ke kalender', 'Alarm H-12 jam & H-1 jam') }}><CalendarPlus size={16} /> Kalender</button>
                 <a className="btn ghost" href={`https://www.google.com/maps/dir/?api=1&destination=${g.meet.pos[0]},${g.meet.pos[1]}&travelmode=bicycling`} target="_blank" rel="noreferrer"><Navigation size={16} /> Ke kumpul</a>
               </div>
-              <a className="btn ghost" href={waLink(familyText(g, rowTime, j))} target="_blank" rel="noreferrer"><RouteIcon size={16} /> Jadwal untuk keluarga di rumah</a>
+              <div className="grid2">
+                <a className="btn ghost" href={waLink(familyText(g, rowTime, j))} target="_blank" rel="noreferrer"><RouteIcon size={16} /> Untuk keluarga</a>
+                <QRInvite link={link} title={g.title} />
+              </div>
             </div>
           </div>
 

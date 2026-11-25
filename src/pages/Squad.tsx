@@ -3,7 +3,7 @@ import { Plus, MapPin, UserPlus, CalendarDays, ChevronRight } from 'lucide-react
 import { useStore } from '../lib/store'
 import type { Friend, GroupRide } from '../lib/types'
 import { HARI, uid } from '../lib/util'
-import { Avatar, Sheet, Tabs, toast, Top } from '../components/UI'
+import { Avatar, Sheet, Swipe, Tabs, toast, Top } from '../components/UI'
 import { AvatarPin, BaseMap, SmallPin } from '../components/Map'
 import { AjakSheet, openAjak } from '../components/AjakFlow'
 import { AgendaRow } from './Home'
@@ -21,7 +21,7 @@ export function CreateRide({ open, onClose, preset }: { open: boolean; onClose: 
 }
 
 export default function Squad() {
-  const { groupRides, friends, rides, settings, addFriend, char, avail } = useStore()
+  const { groupRides, friends, rides, settings, addFriend, char, avail, setMyRsvp } = useStore()
   const [tab, setTab] = useState<'jadwal' | 'teman' | 'liga'>('jadwal')
   const [addF, setAddF] = useState(false)
   const live = (g: GroupRide) => new Date(g.datetime).getTime() > Date.now() - 6 * 3600000
@@ -45,7 +45,7 @@ export default function Squad() {
             <a href="#/meet" className="lrow"><span className="ico"><MapPin size={17} /></span><span className="grow"><span className="t" style={{ display: 'block' }}>Titik temu</span><span className="s" style={{ display: 'block' }}>Adil · searah · jemput</span></span></a>
             <a href="#/kapan" className="lrow"><span className="ico"><CalendarDays size={17} /></span><span className="grow"><span className="t" style={{ display: 'block' }}>Kapan bisa?</span><span className="s" style={{ display: 'block' }}>Cocokkan jadwal</span></span></a>
           </div>
-          {need.length > 0 && <><div className="section-h section"><h3>Butuh jawabanmu</h3><span className="tag accent">{need.length}</span></div><div className="stack" style={{ gap: 8 }}>{need.map((g) => <AgendaRow key={g.id} g={g} />)}</div></>}
+          {need.length > 0 && <><div className="section-h section"><h3>Butuh jawabanmu</h3><span className="tag accent">{need.length}</span></div><div className="stack" style={{ gap: 8 }}>{need.map((g) => <Swipe key={g.id} onRight={() => { setMyRsvp(g.id, 'ikut'); toast('🚲 Kamu ikut!') }} onLeft={() => { setMyRsvp(g.id, 'tidak'); toast('Jawaban tersimpan') }}><AgendaRow g={g} /></Swipe>)}</div></>}
           <div className="section-h section"><h3>Akan datang</h3><span className="mono">{soon.length} jadwal</span></div>
           {soon.length === 0 ? (
             <div className="card" style={{ textAlign: 'center' }}>

@@ -4,7 +4,9 @@ import { ArrowLeft, ArrowRight, Check, Coffee, Crosshair, Home as HomeIcon, Load
 import { useStore } from '../lib/store'
 import type { GroupRide, LatLng, Pace, PlaceRef } from '../lib/types'
 import { BaseMap, MeetPin, AvatarPin, SmallPin } from './Map'
-import { Avatar, Sheet, toast, celebrate } from './UI'
+import { Avatar, LoadingPill, Sheet, toast, celebrate } from './UI'
+import { Orbit } from './Orbit'
+import { LogoMark } from './Logo'
 import { fairPointByTime, haversine } from '../lib/geo'
 import { nearbyPlaces, nearbyMeetSpots, type Place } from '../lib/places'
 import { firstName, hhmm, isFree, squadSlots, SLOTS } from '../lib/meetup'
@@ -90,7 +92,7 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
     const g = build()
     upsertGroupRide(g)
     setCreated(g)
-    const text = inviteText(g, inviteLink(g, settings.name, char))
+    const text = inviteText(g, inviteLink(g, settings.name, char, settings.pay))
     if (mode === 'wa') window.open(waLink(text), '_blank')
     if (mode === 'share') shareOrCopy(g.title, text).then((r) => r === 'copied' && toast('🔗 Undangan disalin', 'Tempel di grup WhatsApp squad'))
     celebrate(0.5)
@@ -103,7 +105,9 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
     return (
       <Sheet open={open} onClose={onClose}>
         <div className="stack" style={{ textAlign: 'center', paddingTop: 6 }}>
-          <div className="ico round ink" style={{ margin: '0 auto', width: 56, height: 56 }}><Check size={26} /></div>
+          <div style={{ display: 'grid', placeItems: 'center', margin: '-6px 0 4px' }}>
+            <Orbit converge size={240} chars={[char, ...friends.filter((f) => created.participants.some((p) => p.friendId === f.id)).map((f) => f.char)]} center={<span className="orbit-logo"><LogoMark size={58} animate /></span>} />
+          </div>
           <div className="qtitle">Ajakan terkirim.<br /><span>Tinggal tunggu jawaban.</span></div>
           <p className="small muted">Saat teman menjawab, mereka akan mengirim <b>link balasan</b> lewat WhatsApp. Ketuk link itu dan RSVP, vote jam, serta lokasi berangkat mereka otomatis masuk ke sini.</p>
           <button className="btn ink block lg" onClick={() => { onClose(); go('squad/' + created.id) }}>Lihat ajakan</button>
@@ -211,7 +215,7 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
               )
             })}
           </div>
-          <p className="tiny muted">Teman yang belum pakai Kayuh tetap bisa menjawab lewat link undangan — tanpa install, tanpa akun.</p>
+          <p className="tiny muted">Teman yang belum pakai PACK tetap bisa menjawab lewat link undangan — tanpa install, tanpa akun.</p>
         </div>
       )}
 
@@ -252,7 +256,7 @@ export default function AjakSheet({ open, onClose, preset }: { open: boolean; on
         <div className="stack" style={{ gap: 14 }}>
           <div className="qtitle">Ngopi<br /><span>di mana?</span></div>
           <p className="small muted">Pilih 1 tempat, atau sampai 3 biar squad voting. Tempat pertama jadi checkpoint coffee break.</p>
-          {busy && !cafes && <div className="empty"><Loader2 size={18} className="spin" /> Mencari kedai kopi dekat {meet.name}…</div>}
+          {busy && !cafes && <div style={{ display: 'grid', placeItems: 'center', padding: '18px 0' }}><LoadingPill text={`Mencari kopi dekat ${meet.name.split(' ').slice(0, 3).join(' ')}…`} /></div>}
           {cafes && cafes.length > 0 && (
             <div className="stack" style={{ gap: 6 }}>
               {cafes.slice(0, 7).map((c) => {

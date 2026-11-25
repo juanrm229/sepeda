@@ -17,7 +17,7 @@ export function FeelCheck({ open, initial = 0.7, initialRpe = 6, onClose, onSave
       </div>
       <div style={{ maxWidth: 440, width: '100%', margin: '0 auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ textAlign: 'center', fontSize: 20, fontWeight: 500, marginTop: 12, letterSpacing: '-0.01em' }}>Gimana rasanya ride tadi?</div>
-        {info && <div className="small" style={{ textAlign: 'center', marginTop: 8, opacity: 0.75 }}>Kayuh mencocokkan rasa ini dengan Form-mu untuk menemukan “titik manis” — kondisi saat kamu paling menikmati gowes.</div>}
+        {info && <div className="small" style={{ textAlign: 'center', marginTop: 8, opacity: 0.75 }}>PACK mencocokkan rasa ini dengan Form-mu untuk menemukan “titik manis” — kondisi saat kamu paling menikmati gowes.</div>}
         <div style={{ display: 'grid', placeItems: 'center', marginTop: 18 }}><FeelFace v={v} size={Math.min(300, window.innerWidth - 60)} /></div>
         <div className="display" style={{ textAlign: 'center', fontSize: 64, opacity: 0.55, marginTop: 4 }}>{feelLabel(v)}</div>
         <div style={{ marginTop: 18 }}>

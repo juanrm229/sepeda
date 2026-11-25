@@ -140,7 +140,7 @@ export default function Record() {
 
   function sosText() {
     const p = lastPos ?? settings.home
-    return `🚨 SOS dari ${settings.name} (Kayuh). Kemungkinan jatuh saat bersepeda. Lokasi terakhir: https://maps.google.com/?q=${p[0].toFixed(5)},${p[1].toFixed(5)} — tolong segera hubungi/datangi.`
+    return `🚨 SOS dari ${settings.name} (PACK). Kemungkinan jatuh saat bersepeda. Lokasi terakhir: https://maps.google.com/?q=${p[0].toFixed(5)},${p[1].toFixed(5)} — tolong segera hubungi/datangi.`
   }
   function sendSOS() {
     window.open(waLink(sosText(), settings.emergencyPhone || undefined), '_blank')

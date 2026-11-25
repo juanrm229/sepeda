@@ -7,7 +7,7 @@ import { openAjak } from '../components/AjakFlow'
 import { bit, firstName, hhmm, isFree, SLOTS, squadSlots } from '../lib/meetup'
 import { useForecast } from '../lib/useForecast'
 import { HARI, HARI_PANJANG } from '../lib/util'
-import { waLink } from '../lib/share'
+import { availLink, waLink } from '../lib/share'
 
 const ORDER = [1, 2, 3, 4, 5, 6, 0] // tampil Senin dulu
 
@@ -93,9 +93,9 @@ export default function Kapan() {
             </div>
           ))}
         </div>
-        <a className="btn ghost block" style={{ marginTop: 16 }} href={waLink(`🚲 Jadwal free gowesku: ${mine.join(', ') || '—'}. Kamu kapan? Isi juga di Kayuh biar gampang cocokin 😄 ${location.origin}`)} target="_blank" rel="noreferrer" onClick={() => toast('Jadwalmu siap dibagikan')}><MessageCircle size={16} /> Bagikan jadwal free-ku</a>
+        <a className="btn ghost block" style={{ marginTop: 16 }} href={waLink(`🚲 Jadwal free gowesku: ${mine.join(', ') || '—'}.\nKetuk biar masuk ke PACK-mu: ${availLink({ name: settings.name, mask: avail, char, at: new Date().toISOString() })}\n\nKirim balik jadwalmu ya, biar ketemu slot emas squad 😄`)} target="_blank" rel="noreferrer" onClick={() => toast('Jadwalmu siap dibagikan')}><MessageCircle size={16} /> Bagikan jadwal free-ku</a>
       </div>
-      <p className="tiny muted" style={{ marginTop: 12 }}>Waktu luang teman di sini masih contoh. Sinkron otomatis antar-HP ada di roadmap (butuh server).</p>
+      <p className="tiny muted" style={{ marginTop: 12 }}>Teman membagikan jadwal free lewat link yang sama — ketuk linknya dan jadwal mereka langsung masuk ke sini. Data contoh dipakai sampai link teman masuk.</p>
     </div>
   )
 }

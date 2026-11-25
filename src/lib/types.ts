@@ -56,6 +56,10 @@ export interface Participant {
   vote?: Vote
   note?: string
   at?: string
+  order?: { item: string; note?: string; price?: number }
+  status?: TripStatus
+  statusAt?: string
+  eta?: string
 }
 
 export interface Vote { t?: number; c?: number }
@@ -84,6 +88,13 @@ export interface GroupRide {
   hostChar?: CharConfig
   /** Check-in rombongan: kunci 'start' | id checkpoint | 'finish' → waktu ISO. */
   checkins?: Record<string, string>
+  /** Titip pesanan ke satu orang (runner) yang memesan & membayar dulu. */
+  orders?: Order[]
+  runner?: string
+  billedAt?: string
+  /** Rekening host (dibawa di link undangan supaya tamu tahu transfer ke mana). */
+  hostPay?: PayAccount[]
+  myStatus?: TripStatus
 }
 
 export type CheckpointKind = 'rehat' | 'kopi' | 'makan' | 'air' | 'foto' | 'sholat' | 'bengkel'
@@ -153,7 +164,20 @@ export interface Settings {
   homeLabel: string
   theme: 'dark' | 'light'
   fuelPricePerKm: number // Rp per km bila naik motor
+  /** Rekening/e-wallet untuk patungan — tidak perlu kirim nomor rekening berulang ke grup. */
+  pay?: PayAccount[]
 }
+
+export interface PayAccount { id: string; kind: 'bank' | 'ewallet'; provider: string; number: string; holder: string }
+
+/** Titipan pesanan (kopi/makan) di checkpoint ngopi. */
+export interface Order { id: string; who: string; name?: string; item: string; note?: string; price?: number; qty: number; at?: string }
+
+/** Catatan utang: `from` berutang `amount` ke `to`. Id orang: 'me' | id teman | 'g-…' tamu. */
+export interface Debt { id: string; rideId?: string; from: string; fromName?: string; to: string; toName?: string; amount: number; note: string; at: string; paid?: string }
+
+/** Status perjalanan peserta untuk papan kedatangan. */
+export type TripStatus = 'otw' | 'tiba' | 'pulang'
 
 /** Avatar profil (DiceBear Lorelei). */
 export interface CharConfig {

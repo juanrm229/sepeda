@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { Bike, CharConfig, EventGoal, Friend, GroupRide, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings, Vote } from './types'
-import { applyRidesToBikes, defaultSettings, MY_AVAIL, seedAvail, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides } from './seed'
+import type { Bike, CharConfig, Debt, EventGoal, Friend, GroupRide, Order, Plan, Reminder, Ride, RoutePlan, Rsvp, Settings, TripStatus, Vote } from './types'
+import { applyRidesToBikes, defaultSettings, MY_AVAIL, seedAvail, seedBikes, seedFriends, seedGroupRides, seedPlan, seedReminders, seedRides, seedLedger } from './seed'
 import { defaultChar, isCharConfig, migrateLegacy, sanitizeChar } from './avatar'
 
 interface State {
@@ -22,6 +22,15 @@ interface State {
   setAvail: (m: number) => void
   setMyVote: (id: string, v: Vote) => void
   checkin: (id: string, key: string, on?: boolean) => void
+  upsertOrder: (rideId: string, o: Order) => void
+  removeOrder: (rideId: string, orderId: string) => void
+  setRunner: (rideId: string, who: string) => void
+  setMyStatus: (rideId: string, st: TripStatus | undefined) => void
+  ledger: Debt[]
+  addDebts: (d: Debt[]) => void
+  setPaid: (ids: string[], paid: boolean) => void
+  deleteDebt: (id: string) => void
+  updateFriendAvail: (id: string, mask: number) => void
   upsertRoute: (r: RoutePlan) => void
   deleteRoute: (id: string) => void
   setChar: (c: CharConfig) => void
@@ -55,6 +64,7 @@ function demo() {
     reminders: seedReminders,
     bikes: applyRidesToBikes(seedBikes, rides),
     plan: seedPlan(),
+    ledger: seedLedger(),
     event: { name: 'Gran Fondo Sentul', date: (() => { const d = new Date(); d.setDate(d.getDate() + 13); d.setHours(6, 0, 0, 0); return d.toISOString() })(), km: 100 } as EventGoal,
   }
 }
@@ -72,10 +82,19 @@ export const useStore = create<State>()(
       setAvail: (m) => set({ avail: m }),
       setMyVote: (id, v) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id === id ? { ...g, myVote: { ...g.myVote, ...v } } : g)) })),
       checkin: (id, key, on = true) => set((s) => ({ groupRides: s.groupRides.map((g) => { if (g.id !== id) return g; const ck = { ...(g.checkins ?? {}) }; if (on) ck[key] = new Date().toISOString(); else delete ck[key]; return { ...g, checkins: ck } }) })),
+      upsertOrder: (rideId, o) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, orders: (g.orders ?? []).some((x) => x.id === o.id) ? g.orders!.map((x) => (x.id === o.id ? o : x)) : [...(g.orders ?? []), o] })) })),
+      removeOrder: (rideId, oid) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, orders: (g.orders ?? []).filter((x) => x.id !== oid) })) })),
+      setRunner: (rideId, who) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, runner: who })) })),
+      setMyStatus: (rideId, st) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, myStatus: st })) })),
+      ledger: [],
+      addDebts: (d) => set((s) => ({ ledger: [...d, ...s.ledger.filter((x) => !d.some((y) => y.id === x.id))] })),
+      setPaid: (ids, paid) => set((s) => ({ ledger: s.ledger.map((x) => (ids.includes(x.id) ? { ...x, paid: paid ? new Date().toISOString() : undefined } : x)) })),
+      deleteDebt: (id) => set((s) => ({ ledger: s.ledger.filter((x) => x.id !== id) })),
+      updateFriendAvail: (id, mask) => set((s) => ({ friends: s.friends.map((f) => (f.id === id ? { ...f, avail: mask } : f)) })),
       upsertRoute: (r) => set((s) => ({ routes: s.routes.some((x) => x.id === r.id) ? s.routes.map((x) => (x.id === r.id ? r : x)) : [r, ...s.routes] })),
       deleteRoute: (id) => set((s) => ({ routes: s.routes.filter((r) => r.id !== id) })),
       setChar: (c) => set({ char: c }),
-      finishOnboarding: (useDemo) => set(useDemo ? { onboarded: true } : { onboarded: true, rides: [], groupRides: [], routes: [], bikes: seedBikes.map((b) => ({ ...b, odometerKm: 0, components: b.components.map((c) => ({ ...c, usedKm: 0 })) })) }),
+      finishOnboarding: (useDemo) => set((st) => useDemo ? { onboarded: true } : { onboarded: true, rides: [], groupRides: [], routes: [], ledger: [], settings: { ...st.settings, pay: [] }, bikes: seedBikes.map((b) => ({ ...b, odometerKm: 0, components: b.components.map((c) => ({ ...c, usedKm: 0 })) })) }),
       setPlan: (p) => set({ plan: p }),
       setEvent: (e) => set({ event: e }),
       setRideFeel: (id, feel, rpe) => set((s) => ({ rides: s.rides.map((r) => (r.id === id ? { ...r, feel, rpe } : r)) })),
@@ -108,7 +127,7 @@ export const useStore = create<State>()(
     }),
     {
       name: 'kayuh-v2',
-      version: 7,
+      version: 8,
       migrate: (persisted: unknown) => {
         const p = (persisted ?? {}) as Partial<State>
         const d = demo()
@@ -116,12 +135,13 @@ export const useStore = create<State>()(
           ...p,
           routes: p.routes ?? [],
           avail: typeof p.avail === 'number' ? p.avail : MY_AVAIL,
+          ledger: p.ledger ?? d.ledger,
           onboarded: p.onboarded ?? true,
           plan: p.plan?.cells?.length === 14 ? p.plan : d.plan,
           char: isCharConfig(p.char) ? sanitizeChar(p.char) : p.char ? migrateLegacy(p.char, p.settings?.name ?? 'kayuh') : defaultChar,
           friends: (p.friends ?? d.friends).map((f, i) => ({ ...f, avail: f.avail ?? seedAvail(f.id), char: isCharConfig(f.char) ? sanitizeChar(f.char) : d.friends.find((x) => x.id === f.id)?.char ?? migrateLegacy(f.char, f.name + i) })),
           groupRides: (p.groupRides ?? d.groupRides).map((g) => { const seed = d.groupRides.find((x) => x.id.split('-')[0] === g.id); return seed && !g.timeOptions ? { ...seed, myRsvp: g.myRsvp } : g }),
-          settings: { ...defaultSettings, ...(p.settings ?? {}) },
+          settings: { ...defaultSettings, pay: [], ...(p.settings ?? {}) },
         } as State
       },
     },

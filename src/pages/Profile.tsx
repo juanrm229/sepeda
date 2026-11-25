@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Crosshair, Download, RefreshCw, Trash2, Moon, Sun } from 'lucide-react'
 import { useStore } from '../lib/store'
+import { MyPayAccounts } from '../components/PayAccounts'
 import { badges, level, levelTitle } from '../lib/analytics'
 import { fmt } from '../lib/util'
 import { confirmDialog, toast, Top } from '../components/UI'
@@ -53,6 +54,10 @@ export default function Profile() {
               <div><div className="mono">Tanjakan</div><div className="dot" style={{ fontSize: 28 }}>{fmt(totalElev)}</div><div className="mono">m</div></div>
               <div><div className="mono">Ride</div><div className="dot" style={{ fontSize: 28 }}>{rides.length}</div><div className="mono">×</div></div>
             </div>
+          </div>
+          <div className="card">
+            <div className="card-h"><div><div className="mono">Rekening & e-wallet</div><div className="b" style={{ marginTop: 2 }}>Ikut otomatis di tagihan patungan</div></div><a href="#/patungan" className="link">Patungan</a></div>
+            <MyPayAccounts />
           </div>
 
           <div className="section-h" style={{ marginTop: 10 }}><h3>Lencana</h3><span className="mono">{bs.filter((b) => b.got).length}/{bs.length}</span></div>

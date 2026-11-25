@@ -5,7 +5,7 @@ const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}
 const esc = (s: string) => s.replace(/[\\,;]/g, (c) => '\\' + c).replace(/\n/g, '\\n')
 
 function wrap(events: string[]) {
-  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Kayuh//ID', 'CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n')
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PACK//ID', 'CALSCALE:GREGORIAN', ...events, 'END:VCALENDAR'].join('\r\n')
 }
 
 export function groupRideICS(g: GroupRide): string {
@@ -47,5 +47,5 @@ export function download(name: string, content: string, type = 'text/calendar') 
 export function gpx(name: string, track: [number, number][], startIso: string): string {
   const t0 = new Date(startIso).getTime()
   const pts = track.map(([la, lo], i) => `<trkpt lat="${la.toFixed(6)}" lon="${lo.toFixed(6)}"><time>${new Date(t0 + i * 30000).toISOString()}</time></trkpt>`).join('')
-  return `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="Kayuh" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${name.replace(/[<&]/g, '')}</name><trkseg>${pts}</trkseg></trk></gpx>`
+  return `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="PACK" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${name.replace(/[<&]/g, '')}</name><trkseg>${pts}</trkseg></trk></gpx>`
 }

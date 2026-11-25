@@ -47,7 +47,7 @@ export function GroupActionCard({ g, compact }: { g: GroupRide; compact?: boolea
           {going.slice(0, 4).map((f) => f && <Avatar key={f.id} name={f.name} color={f.color} c={f.char} size={30} />)}
         </div>
         <span className="small" style={{ flex: 1 }}>{going.length + (g.myRsvp === 'ikut' ? 1 : 0)} ikut</span>
-        <button className="btn sm" style={{ background: 'rgba(0,0,0,.22)', color: '#fff' }} onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><UserPlus size={14} /> Ajak</button>
+        <button className="btn sm" style={{ background: 'rgba(0,0,0,.22)', color: '#fff' }} onClick={async () => { const r = await shareOrCopy(g.title, inviteText(g, inviteLink(g, settings.name, char, settings.pay))); if (r === 'copied') toast('🔗 Link undangan disalin') }}><UserPlus size={14} /> Ajak</button>
       </div>
 
       <div className="row" style={{ marginTop: 12, gap: 8 }}>

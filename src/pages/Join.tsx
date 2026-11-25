@@ -11,6 +11,8 @@ import { PACE } from '../components/AjakFlow'
 import { go } from '../lib/router'
 import { firstName, hhmm } from '../lib/meetup'
 import type { Rsvp, Vote } from '../lib/types'
+import { QUICK_ITEMS } from '../lib/money'
+import { PayCard } from '../components/PayAccounts'
 
 export default function Join({ code }: { code: string }) {
   const { upsertGroupRide, groupRides, settings, char, onboarded, finishOnboarding, updateSettings } = useStore()
@@ -21,6 +23,8 @@ export default function Join({ code }: { code: string }) {
   const [name, setName] = useState(onboarded ? settings.name : '')
   const [note, setNote] = useState('')
   const [shareFrom, setShareFrom] = useState(onboarded)
+  const [item, setItem] = useState('')
+  const [itemNote, setItemNote] = useState('')
   if (!g) return <div><Top title="Undangan tidak valid" back="" /><div className="empty">Link undangan rusak atau terpotong. Minta kirim ulang ya.</div></div>
 
   const d = new Date(g.datetime)
@@ -38,7 +42,7 @@ export default function Join({ code }: { code: string }) {
     if (r === 'ikut') celebrate(0.7)
   }
   function send() {
-    const rep = { rideId: g!.id, name: (name.trim() || settings.name), rsvp: answer!, vote, from: shareFrom && onboarded ? settings.home : undefined, note: note.trim() || undefined, char, at: new Date().toISOString() }
+    const rep = { rideId: g!.id, name: (name.trim() || settings.name), rsvp: answer!, vote, from: shareFrom && onboarded ? settings.home : undefined, note: note.trim() || undefined, char, at: new Date().toISOString(), order: item.trim() && answer !== 'tidak' ? { item: item.trim(), note: itemNote.trim() || undefined, price: QUICK_ITEMS.find((q) => q.item === item.trim())?.price } : undefined }
     window.open(waLink(replyText(g!, rep, replyLink(rep))), '_blank')
     toast('📨 Balasan siap dikirim', `Pilih chat ${host} di WhatsApp`)
   }
@@ -90,6 +94,18 @@ export default function Join({ code }: { code: string }) {
         </div>
       )}
 
+      {(g.coffeeOptions?.length || g.plan?.checkpoints.some((c) => c.kind === 'kopi' || c.kind === 'makan')) && (
+        <div className="card section" style={{ marginTop: 12 }}>
+          <div className="mono" style={{ marginBottom: 4 }}>Mau nitip apa? (opsional)</div>
+          <p className="tiny muted" style={{ marginBottom: 10 }}>{host} yang pesankan semua di tempat ngopi. Titipanmu ikut di jawaban.</p>
+          <div className="chips">{QUICK_ITEMS.slice(0, 7).map((q) => <button key={q.item} className={`chip ${item === q.item ? 'on' : ''}`} onClick={() => setItem(item === q.item ? '' : q.item)}>{q.item}</button>)}</div>
+          <div className="grid2" style={{ marginTop: 10 }}>
+            <input className="input" placeholder="Pesanan lain…" value={item} maxLength={60} onChange={(e) => setItem(e.target.value)} />
+            <input className="input" placeholder="Catatan (less sugar…)" value={itemNote} maxLength={80} onChange={(e) => setItemNote(e.target.value)} />
+          </div>
+        </div>
+      )}
+
       {g.plan && g.plan.checkpoints.length > 0 && (
         <div className="card section" style={{ marginTop: 12 }}>
           <div className="mono" style={{ marginBottom: 12 }}>Rute · {g.plan.checkpoints.length} checkpoint</div>
@@ -130,14 +146,16 @@ export default function Join({ code }: { code: string }) {
           </div>
           <input className="input" style={{ marginTop: 14 }} placeholder="Pesan singkat (opsional)" maxLength={120} value={note} onChange={(e) => setNote(e.target.value)} />
           {onboarded && <label className="row between small" style={{ marginTop: 12 }}><span>Bagikan perkiraan titik berangkat (±1 km) untuk titik temu adil</span><button type="button" className={`toggle ${shareFrom ? 'on' : ''}`} aria-pressed={shareFrom} aria-label="Bagikan titik berangkat" onClick={() => setShareFrom(!shareFrom)} /></label>}
+          {item.trim() && answer !== 'tidak' && <div className="tag" style={{ marginTop: 12 }}>🧾 Nitip: {item}{itemNote ? ` · ${itemNote}` : ''}</div>}
           <button className="btn ink block lg" style={{ marginTop: 14 }} onClick={send}><MessageCircle size={17} /> Kirim jawaban ke {host}</button>
+          {g.hostPay?.length ? <div className="stack" style={{ gap: 6, marginTop: 14 }}><span className="mono">Rekening {host} untuk patungan</span>{g.hostPay.map((a) => <PayCard key={a.id} a={a} />)}</div> : null}
           <div className="grid2" style={{ marginTop: 8 }}>
             <button className="btn ghost" onClick={() => setAnswer(null)}>Ubah jawaban</button>
             <button className="btn ghost" onClick={() => go('squad/' + g.id)}>Lihat ajakan</button>
           </div>
         </div>
       )}
-      <p className="tiny muted" style={{ marginTop: 12, textAlign: 'center' }}>Kayuh menyimpan semuanya di HP-mu. Tanpa akun, tanpa server.</p>
+      <p className="tiny muted" style={{ marginTop: 12, textAlign: 'center' }}>PACK menyimpan semuanya di HP-mu. Tanpa akun, tanpa server.</p>
     </div>
   )
 }

@@ -53,7 +53,7 @@ export default function Reminders() {
   async function enable() {
     const r = await askPermission()
     setPerm(r)
-    if (r === 'granted') { notify('Notifikasi aktif 🚲', 'Kayuh akan mengingatkanmu sesuai jadwal.'); toast('Notifikasi aktif') }
+    if (r === 'granted') { notify('Notifikasi aktif 🚲', 'PACK akan mengingatkanmu sesuai jadwal.'); toast('Notifikasi aktif') }
     else toast('Izin notifikasi tidak diberikan. Gunakan ekspor kalender.')
   }
 
@@ -99,7 +99,7 @@ export default function Reminders() {
 
           <div className="grid2">
             <button className="btn ghost" onClick={() => { download('kayuh-pengingat.ics', remindersICS(reminders)); toast('File kalender diunduh, buka untuk menambahkan ke Google/Apple Calendar') }}><CalendarPlus size={16} /> Ekspor ke kalender</button>
-            <button className="btn ghost" onClick={() => notify('Tes pengingat 🚲', 'Begini tampilan pengingat dari Kayuh.').then((ok) => !ok && toast('Aktifkan izin notifikasi dulu'))}><Bell size={16} /> Tes notifikasi</button>
+            <button className="btn ghost" onClick={() => notify('Tes pengingat 🚲', 'Begini tampilan pengingat dari PACK.').then((ok) => !ok && toast('Aktifkan izin notifikasi dulu'))}><Bell size={16} /> Tes notifikasi</button>
           </div>
           <p className="tiny muted">Tips: ekspor ke kalender membuat pengingat tetap berbunyi walau browser ditutup — alarm dikelola oleh kalender HP-mu.</p>
         </div>

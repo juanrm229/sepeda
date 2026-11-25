@@ -37,7 +37,7 @@ export default function Passport() {
       <div className="card passport">
         <div className="row between" style={{ alignItems: 'flex-start' }}>
           <div>
-            <div className="mono">Republik Pesepeda · Kayuh</div>
+            <div className="mono">Republik Pesepeda · PACK</div>
             <div className="display" style={{ fontSize: 30, marginTop: 4 }}>Paspor {settings.name}</div>
             <div className="small" style={{ marginTop: 4, opacity: 0.8 }}>{got} dari {list.length} landmark distempel</div>
           </div>

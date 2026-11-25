@@ -1,4 +1,4 @@
-import type { CharConfig, GroupRide, LatLng, Rsvp, Vote } from './types'
+import type { CharConfig, GroupRide, LatLng, PayAccount, Rsvp, TripStatus, Vote } from './types'
 import { fmtDate } from './util'
 import { isCharConfig, sanitizeChar } from './avatar'
 
@@ -20,11 +20,12 @@ export function unpackChar(a: unknown): CharConfig | undefined {
 
 /* ---------- Undangan (host → teman) ---------- */
 /** Undangan dikodekan di URL — teman bisa membuka, voting & RSVP tanpa server. */
-export function inviteLink(g: GroupRide, hostName: string, hostChar?: CharConfig): string {
+export function inviteLink(g: GroupRide, hostName: string, hostChar?: CharConfig, hostPay?: PayAccount[]): string {
   const t0 = new Date(g.datetime).getTime()
   const payload = {
     v: 2, i: g.id, t: g.title, d: g.datetime, m: g.meet.name, p: g.meet.pos.map(r5), pc: g.pace, k: g.distanceKm, r: g.route, n: g.notes, nd: g.noDrop, h: hostName,
     nt: g.note, hc: hostChar ? packChar(hostChar) : undefined,
+    py: hostPay?.length ? hostPay.slice(0, 3).map((a) => [a.kind === 'bank' ? 'b' : 'e', a.provider, a.number, a.holder]) : undefined,
     to: g.timeOptions && g.timeOptions.length > 1 ? g.timeOptions.map((x) => Math.round((new Date(x).getTime() - t0) / 60000)) : undefined,
     co: g.coffeeOptions?.length ? g.coffeeOptions.map((c) => [c.name, r5(c.pos[0]), r5(c.pos[1]), c.kind]) : undefined,
     c: g.plan?.checkpoints.map((c) => [c.place?.name ?? c.name, r5(c.pos[0]), r5(c.pos[1]), c.kind, c.stopMin]),
@@ -41,6 +42,7 @@ export function parseInvite(code: string): GroupRide | null {
       id: p.i ?? 'inv-' + code.slice(0, 10), title: p.t, datetime: p.d, meet: { name: p.m, pos: p.p }, pace: p.pc, distanceKm: p.k,
       route: p.r, notes: p.n, noDrop: !!p.nd, participants: [], myRsvp: 'menunggu', host: p.h || 'Teman',
       note: p.nt, hostChar: unpackChar(p.hc),
+      hostPay: Array.isArray(p.py) ? p.py.map((a: string[], i: number) => ({ id: 'hp' + i, kind: a[0] === 'b' ? 'bank' : 'ewallet', provider: String(a[1]).slice(0, 20), number: String(a[2]).slice(0, 30), holder: String(a[3] ?? '').slice(0, 40) })) : undefined,
       timeOptions: Array.isArray(p.to) ? p.to.map((m: number) => new Date(t0 + m * 60000).toISOString()) : undefined,
       coffeeOptions: Array.isArray(p.co) ? p.co.map((c: [string, number, number, string]) => ({ name: c[0], pos: [c[1], c[2]] as LatLng, kind: c[3] ?? 'Kafe' })) : undefined,
       plan: p.c ? {
@@ -54,10 +56,10 @@ export function parseInvite(code: string): GroupRide | null {
 }
 
 /* ---------- Balasan (teman → host) — RSVP dua arah tanpa server ---------- */
-export interface Reply { rideId: string; name: string; rsvp: Rsvp; vote?: Vote; from?: LatLng; note?: string; char?: CharConfig; at: string }
+export interface Reply { rideId: string; name: string; rsvp: Rsvp; vote?: Vote; from?: LatLng; note?: string; char?: CharConfig; at: string; order?: { item: string; note?: string; price?: number }; status?: TripStatus; eta?: string }
 
 export function replyLink(r: Reply): string {
-  const payload = { i: r.rideId, n: r.name, r: r.rsvp, t: r.vote?.t, c: r.vote?.c, f: r.from?.map((x) => +x.toFixed(2)), m: r.note, a: r.char ? packChar(r.char) : undefined, at: r.at }
+  const payload = { i: r.rideId, n: r.name, r: r.rsvp, t: r.vote?.t, c: r.vote?.c, f: r.from?.map((x) => +x.toFixed(2)), m: r.note, a: r.char ? packChar(r.char) : undefined, at: r.at, o: r.order ? [r.order.item, r.order.note, r.order.price] : undefined, st: r.status, e: r.eta }
   return `${location.origin}${location.pathname}#/balas/${b64(JSON.stringify(payload))}`
 }
 
@@ -65,17 +67,24 @@ export function parseReply(code: string): Reply | null {
   try {
     const p = JSON.parse(unb64(code))
     if (!p.i || !p.n || !['ikut', 'mungkin', 'tidak'].includes(p.r)) return null
-    return { rideId: p.i, name: String(p.n).slice(0, 40), rsvp: p.r, vote: p.t != null || p.c != null ? { t: p.t ?? undefined, c: p.c ?? undefined } : undefined, from: Array.isArray(p.f) ? [p.f[0], p.f[1]] : undefined, note: p.m ? String(p.m).slice(0, 140) : undefined, char: unpackChar(p.a), at: p.at ?? new Date().toISOString() }
+    return { rideId: p.i, name: String(p.n).slice(0, 40), rsvp: p.r, vote: p.t != null || p.c != null ? { t: p.t ?? undefined, c: p.c ?? undefined } : undefined, from: Array.isArray(p.f) ? [p.f[0], p.f[1]] : undefined, note: p.m ? String(p.m).slice(0, 140) : undefined, char: unpackChar(p.a), at: p.at ?? new Date().toISOString(),
+      order: Array.isArray(p.o) && p.o[0] ? { item: String(p.o[0]).slice(0, 60), note: p.o[1] ? String(p.o[1]).slice(0, 80) : undefined, price: typeof p.o[2] === 'number' ? p.o[2] : undefined } : undefined,
+      status: ['otw', 'tiba', 'pulang'].includes(p.st) ? p.st : undefined, eta: typeof p.e === 'string' ? p.e : undefined }
   } catch {
     return null
   }
 }
 
 export function replyText(g: GroupRide, r: Reply, link: string): string {
+  if (r.status) {
+    const st = r.status === 'otw' ? `🚴 Aku OTW ke ${g.meet.name}${r.eta ? `, sampai ±${new Date(r.eta).toTimeString().slice(0, 5).replace(':', '.')}` : ''}.` : r.status === 'tiba' ? `📍 Aku sudah sampai di ${g.meet.name}.` : '🏠 Aku sudah sampai rumah dengan selamat. Makasih gowesnya!'
+    return `${st}\n\nKetuk untuk update papan kedatangan: ${link}`
+  }
   const head = r.rsvp === 'ikut' ? `✅ Aku ikut *${g.title}*!` : r.rsvp === 'mungkin' ? `🤔 Mungkin ikut *${g.title}*.` : `🙏 Maaf, kali ini nggak bisa ikut *${g.title}*.`
   const t = r.vote?.t != null && g.timeOptions?.[r.vote.t] ? `\n🕐 Pilih jam: ${fmtDate(g.timeOptions[r.vote.t], true)}` : ''
   const c = r.vote?.c != null && g.coffeeOptions?.[r.vote.c] ? `\n☕ Ngopi: ${g.coffeeOptions[r.vote.c].name}` : ''
-  return `${head}${t}${c}${r.note ? `\n💬 ${r.note}` : ''}\n\nKetuk supaya jawabanku masuk ke Kayuh-mu: ${link}`
+  const o = r.order ? `\n🧾 Nitip: ${r.order.item}${r.order.note ? ` (${r.order.note})` : ''}` : ''
+  return `${head}${t}${c}${o}${r.note ? `\n💬 ${r.note}` : ''}\n\nKetuk supaya jawabanku masuk ke PACK-mu: ${link}`
 }
 
 /* ---------- Teks ---------- */
@@ -94,3 +103,16 @@ export async function shareOrCopy(title: string, text: string): Promise<'shared'
 }
 
 export const waLink = (text: string, phone?: string) => `https://wa.me/${phone ? phone.replace(/\D/g, '').replace(/^0/, '62') : ''}?text=${encodeURIComponent(text)}`
+
+/* ---------- Jadwal free (link ketersediaan) ---------- */
+export interface AvailShare { name: string; mask: number; char?: CharConfig; at: string }
+export function availLink(a: AvailShare): string {
+  return `${location.origin}${location.pathname}#/jadwal/${b64(JSON.stringify({ n: a.name, m: a.mask, a: a.char ? packChar(a.char) : undefined, at: a.at }))}`
+}
+export function parseAvail(code: string): AvailShare | null {
+  try { const p = JSON.parse(unb64(code)); if (!p.n || typeof p.m !== 'number') return null; return { name: String(p.n).slice(0, 40), mask: p.m & 0x1fffff, char: unpackChar(p.a), at: p.at ?? new Date().toISOString() } } catch { return null }
+}
+
+/* ---------- Rupiah & rekening ---------- */
+export const rp = (n: number) => 'Rp' + Math.round(n).toLocaleString('id-ID')
+export const payLine = (a: PayAccount) => `${a.provider} ${a.number} a.n. ${a.holder}`
