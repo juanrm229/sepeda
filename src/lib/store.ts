@@ -86,7 +86,6 @@ export const useStore = create<State>()(
       removeOrder: (rideId, oid) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, orders: (g.orders ?? []).filter((x) => x.id !== oid) })) })),
       setRunner: (rideId, who) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, runner: who })) })),
       setMyStatus: (rideId, st) => set((s) => ({ groupRides: s.groupRides.map((g) => (g.id !== rideId ? g : { ...g, myStatus: st })) })),
-      ledger: [],
       addDebts: (d) => set((s) => ({ ledger: [...d, ...s.ledger.filter((x) => !d.some((y) => y.id === x.id))] })),
       setPaid: (ids, paid) => set((s) => ({ ledger: s.ledger.map((x) => (ids.includes(x.id) ? { ...x, paid: paid ? new Date().toISOString() : undefined } : x)) })),
       deleteDebt: (id) => set((s) => ({ ledger: s.ledger.filter((x) => x.id !== id) })),

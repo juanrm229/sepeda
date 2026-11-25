@@ -114,5 +114,5 @@ export function parseAvail(code: string): AvailShare | null {
 }
 
 /* ---------- Rupiah & rekening ---------- */
-export const rp = (n: number) => 'Rp' + Math.round(n).toLocaleString('id-ID')
+export const rp = (n: number) => 'Rp' + (Math.round(n) || 0).toLocaleString('id-ID')
 export const payLine = (a: PayAccount) => `${a.provider} ${a.number} a.n. ${a.holder}`
