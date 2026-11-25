@@ -1,5 +1,7 @@
 # PACK — Ride as one.
 
+**Live:** https://pack-ride.vercel.app
+
 **Stop riding alone.** PACK adalah PWA untuk pesepeda yang fokus ke **ketemuan**:
 - ajak squad dalam 10 detik dan cocokkan jadwal;
 - cari titik temu yang adil, lalu atur checkpoint & ngopi;
